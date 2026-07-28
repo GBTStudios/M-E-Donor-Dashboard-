@@ -1,5 +1,3 @@
-.env
-
 # Python
 venv/
 __pycache__/
@@ -11,6 +9,16 @@ __pycache__/
 .env
 .env.local
 
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# TypeScript
+*.tsbuildinfo
+
 # OS
 .DS_Store
 Thumbs.db
@@ -18,3 +26,8 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
