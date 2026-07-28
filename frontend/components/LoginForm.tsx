@@ -14,19 +14,34 @@ export default function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  function isValidEmail(value: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  const bothFieldsFilled = email.trim().length > 0 && password.length > 0;
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
+
+    if (!email.trim() || !password) {
+      setError("Please enter both your email and password.");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
     setLoading(true);
-
     const result = await loginUser(email, password, keepSignedIn);
-
     setLoading(false);
 
     if (result.success) {
       router.push("/dashboard");
     } else {
-      setError(result.error ?? "Something went wrong. Please try again.");
+      setError(result.error);
     }
   }
 
@@ -53,45 +68,46 @@ export default function LoginForm() {
         <div className="flex-1 h-px bg-black/10" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <div>
-          <label className="text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="text-sm font-medium text-gray-700">
             Work Email
           </label>
           <div className="relative mt-1">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
+              id="email"
               type="email"
-              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@organization.org"
-              className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-black/10 bg-white/60 text-sm focus:outline-none focus:ring-2 focus:ring-teal-700"
+              className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-black/10 bg-white/60 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-700"
             />
           </div>
         </div>
 
         <div>
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="text-sm font-medium text-gray-700">
               Password
             </label>
-            <a href="/forgot_password" className="text-xs text-teal-700 hover:underline">
+            <a href="/forgot-password" className="text-xs text-teal-700 hover:underline">
               Forgot password?
             </a>
           </div>
           <div className="relative mt-1">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
+              id="password"
               type={showPassword ? "text" : "password"}
-              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-black/10 bg-white/60 text-sm focus:outline-none focus:ring-2 focus:ring-teal-700"
+              className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-black/10 bg-white/60 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-700"
             />
             <button
               type="button"
+              aria-label={showPassword ? "Hide password" : "Show password"}
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
             >
@@ -110,16 +126,27 @@ export default function LoginForm() {
           Keep me signed in for 30 days
         </label>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-2 bg-teal-800 hover:bg-teal-900 text-white rounded-lg py-2.5 text-sm font-medium transition disabled:opacity-60"
+          disabled={!bothFieldsFilled || loading}
+          className="w-full flex items-center justify-center gap-2 bg-teal-800 hover:bg-teal-900 text-white rounded-lg py-2.5 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Signing in..." : "Sign in to Platform"}
           {!loading && <ArrowRight className="w-4 h-4" />}
         </button>
+
+        <p className="text-center text-sm text-gray-500">
+          Don't have an account?{" "}
+          <a href="/signup" className="text-teal-700 hover:underline">
+            Sign up
+          </a>
+        </p>
       </form>
     </div>
   );
