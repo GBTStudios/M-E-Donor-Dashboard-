@@ -41,8 +41,6 @@ export function SignUpForm() {
     if (touched[field]) {
       setErrors((prev) => ({ ...prev, [field]: validateSignUpField(field, nextValues) }));
     }
-    // Re-validate confirmPassword whenever password changes, since its
-    // validity depends on both fields together.
     if (field === "password" && touched.confirmPassword) {
       setErrors((prev) => ({
         ...prev,
@@ -60,8 +58,6 @@ export function SignUpForm() {
     e.preventDefault();
     setFormError(undefined);
 
-    // Validate everything on submit regardless of touched state, in case
-    // someone pastes values in or tabs through without triggering blur.
     const allErrors = validateSignUpForm(values);
     setErrors(allErrors);
     setTouched({ name: true, email: true, password: true, confirmPassword: true });
@@ -71,10 +67,10 @@ export function SignUpForm() {
     setIsSubmitting(true);
     try {
       const result = await signUp({
-  name: values.name,
-  email: values.email,
-  password: values.password,
-  });
+        name: values.name,
+        email: values.email,
+        password: values.password,
+      });
 
       if (!result.success) {
         setFormError(result.message);
@@ -95,155 +91,175 @@ export function SignUpForm() {
 
   if (isSuccess) {
     return (
-      <div className="bg-white rounded-card shadow-card p-10 w-full max-w-md text-center">
-        <div className="w-14 h-14 rounded-full bg-brand-mint flex items-center justify-center mx-auto mb-5">
-          <CheckCircle2 className="w-7 h-7 text-brand-primary" />
+      <div className="w-screen min-h-screen bg-[#F7F1EB] flex flex-col items-center justify-center p-8 sm:p-16">
+        <div className="bg-[#DAEFEE] rounded-3xl p-12 sm:p-16 w-full max-w-2xl text-center shadow-sm border border-[#C5E5E3]">
+          <div className="w-16 h-16 rounded-full bg-[#CCEAE8] flex items-center justify-center mx-auto mb-6">
+            <CheckCircle2 className="w-8 h-8 text-[#1A534A]" />
+          </div>
+          <h1 className="text-3xl font-semibold text-[#1A534A] mb-3">Account created</h1>
+          <p className="text-base text-[#5B7571] mb-8">
+            We&apos;ve sent a verification code to <strong>{values.email}</strong>. Enter it next to
+            activate your account.
+          </p>
+          <Link
+            href="/signup/verify"
+            className="inline-block w-full bg-[#1A534A] hover:bg-[#134038] text-white text-base font-semibold py-4 rounded-2xl transition-colors"
+          >
+            Continue to verification
+          </Link>
         </div>
-        <h1 className="text-xl font-semibold text-brand-ink mb-2">Account created</h1>
-        <p className="text-sm text-brand-muted mb-6">
-          We&apos;ve sent a verification code to <strong>{values.email}</strong>. Enter it next to
-          activate your account.
-        </p>
-        <Link
-          href="/signup/verify"
-          className="inline-block w-full bg-brand-primary hover:bg-brand-primaryHover text-white text-sm font-semibold py-3 rounded-full transition-colors"
-        >
-          Continue to verification
-        </Link>
       </div>
     );
   }
 
   return (
-    <div className="bg-brand-mint rounded-card shadow-card w-full max-w-xl px-10 py-6 sm:px-14 sm:py-8">
-      <div className="flex items-center gap-2 mb-6">
-        <div className="w-7 h-7 rounded-md bg-brand-primary text-white flex items-center justify-center text-sm font-bold">
-          G
+    <div className="w-screen min-h-screen bg-[#F7F1EB] flex flex-col items-center justify-center p-8 sm:p-16 md:p-24">
+      <h1 className="text-4xl sm:text-5xl font-semibold text-[#1A534A] mb-4 tracking-tight text-center">
+        Create your account
+      </h1>
+
+      <div className="bg-[#DAEFEE] rounded-3xl w-full max-w-2xl p-10 sm:p-14 shadow-sm border border-[#C5E5E3]">
+        {formError && (
+          <div
+            role="alert"
+            className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 text-base rounded-xl px-5 py-4 mb-8"
+          >
+            <XCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+            <span>{formError}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+          <div>
+            <label htmlFor="name" className="block text-sm font-semibold text-[#3D524C] mb-2">
+              Full name
+            </label>
+            <input
+              id="name"
+              type="text"
+              autoComplete="name"
+              value={values.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              onBlur={() => handleBlur("name")}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "name-error" : undefined}
+              placeholder="Jane Doe"
+              className={`w-full rounded-2xl border-none px-5 py-4 text-base text-[#2C3E38] placeholder:text-[#9FB0AC] bg-[#F7F1EB] focus:outline-none focus:ring-2 focus:ring-[#1A534A]/40 ${
+                errors.name ? "ring-2 ring-red-500" : ""
+              }`}
+            />
+            {errors.name && (
+              <p id="name-error" className="text-sm text-red-600 mt-2">
+                {errors.name}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-semibold text-[#3D524C] mb-2">
+              Enter email address
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={values.email}
+              onChange={(e) => handleChange("email", e.target.value)}
+              onBlur={() => handleBlur("email")}
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "email-error" : undefined}
+              placeholder="jane@yourfoundation.org"
+              className={`w-full rounded-2xl border-none px-5 py-4 text-base text-[#2C3E38] placeholder:text-[#9FB0AC] bg-[#F7F1EB] focus:outline-none focus:ring-2 focus:ring-[#1A534A]/40 ${
+                errors.email ? "ring-2 ring-red-500" : ""
+              }`}
+            />
+            {errors.email && (
+              <p id="email-error" className="text-sm text-red-600 mt-2">
+                {errors.email}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <PasswordField
+              id="password"
+              label="Enter password"
+              value={values.password}
+              onChange={(v) => handleChange("password", v)}
+              onBlur={() => handleBlur("password")}
+              error={errors.password}
+              placeholder="At least 8 characters"
+            />
+          </div>
+
+          <PasswordStrengthMeter password={values.password} />
+
+          <div>
+            <PasswordField
+              id="confirmPassword"
+              label="Confirm password"
+              value={values.confirmPassword}
+              onChange={(v) => handleChange("confirmPassword", v)}
+              onBlur={() => handleBlur("confirmPassword")}
+              error={errors.confirmPassword}
+              placeholder="Re-enter your password"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={!isValid || isSubmitting}
+            className="w-full flex items-center justify-center gap-2 bg-[#1A534A] hover:bg-[#134038] disabled:opacity-50 disabled:cursor-not-allowed text-white text-lg font-medium py-4 rounded-2xl transition-colors shadow-sm mt-3"
+          >
+            {isSubmitting && <Loader2 className="w-6 h-6 animate-spin" data-testid="spinner" />}
+            {isSubmitting ? "Creating account…" : "Continue"}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="relative flex items-center justify-center my-8">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-[#BBDEDC]" />
+          </div>
+          <span className="relative bg-[#DAEFEE] px-5 text-sm font-bold tracking-wider text-[#7C9791] uppercase">
+            OR
+          </span>
         </div>
-        <span className="font-semibold text-brand-ink text-[15px]">Groundbreaker Impact</span>
-      </div>
 
-      <h1 className="text-2xl font-semibold text-brand-ink mb-1">Create your account</h1>
-      <p className="text-sm text-brand-muted mb-6">
-        Get verified access to Groundbreaker&apos;s impact dashboard.
-      </p>
-
-      {formError && (
-        <div
-          role="alert"
-          className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5"
-        >
-          <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <span>{formError}</span>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} noValidate>
-        <div className="mb-4">
-          <label htmlFor="name" className="block text-xs font-semibold text-brand-ink mb-1.5">
-            Full name
-          </label>
-          <input
-            id="name"
-            type="text"
-            autoComplete="name"
-            value={values.name}
-            onChange={(e) => handleChange("name", e.target.value)}
-            onBlur={() => handleBlur("name")}
-            aria-invalid={!!errors.name}
-            aria-describedby={errors.name ? "name-error" : undefined}
-            placeholder="Jane Doe"
-           className={`w-full rounded-lg border px-3.5 py-2.5 text-sm text-brand-ink placeholder:text-brand-muted bg-brand-cream focus:outline-none focus:ring-2 focus:ring-brand-primary/30 ${
-           errors.name ? "border-status-danger" : "border-brand-border"
-           }`}
-          />
-          {errors.name && (
-            <p id="name-error" className="text-xs text-status-danger mt-1.5">
-              {errors.name}
-            </p>
-          )}
-        </div>
-
-        <div className="mb-4">
-          <label htmlFor="email" className="block text-xs font-semibold text-brand-ink mb-1.5">
-            Work email
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            value={values.email}
-            onChange={(e) => handleChange("email", e.target.value)}
-            onBlur={() => handleBlur("email")}
-            aria-invalid={!!errors.email}
-            aria-describedby={errors.email ? "email-error" : undefined}
-            placeholder="jane@yourfoundation.org"
-            className={`w-full rounded-lg border px-3.5 py-2.5 text-sm text-brand-ink placeholder:text-brand-muted bg-brand-cream focus:outline-none focus:ring-2 focus:ring-brand-primary/30 ${
-            errors.email ? "border-status-danger" : "border-brand-border"
-          }`}
-          />
-          {errors.email && (
-            <p id="email-error" className="text-xs text-status-danger mt-1.5">
-              {errors.email}
-            </p>
-          )}
-        </div>
-
-        <div className="mb-2">
-          <PasswordField
-            id="password"
-            label="Password"
-            value={values.password}
-            onChange={(v) => handleChange("password", v)}
-            onBlur={() => handleBlur("password")}
-            error={errors.password}
-            placeholder="At least 8 characters"
-          />
-        </div>
-
-        <PasswordStrengthMeter password={values.password} />
-
-        <div className="mb-5">
-          <PasswordField
-            id="confirmPassword"
-            label="Confirm password"
-            value={values.confirmPassword}
-            onChange={(v) => handleChange("confirmPassword", v)}
-            onBlur={() => handleBlur("confirmPassword")}
-            error={errors.confirmPassword}
-            placeholder="Re-enter your password"
-          />
-        </div>
-
+        {/* Google Auth Button */}
         <button
-          type="submit"
-          disabled={!isValid || isSubmitting}
-          className="w-full flex items-center justify-center gap-2 bg-brand-primary hover:bg-brand-primaryHover disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold py-3 rounded-full transition-colors"
+          type="button"
+          onClick={handleGoogleSignUp}
+          className="w-full flex items-center justify-center gap-3 bg-[#F7F1EB] hover:bg-[#FAF6F2] text-[#2C3E38] text-lg font-medium py-4 px-5 rounded-2xl shadow-sm transition-colors border border-transparent"
         >
-          {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" data-testid="spinner" />}
-          {isSubmitting ? "Creating account…" : "Create account"}
+          <svg className="w-6 h-6" viewBox="0 0 24 24">
+            <path
+              fill="#4285F4"
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+            />
+          </svg>
+          Continue with Google
         </button>
-      </form>
 
-      <div className="flex items-center gap-3 my-5">
-        <div className="flex-1 h-px bg-brand-border" />
-        <span className="text-xs text-brand-muted">or</span>
-        <div className="flex-1 h-px bg-brand-border" />
+        <p className="text-center text-base text-[#5B7571] mt-10">
+          Already have an account?{" "}
+          <Link href="/login" className="text-[#1A534A] font-semibold hover:underline">
+            Sign in
+          </Link>
+        </p>
       </div>
-
-      <button
-        type="button"
-        onClick={handleGoogleSignUp}
-        className="w-full flex items-center justify-center gap-2 bg-white border border-brand-border text-brand-ink text-sm font-semibold py-3 rounded-full hover:bg-brand-cream/40 transition-colors">
-        Continue with Google
-      </button>
-
-      <p className="text-center text-sm text-brand-muted mt-6">
-        Already have an account?{" "}
-        <Link href="/login" className="text-brand-primary font-semibold">
-          Log in
-        </Link>
-      </p>
     </div>
   );
 }

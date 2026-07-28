@@ -40,7 +40,7 @@ export function PasswordField({
 
   return (
     <div>
-      <label htmlFor={id} className="block text-xs font-semibold text-brand-ink mb-1.5">
+      <label htmlFor={id} className="block text-sm font-semibold text-[#3D524C] mb-2">
         {label}
       </label>
       <div className="relative">
@@ -54,21 +54,21 @@ export function PasswordField({
           aria-invalid={!!error}
           aria-describedby={describedBy || undefined}
           placeholder={placeholder}
-          className={`w-full rounded-lg border px-3.5 py-2.5 pr-10 text-sm text-brand-ink placeholder:text-brand-muted bg-brand-cream focus:outline-none focus:ring-2 focus:ring-brand-primary/30 ${
-          error ? "border-status-danger" : "border-brand-border"
+          className={`w-full rounded-2xl border-none px-5 py-4 pr-12 text-base text-[#2C3E38] placeholder:text-[#9FB0AC] bg-[#F8F5F0] focus:outline-none focus:ring-2 focus:ring-[#1A534A]/40 ${
+            error ? "ring-2 ring-red-500" : ""
           }`}
         />
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-ink"
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7C9791] hover:text-[#2C3E38] p-1 transition-colors"
         >
-          {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          {visible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
         </button>
       </div>
       {error && (
-        <p id={errorId} className="text-xs text-status-danger mt-1.5">
+        <p id={errorId} className="text-sm text-red-600 mt-2">
           {error}
         </p>
       )}
