@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, HTTPException, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from app.models.schemas import LoginRequest, TokenResponse
+from app.models.auth_schemas import LoginRequest, TokenResponse, UserOut
 from app.db.supabase_client import supabase
 from app.core.security import verify_password, create_access_token
 
@@ -10,6 +10,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
 
 GENERIC_ERROR = "Invalid email or password"
+
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("5/minute")
@@ -29,4 +30,11 @@ async def login(request: Request, credentials: LoginRequest):
 
     access_token = create_access_token(data={"sub": user["id"], "role": user.get("role", "donor")})
 
-    return TokenResponse(access_token=access_token)
+    return TokenResponse(
+        access_token=access_token,
+        user=UserOut(
+            id=user["id"],
+            email=user["email"],
+            full_name=user.get("full_name", ""),
+        ),
+    )

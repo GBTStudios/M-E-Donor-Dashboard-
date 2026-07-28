@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app.models.schemas import SignupRequest, SignupResponse
+from app.models.signup_schemas import SignupRequest, SignupResponse
 from app.db.supabase_client import supabase
 from app.core.security import hash_password
 

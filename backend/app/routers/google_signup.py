@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app.models.schemas import GoogleSignupRequest, GoogleSignupResponse
+from app.models.google_schemas import GoogleSignupRequest, GoogleSignupResponse
 from app.db.supabase_client import supabase
 
 router = APIRouter(prefix="/auth", tags=["auth"])
