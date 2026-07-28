@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, signup
+from app.routers import auth, signup, google_signup
 
 app = FastAPI(title="Groundbreaker Donor Dashboard API")
 
@@ -15,7 +15,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(signup.router)
-
+app.include_router(google_signup.router)
 
 @app.get("/health")
 def health_check():

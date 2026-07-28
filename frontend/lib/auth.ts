@@ -1,3 +1,5 @@
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 type LoginResult =
   | { success: true; user: { id: string; email: string; full_name: string } }
   | { success: false; error: string };
@@ -8,7 +10,7 @@ export async function loginUser(
   keepSignedIn: boolean
 ): Promise<LoginResult> {
   try {
-    const response = await fetch("http://127.0.0.1:8000/auth/login", {
+    const response = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password, keepSignedIn }),
@@ -55,7 +57,7 @@ type RequestResetResult =
 
 export async function requestResetCode(email: string): Promise<RequestResetResult> {
   try {
-    const response = await fetch("http://127.0.0.1:8000/auth/forgot-password", {
+    const response = await fetch(`${API_URL}/auth/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
@@ -78,7 +80,7 @@ type VerifyCodeResult =
 
 export async function verifyResetCode(email: string, code: string): Promise<VerifyCodeResult> {
   try {
-    const response = await fetch("http://127.0.0.1:8000/auth/verify-reset-code", {
+    const response = await fetch(`${API_URL}/auth/verify-reset-code`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, code }),
@@ -110,7 +112,7 @@ export async function resetPassword(
   newPassword: string
 ): Promise<ResetPasswordResult> {
   try {
-    const response = await fetch("http://127.0.0.1:8000/auth/reset-password", {
+    const response = await fetch(`${API_URL}/auth/reset-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, code, newPassword }),
