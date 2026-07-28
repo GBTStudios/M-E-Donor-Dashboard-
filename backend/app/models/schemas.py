@@ -37,3 +37,12 @@ class SignupResponse(BaseModel):
     id: str
     email: EmailStr
     message: str = "Account created. Please verify your email before logging in."
+
+class GoogleSignupRequest(BaseModel):
+    access_token: str
+
+class GoogleSignupResponse(BaseModel):
+    id: str
+    email: EmailStr
+    full_name: str
+    is_new_user: bool
