@@ -19,14 +19,18 @@ export function PasswordStrengthMeter({ password }: PasswordStrengthMeterProps) 
   const segments = [0, 1, 2, 3];
 
   return (
-    <div className="flex flex-col gap-1" aria-live="polite">
+    <div
+      className="flex flex-col gap-1"
+      aria-live="polite"
+      data-testid="password-strength-meter"
+    >
       <div className="flex gap-1">
         {segments.map((segmentIndex) => (
           <span
             key={segmentIndex}
             className="h-1 flex-1 rounded-full transition-colors"
             style={{
-              backgroundColor: segmentIndex < score ? color : "#E4DFD1",
+              backgroundColor: segmentIndex < score ? color : "var(--color-brand-border)",
             }}
           />
         ))}

@@ -71,11 +71,10 @@ export function SignUpForm() {
     setIsSubmitting(true);
     try {
       const result = await signUp({
-        name: values.name,
-        email: values.email,
-        password: values.password,
-        confirmPassword: ""
-      });
+  name: values.name,
+  email: values.email,
+  password: values.password,
+  });
 
       if (!result.success) {
         setFormError(result.message);

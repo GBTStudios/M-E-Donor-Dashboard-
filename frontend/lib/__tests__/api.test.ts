@@ -71,7 +71,7 @@ describe("signUp", () => {
     global.fetch = jest.fn().mockRejectedValueOnce(new TypeError("Failed to fetch")) as jest.Mock;
 
     await expect(signUp(validValues)).rejects.toThrow(
-      "Could not reach the server. Check your connection and try again."
+      "We couldn't reach the server. Check your connection and try again."
     );
   });
 
