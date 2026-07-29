@@ -1,10 +1,14 @@
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, HTTPException, status
 
 from app.models.signup_schemas import SignupRequest, SignupResponse
 from app.db.supabase_client import supabase
 from app.core.security import hash_password
+from app.services.email_service import generate_verification_code, send_verification_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
 
 @router.post("/signup", response_model=SignupResponse, status_code=status.HTTP_201_CREATED)
 async def signup(payload: SignupRequest):
@@ -33,5 +37,19 @@ async def signup(payload: SignupRequest):
         )
 
     new_user = result.data[0]
+
+    code = generate_verification_code()
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+
+    supabase.table("verification_codes").insert({
+        "email": new_user["email"],
+        "code": code,
+        "expires_at": expires_at.isoformat()
+    }).execute()
+
+    try:
+        send_verification_email(new_user["email"], code)
+    except Exception:
+        pass
 
     return SignupResponse(id=new_user["id"], email=new_user["email"])

@@ -2,8 +2,10 @@ from fastapi import APIRouter, HTTPException, status
 
 from app.models.google_schemas import GoogleSignupRequest, GoogleSignupResponse
 from app.db.supabase_client import supabase
+from app.core.security import create_access_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
 
 @router.post("/google-signup", response_model=GoogleSignupResponse, status_code=status.HTTP_200_OK)
 async def google_signup(payload: GoogleSignupRequest):
@@ -33,32 +35,31 @@ async def google_signup(payload: GoogleSignupRequest):
 
     if existing.data:
         user = existing.data[0]
-        return GoogleSignupResponse(
-            id=user["id"],
-            email=user["email"],
-            full_name=user["full_name"],
-            is_new_user=False
-        )
+        is_new_user = False
+    else:
+        result = supabase.table("users").insert({
+            "email": email,
+            "hashed_password": None,
+            "full_name": full_name,
+            "is_verified": True,
+            "role": "donor"
+        }).execute()
 
-    result = supabase.table("users").insert({
-        "email": email,
-        "hashed_password": None,
-        "full_name": full_name,
-        "is_verified": True,
-        "role": "donor"
-    }).execute()
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create account from Google sign-in."
+            )
 
-    if not result.data:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create account from Google sign-in."
-        )
+        user = result.data[0]
+        is_new_user = True
 
-    new_user = result.data[0]
+    backend_token = create_access_token(data={"sub": user["id"], "role": user.get("role", "donor")})
 
     return GoogleSignupResponse(
-        id=new_user["id"],
-        email=new_user["email"],
-        full_name=new_user["full_name"],
-        is_new_user=True
+        access_token=backend_token,
+        id=user["id"],
+        email=user["email"],
+        full_name=user["full_name"],
+        is_new_user=is_new_user
     )

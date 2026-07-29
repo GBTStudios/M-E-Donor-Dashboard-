@@ -31,3 +31,5 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+# Local OAuth test file — never commit (contains keys when filled in)
+backend/google_oauth_test.html

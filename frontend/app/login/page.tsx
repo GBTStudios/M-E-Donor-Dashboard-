@@ -1,9 +1,11 @@
-import { SignUpForm } from "@/components/auth/SignUpForm";
+import LoginForm from "@/components/LoginForm";
 
-export default function SignUpPage() {
+export default function LoginPage() {
   return (
-    <main className="min-h-screen bg-brand-cream flex items-center justify-center px-4 py-10">
-      <SignUpForm />
-    </main>
+    <div className="min-h-screen flex items-center justify-center bg-[#f5efe4] px-4">
+      <div className="w-full max-w-md bg-[#eaf5f0] rounded-xl border border-black/10 p-8">
+        <LoginForm />
+      </div>
+    </div>
   );
 }
