@@ -67,13 +67,24 @@ export function SignUpForm() {
     setIsSubmitting(true);
     try {
       const result = await signUp({
-        name: values.name,
+        full_name: values.name,
         email: values.email,
         password: values.password,
       });
 
       if (!result.success) {
         setFormError(result.message);
+        // Surface backend field-level errors (e.g. from a 422 response) as
+        // if they were client-side validation errors, so they render inline
+        // next to the right input rather than only in the top banner.
+        if (result.fieldErrors) {
+          setErrors((prev) => ({
+            ...prev,
+            ...(result.fieldErrors?.full_name ? { name: result.fieldErrors.full_name } : {}),
+            ...(result.fieldErrors?.email ? { email: result.fieldErrors.email } : {}),
+            ...(result.fieldErrors?.password ? { password: result.fieldErrors.password } : {}),
+          }));
+        }
         return;
       }
 

@@ -89,6 +89,12 @@ export function validateSignUpField(
       if (values.password.length < MIN_PASSWORD_LENGTH) {
         return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
       }
+      if (!/[A-Z]/.test(values.password)) {
+        return "Password must contain at least one uppercase letter.";
+      }
+      if (!/[0-9]/.test(values.password)) {
+        return "Password must contain at least one number.";
+      }
       return undefined;
 
     case "confirmPassword":
