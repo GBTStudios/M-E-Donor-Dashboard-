@@ -3,7 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
-import { loginUser } from "@/lib/auth";
+import { loginUser, signInWithGoogle } from "@/lib/auth";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -54,6 +54,7 @@ export default function LoginForm() {
 
       <button
         type="button"
+        onClick={signInWithGoogle}
         className="w-full mt-6 flex items-center justify-center gap-2 border border-black/10 rounded-lg py-2.5 bg-[#f5efe4] hover:bg-[#efe8db] transition"
       >
         <GoogleIcon />

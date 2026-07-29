@@ -1,3 +1,5 @@
+import { supabase } from "@/lib/supabaseClient";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type LoginResult =
@@ -124,6 +126,54 @@ export async function resetPassword(
 
     const data = await response.json().catch(() => ({}));
     return { success: false, error: data.detail ?? data.error ?? "Something went wrong. Please try again." };
+  } catch {
+    return { success: false, error: "Network error. Please try again." };
+  }
+}
+
+export async function signInWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/auth/google-callback`,
+    },
+  });
+
+  if (error) {
+    console.error("Google sign in error:", error.message);
+  }
+}
+
+type GoogleLoginResult =
+  | { success: true; user: { id: string; email: string; full_name: string } }
+  | { success: false; error: string };
+
+export async function completeGoogleLogin(): Promise<GoogleLoginResult> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const supabaseToken = sessionData.session?.access_token;
+
+  if (!supabaseToken) {
+    return { success: false, error: "Google sign in did not complete. Please try again." };
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/auth/google-signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_token: supabaseToken }),
+    });
+
+    if (response.status === 200) {
+      const data = await response.json();
+      localStorage.setItem("access_token", data.access_token);
+      return {
+        success: true,
+        user: { id: data.id, email: data.email, full_name: data.full_name },
+      };
+    }
+
+    const data = await response.json().catch(() => ({}));
+    return { success: false, error: data.detail ?? "Google sign in failed. Please try again." };
   } catch {
     return { success: false, error: "Network error. Please try again." };
   }
