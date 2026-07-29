@@ -6,6 +6,8 @@ class GoogleSignupRequest(BaseModel):
 
 
 class GoogleSignupResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
     id: str
     email: EmailStr
     full_name: str
