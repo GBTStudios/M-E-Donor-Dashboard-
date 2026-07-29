@@ -54,8 +54,8 @@ export function PasswordField({
           aria-invalid={!!error}
           aria-describedby={describedBy || undefined}
           placeholder={placeholder}
-          className={`w-full rounded-2xl border-none px-5 py-4 pr-12 text-base text-[#2C3E38] placeholder:text-[#9FB0AC] bg-[#F8F5F0] focus:outline-none focus:ring-2 focus:ring-[#1A534A]/40 ${
-            error ? "ring-2 ring-red-500" : ""
+          className={`w-full rounded-lg border px-3.5 py-2.5 pr-12 text-sm text-[#2C3E38] placeholder:text-[#9FB0AC] bg-white/60 focus:outline-none focus:ring-2 focus:ring-[#1A534A]/40 ${
+            error ? "border-red-500" : "border-black/10"
           }`}
         />
         <button
