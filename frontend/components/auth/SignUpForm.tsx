@@ -102,8 +102,8 @@ export function SignUpForm() {
 
   if (isSuccess) {
     return (
-      <div className="w-screen min-h-screen bg-[#F7F1EB] flex flex-col items-center justify-center p-8 sm:p-16">
-        <div className="bg-[#DAEFEE] rounded-3xl p-12 sm:p-16 w-full max-w-2xl text-center shadow-sm border border-[#C5E5E3]">
+      <div className="w-screen min-h-screen bg-[#f5efe4] flex flex-col items-center justify-center p-8 sm:p-16">
+        <div className="bg-[#eaf5f0] rounded-3xl p-12 sm:p-16 w-full max-w-2xl text-center shadow-sm border border-black/10">
           <div className="w-16 h-16 rounded-full bg-[#CCEAE8] flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 className="w-8 h-8 text-[#1A534A]" />
           </div>
@@ -113,7 +113,7 @@ export function SignUpForm() {
             activate your account.
           </p>
           <Link
-            href="/signup/verify"
+            href={`/signup/verify?email=${encodeURIComponent(values.email)}`}
             className="inline-block w-full bg-[#1A534A] hover:bg-[#134038] text-white text-base font-semibold py-4 rounded-2xl transition-colors"
           >
             Continue to verification
@@ -124,23 +124,24 @@ export function SignUpForm() {
   }
 
   return (
-    <div className="w-screen min-h-screen bg-[#F7F1EB] flex flex-col items-center justify-center p-8 sm:p-16 md:p-24">
-      <h1 className="text-4xl sm:text-5xl font-semibold text-[#1A534A] mb-4 tracking-tight text-center">
-        Create your account
-      </h1>
+    <div className="w-screen min-h-screen bg-[#f5efe4] flex flex-col items-center justify-center p-6 sm:p-10">
+      <div className="bg-[#eaf5f0] rounded-2xl w-full max-w-md p-8 shadow-sm border border-black/10">
+        <h1 className="text-2xl font-semibold text-[#1A534A] mb-1">Create your account</h1>
+        <p className="text-sm text-[#5B7571] mb-6">
+          Enter your details to access your impact dashboard.
+        </p>
 
-      <div className="bg-[#DAEFEE] rounded-3xl w-full max-w-2xl p-10 sm:p-14 shadow-sm border border-[#C5E5E3]">
         {formError && (
           <div
             role="alert"
-            className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 text-base rounded-xl px-5 py-4 mb-8"
+            className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5"
           >
-            <XCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+            <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <span>{formError}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
           <div>
             <label htmlFor="name" className="block text-sm font-semibold text-[#3D524C] mb-2">
               Full name
@@ -155,8 +156,8 @@ export function SignUpForm() {
               aria-invalid={!!errors.name}
               aria-describedby={errors.name ? "name-error" : undefined}
               placeholder="Jane Doe"
-              className={`w-full rounded-2xl border-none px-5 py-4 text-base text-[#2C3E38] placeholder:text-[#9FB0AC] bg-[#F7F1EB] focus:outline-none focus:ring-2 focus:ring-[#1A534A]/40 ${
-                errors.name ? "ring-2 ring-red-500" : ""
+              className={`w-full rounded-lg border px-3.5 py-2.5 text-sm text-[#2C3E38] placeholder:text-[#9FB0AC] bg-white/60 focus:outline-none focus:ring-2 focus:ring-[#1A534A]/40 ${
+                errors.name ? "border-red-500" : "border-black/10"
               }`}
             />
             {errors.name && (
@@ -180,8 +181,8 @@ export function SignUpForm() {
               aria-invalid={!!errors.email}
               aria-describedby={errors.email ? "email-error" : undefined}
               placeholder="jane@yourfoundation.org"
-              className={`w-full rounded-2xl border-none px-5 py-4 text-base text-[#2C3E38] placeholder:text-[#9FB0AC] bg-[#F7F1EB] focus:outline-none focus:ring-2 focus:ring-[#1A534A]/40 ${
-                errors.email ? "ring-2 ring-red-500" : ""
+              className={`w-full rounded-lg border px-3.5 py-2.5 text-sm text-[#2C3E38] placeholder:text-[#9FB0AC] bg-white/60 focus:outline-none focus:ring-2 focus:ring-[#1A534A]/40 ${
+                errors.email ? "border-red-500" : "border-black/10"
               }`}
             />
             {errors.email && (
@@ -220,19 +221,19 @@ export function SignUpForm() {
           <button
             type="submit"
             disabled={!isValid || isSubmitting}
-            className="w-full flex items-center justify-center gap-2 bg-[#1A534A] hover:bg-[#134038] disabled:opacity-50 disabled:cursor-not-allowed text-white text-lg font-medium py-4 rounded-2xl transition-colors shadow-sm mt-3"
+            className="w-full flex items-center justify-center gap-2 bg-[#1A534A] hover:bg-[#134038] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-full transition-colors shadow-sm mt-1"
           >
-            {isSubmitting && <Loader2 className="w-6 h-6 animate-spin" data-testid="spinner" />}
+            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" data-testid="spinner" />}
             {isSubmitting ? "Creating account…" : "Continue"}
           </button>
         </form>
 
         {/* Divider */}
-        <div className="relative flex items-center justify-center my-8">
+        <div className="relative flex items-center justify-center my-5">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-[#BBDEDC]" />
           </div>
-          <span className="relative bg-[#DAEFEE] px-5 text-sm font-bold tracking-wider text-[#7C9791] uppercase">
+          <span className="relative bg-[#eaf5f0] px-3 text-xs font-bold tracking-wider text-[#7C9791] uppercase">
             OR
           </span>
         </div>
@@ -241,9 +242,9 @@ export function SignUpForm() {
         <button
           type="button"
           onClick={handleGoogleSignUp}
-          className="w-full flex items-center justify-center gap-3 bg-[#F7F1EB] hover:bg-[#FAF6F2] text-[#2C3E38] text-lg font-medium py-4 px-5 rounded-2xl shadow-sm transition-colors border border-transparent"
+          className="w-full flex items-center justify-center gap-2 bg-[#F7F1EB] hover:bg-[#FAF6F2] text-[#2C3E38] text-sm font-medium py-2.5 px-4 rounded-full shadow-sm transition-colors border border-transparent"
         >
-          <svg className="w-6 h-6" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
               fill="#4285F4"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -264,7 +265,7 @@ export function SignUpForm() {
           Continue with Google
         </button>
 
-        <p className="text-center text-base text-[#5B7571] mt-10">
+        <p className="text-center text-sm text-[#5B7571] mt-6">
           Already have an account?{" "}
           <Link href="/login" className="text-[#1A534A] font-semibold hover:underline">
             Sign in
