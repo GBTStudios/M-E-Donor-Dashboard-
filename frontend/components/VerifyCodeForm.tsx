@@ -11,6 +11,11 @@ const EXPIRY_SECONDS = 30 * 60; // 30 minutes, per the acceptance criteria.
 // backend developer which duration the real code expiry actually uses,
 // then adjust EXPIRY_SECONDS to match.
 
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_SECONDS = 60; // client-side cooldown after too many failed attempts.
+// Note: this is a UX guardrail only, not real security — the backend should
+// enforce its own rate limiting on verify-reset-code independently.
+
 export default function VerifyCodeForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -19,6 +24,8 @@ export default function VerifyCodeForm() {
   const [expired, setExpired] = useState(false);
   const [loading, setLoading] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(EXPIRY_SECONDS);
+  const [attemptsLeft, setAttemptsLeft] = useState(MAX_ATTEMPTS);
+  const [lockedOutSeconds, setLockedOutSeconds] = useState(0);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
@@ -40,6 +47,16 @@ export default function VerifyCodeForm() {
     }, 1000);
     return () => clearInterval(timer);
   }, [secondsLeft]);
+
+  useEffect(() => {
+    if (lockedOutSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockedOutSeconds((s) => s - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockedOutSeconds]);
+
+  const isLockedOut = lockedOutSeconds > 0;
 
   function formatTime(totalSeconds: number) {
     const minutes = Math.floor(totalSeconds / 60);
@@ -95,6 +112,8 @@ export default function VerifyCodeForm() {
   const isComplete = code.length === CODE_LENGTH;
 
   async function handleVerify() {
+    if (isLockedOut || expired) return;
+
     setError("");
     setLoading(true);
     const result = await verifyResetCode(email, code);
@@ -102,7 +121,20 @@ export default function VerifyCodeForm() {
 
     if (!result.success) {
       const errorResult = result as { success: false; error: string; expired?: boolean };
-      setError(errorResult.error);
+
+      const remaining = attemptsLeft - 1;
+      setAttemptsLeft(remaining);
+
+      if (remaining <= 0) {
+        setError("Too many incorrect attempts. Please wait before trying again.");
+        setLockedOutSeconds(LOCKOUT_SECONDS);
+        setAttemptsLeft(MAX_ATTEMPTS);
+        setDigits(Array(CODE_LENGTH).fill(""));
+        inputRefs.current[0]?.focus();
+      } else {
+        setError(errorResult.error);
+      }
+
       if (errorResult.expired) setExpired(true);
       return;
     }
@@ -116,6 +148,8 @@ export default function VerifyCodeForm() {
     setDigits(Array(CODE_LENGTH).fill(""));
     setExpired(false);
     setSecondsLeft(EXPIRY_SECONDS);
+    setAttemptsLeft(MAX_ATTEMPTS);
+    setLockedOutSeconds(0);
     await requestResetCode(email);
     inputRefs.current[0]?.focus();
   }
@@ -147,7 +181,7 @@ export default function VerifyCodeForm() {
             inputMode="numeric"
             maxLength={1}
             value={digit}
-            disabled={expired}
+            disabled={expired || isLockedOut}
             onChange={(e) => handleChange(index, e)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             onPaste={handlePaste}
@@ -162,13 +196,23 @@ export default function VerifyCodeForm() {
           This code has expired. Please request a new one.
         </p>
       )}
+      {isLockedOut && (
+        <p className="text-sm text-red-600 mt-3">
+          Try again in {formatTime(lockedOutSeconds)}.
+        </p>
+      )}
+      {!isLockedOut && !expired && attemptsLeft < MAX_ATTEMPTS && (
+        <p className="text-xs text-gray-500 mt-2">
+          {attemptsLeft} attempt{attemptsLeft === 1 ? "" : "s"} remaining.
+        </p>
+      )}
 
       <button
         onClick={handleVerify}
-        disabled={!isComplete || loading || expired}
+        disabled={!isComplete || loading || expired || isLockedOut}
         className="w-full mt-4 bg-teal-800 hover:bg-teal-900 text-white rounded-lg py-2.5 text-sm font-medium transition disabled:opacity-50"
       >
-        {loading ? "Verifying..." : "Verify Account"}
+        {loading ? "Verifying..." : isLockedOut ? `Try again in ${formatTime(lockedOutSeconds)}` : "Verify Account"}
       </button>
 
       <div className="text-center mt-4 text-sm text-gray-500">

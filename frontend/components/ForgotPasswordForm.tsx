@@ -8,21 +8,41 @@ import { requestResetCode } from "@/lib/auth";
 export default function ForgotPasswordForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
+  const [touched, setTouched] = useState(false);
+  const [fieldError, setFieldError] = useState("");
+  const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
 
   function isValidEmail(value: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
 
+  function validate(value: string) {
+    if (!value.trim()) return "Email is required.";
+    if (!isValidEmail(value)) return "Please enter a valid email address.";
+    return "";
+  }
+
+  function handleChange(value: string) {
+    setEmail(value);
+    if (touched) {
+      setFieldError(validate(value));
+    }
+  }
+
+  function handleBlur() {
+    setTouched(true);
+    setFieldError(validate(email));
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError("");
+    setFormError("");
+    setTouched(true);
 
-    if (!isValidEmail(email)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
+    const validationError = validate(email);
+    setFieldError(validationError);
+    if (validationError) return;
 
     setLoading(true);
     const result = await requestResetCode(email);
@@ -30,9 +50,10 @@ export default function ForgotPasswordForm() {
 
     if (!result.success) {
       const errorResult = result as { success: false; error: string };
-      setError(errorResult.error);
+      setFormError(errorResult.error);
       return;
     }
+
     sessionStorage.setItem("resetEmail", email);
     router.push("/forgot-password/verify");
   }
@@ -48,25 +69,35 @@ export default function ForgotPasswordForm() {
         Enter the code sent to the email address associated with your Groundbreaker account.
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+      <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
         <div>
-          <label className="text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="text-sm font-medium text-gray-700">
             Work Email Address
           </label>
           <div className="relative mt-1">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
+              id="email"
               type="email"
-              required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => handleChange(e.target.value)}
+              onBlur={handleBlur}
+              aria-invalid={!!fieldError}
+              aria-describedby={fieldError ? "email-error" : undefined}
               placeholder="name@organization.org"
-              className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-black/10 bg-white/60 text-sm focus:outline-none focus:ring-2 focus:ring-teal-700"
+              className={`w-full pl-9 pr-3 py-2.5 rounded-lg border bg-white/60 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-700 ${
+                fieldError ? "border-red-500" : "border-black/10"
+              }`}
             />
           </div>
+          {fieldError && (
+            <p id="email-error" className="text-sm text-red-600 mt-2">
+              {fieldError}
+            </p>
+          )}
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {formError && <p className="text-sm text-red-600">{formError}</p>}
 
         <button
           type="submit"
