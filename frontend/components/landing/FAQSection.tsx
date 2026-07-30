@@ -5,34 +5,44 @@ import { ChevronDown } from "lucide-react";
 
 const FAQ_ITEMS = [
   {
-    question: "How is data collected on the ground?",
+    question: "How does Groundbreaker measure its impact?",
     answer:
-      "Field teams at each partner site log participant outcomes directly into the platform at intake, during the programme, and at graduation, using structured forms designed with our M&E team.",
+      "Groundbreaker operates a longitudinal monitoring, evaluation, and learning (MEL) system that tracks every participant across all cohorts, from baseline entry through graduation and into their post-programme careers. Data is collected through baseline, endline, and follow-up surveys, consolidated into a single verified database managed by the MEL Lead in Germany in close coordination with the Ugandan implementation team.",
   },
   {
-    question: "What is the role of AI in verification?",
+    question: "What exactly does Groundbreaker measure?",
     answer:
-      "AI cross-checks submitted records against historical patterns and flags anomalies for human review, rather than replacing human verification entirely.",
+      "The MEL system tracks graduation rates, employment rates, income change from baseline to post-programme, sector and employer placement, geographic distribution of employers, continuing education uptake, and household-level effects. Net self-reported income serves as the headline economic indicator.",
   },
   {
-    question: "How often is the donor dashboard updated?",
+    question: "How is data quality ensured?",
     answer:
-      "Participant-level records update as field teams submit them. Aggregate landing page statistics are refreshed periodically by our team, typically every few months.",
+      "Every dataset passes through a structured verification process before being used in reporting. Field-level checks are conducted by the Ugandan team, followed by cross-verification against source records and consistency checks by the MEL Lead in Germany. Methodology decisions and corrections are documented so reported figures are traceable and defensible.",
   },
   {
-    question: "Is participant data kept anonymous?",
+    question: "How long do you track graduates after they leave the programme?",
     answer:
-      "Yes. Donor-facing dashboards and public pages only ever show aggregated or de-identified data — individual records are never exposed publicly.",
+      "Groundbreaker tracks graduates on an ongoing basis through follow-up surveys, capturing employment status, income, and career progression. Older cohorts remain in the tracking system, building a longitudinal view of career trajectories over multiple years.",
   },
   {
-    question: "Who verifies the reported outcomes?",
+    question: "How comparable is data across cohorts?",
     answer:
-      "Outcomes are verified through a combination of field team sign-off, automated anomaly detection, and periodic independent spot checks.",
+      "Data collected from Cohort 4 onwards is fully comparable, using standardised instruments and consistent methodology. Earlier cohorts (1 to 3) were tracked with different instruments, and their baseline figures are preserved as originally recorded. Groundbreaker is transparent about these methodological differences in all reporting.",
   },
   {
-    question: "Can I download the raw data?",
+    question: "Do you track family or community-level impact?",
     answer:
-      "Aggregated impact reports are available on request. Raw participant-level data is not available publicly, in order to protect participant privacy.",
+      "Yes. Structured family interviews are conducted with parents, guardians, and siblings to document changes in household income contribution, siblings' education, healthcare access, and family stability, complementing the quantitative outcomes.",
+  },
+  {
+    question: "Is your MEL system externally audited or reviewed?",
+    answer:
+      "Groundbreaker's financial data is externally audited, and MEL methodology is documented for donor review. The organisation is open to independent MEL reviews and welcomes donor engagement on evaluation frameworks.",
+  },
+  {
+    question: "Can donors access your raw data?",
+    answer:
+      "Groundbreaker shares aggregated MEL findings in donor reports and can provide additional breakdowns on request. Individual-level data is protected under participant consent agreements and data protection principles, and is not shared externally in identifiable form.",
   },
 ];
 
