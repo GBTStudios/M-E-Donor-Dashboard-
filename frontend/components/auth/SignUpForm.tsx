@@ -11,6 +11,7 @@ import {
   type SignUpFieldErrors,
 } from "@/lib/validation";
 import { signUp } from "@/lib/api";
+import { signInWithGoogle } from "@/lib/auth";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { PasswordStrengthMeter } from "@/components/ui/PasswordStrengthMeter";
 
@@ -97,7 +98,11 @@ export function SignUpForm() {
   }
 
   function handleGoogleSignUp() {
-    window.location.href = "/api/auth/google";
+    setFormError(undefined);
+    signInWithGoogle();
+    // signInWithGoogle redirects the browser to Google — no further action
+    // needed here. Account creation/login completes on /auth/google-callback
+    // once the browser returns from Google.
   }
 
   if (isSuccess) {
