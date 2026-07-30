@@ -77,6 +77,7 @@ export default function VerifyCodeForm() {
 
     if (result.success) {
       sessionStorage.setItem("resetVerified", "true");
+      sessionStorage.setItem("resetCode", code);
       router.push("/forgot-password/reset");
     } else {
       setError(result.error);
