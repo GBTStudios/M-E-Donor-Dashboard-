@@ -28,12 +28,13 @@ export default function ForgotPasswordForm() {
     const result = await requestResetCode(email);
     setLoading(false);
 
-    if (result.success) {
-      sessionStorage.setItem("resetEmail", email);
-      router.push("/forgot-password/verify");
-    } else {
-      setError(result.error);
+    if (!result.success) {
+      const errorResult = result as { success: false; error: string };
+      setError(errorResult.error);
+      return;
     }
+    sessionStorage.setItem("resetEmail", email);
+    router.push("/forgot-password/verify");
   }
 
   return (

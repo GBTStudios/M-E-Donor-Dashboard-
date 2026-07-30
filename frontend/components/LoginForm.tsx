@@ -38,11 +38,12 @@ export default function LoginForm() {
     const result = await loginUser(email, password, keepSignedIn);
     setLoading(false);
 
-    if (result.success) {
-      router.push("/dashboard");
-    } else {
-      setError(result.error);
+    if (!result.success) {
+      const errorResult = result as { success: false; error: string };
+      setError(errorResult.error);
+      return;
     }
+    router.push("/dashboard");
   }
 
   return (

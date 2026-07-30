@@ -54,14 +54,15 @@ export default function ResetPasswordForm() {
     const result = await resetPassword(email, code, password);
     setLoading(false);
 
-    if (result.success) {
-      sessionStorage.removeItem("resetEmail");
-      sessionStorage.removeItem("resetVerified");
-      sessionStorage.removeItem("resetCode");
-      setDone(true);
-    } else {
-      setError(result.error);
+    if (!result.success) {
+      const errorResult = result as { success: false; error: string };
+      setError(errorResult.error);
+      return;
     }
+    sessionStorage.removeItem("resetEmail");
+    sessionStorage.removeItem("resetVerified");
+    sessionStorage.removeItem("resetCode");
+    setDone(true);
   }
 
   if (done) {
