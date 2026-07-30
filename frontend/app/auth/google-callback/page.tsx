@@ -11,11 +11,12 @@ export default function GoogleCallbackPage() {
   useEffect(() => {
     async function finishLogin() {
       const result = await completeGoogleLogin();
-      if (result.success) {
-        router.push("/dashboard");
-      } else {
-        setError(result.error);
+      if (!result.success) {
+        const errorResult = result as { success: false; error: string };
+        setError(errorResult.error);
+        return;
       }
+      router.push("/dashboard");
     }
     finishLogin();
   }, [router]);

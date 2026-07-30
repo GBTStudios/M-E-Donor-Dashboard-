@@ -75,13 +75,15 @@ export default function VerifyCodeForm() {
     const result = await verifyResetCode(email, code);
     setLoading(false);
 
-    if (result.success) {
-      sessionStorage.setItem("resetVerified", "true");
-      router.push("/forgot-password/reset");
-    } else {
-      setError(result.error);
-      if (result.expired) setExpired(true);
+    if (!result.success) {
+      const errorResult = result as { success: false; error: string; expired?: boolean };
+      setError(errorResult.error);
+      if (errorResult.expired) setExpired(true);
+      return;
     }
+    sessionStorage.setItem("resetVerified", "true");
+    sessionStorage.setItem("resetCode", code);
+    router.push("/forgot-password/reset");
   }
 
   async function handleResend() {
