@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, KeyboardEvent, ChangeEvent } from "react";
+import { useState, useEffect, useRef, KeyboardEvent, ChangeEvent, ClipboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Mail } from "lucide-react";
 import { verifyResetCode, requestResetCode } from "@/lib/auth";
@@ -49,21 +49,46 @@ export default function VerifyCodeForm() {
 
   function handleChange(index: number, e: ChangeEvent<HTMLInputElement>) {
     const value = e.target.value.replace(/[^0-9]/g, "");
-    if (!value) return;
 
     const newDigits = [...digits];
-    newDigits[index] = value[value.length - 1];
+    newDigits[index] = value ? value[value.length - 1] : "";
     setDigits(newDigits);
 
-    if (index < CODE_LENGTH - 1) {
+    if (value && index < CODE_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
     }
   }
 
   function handleKeyDown(index: number, e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Backspace" && !digits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+    if (e.key === "Backspace") {
+      if (digits[index]) {
+        // Clear the current box's digit.
+        const newDigits = [...digits];
+        newDigits[index] = "";
+        setDigits(newDigits);
+      } else if (index > 0) {
+        // Current box is already empty: clear the previous box and move focus there.
+        const newDigits = [...digits];
+        newDigits[index - 1] = "";
+        setDigits(newDigits);
+        inputRefs.current[index - 1]?.focus();
+      }
     }
+  }
+
+  function handlePaste(e: ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, CODE_LENGTH);
+    if (!pasted) return;
+
+    const newDigits = Array(CODE_LENGTH).fill("");
+    for (let i = 0; i < pasted.length; i++) {
+      newDigits[i] = pasted[i];
+    }
+    setDigits(newDigits);
+
+    const nextIndex = Math.min(pasted.length, CODE_LENGTH - 1);
+    inputRefs.current[nextIndex]?.focus();
   }
 
   const code = digits.join("");
@@ -125,7 +150,8 @@ export default function VerifyCodeForm() {
             disabled={expired}
             onChange={(e) => handleChange(index, e)}
             onKeyDown={(e) => handleKeyDown(index, e)}
-            className="w-11 h-11 text-center rounded-lg border border-black/10 bg-white/60 text-lg focus:outline-none focus:ring-2 focus:ring-teal-700 disabled:opacity-50"
+            onPaste={handlePaste}
+            className="w-11 h-11 text-center rounded-lg border border-black/10 bg-white/60 text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-700 disabled:opacity-50"
           />
         ))}
       </div>
