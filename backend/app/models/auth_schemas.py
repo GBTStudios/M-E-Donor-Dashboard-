@@ -10,9 +10,11 @@ class UserOut(BaseModel):
     id: str
     email: EmailStr
     full_name: str
+    role: str
 
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    first_login: bool
     user: UserOut
