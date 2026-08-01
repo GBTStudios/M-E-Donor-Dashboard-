@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { setFirstLoginFlag, setRole } from "@/lib/adminAuth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -21,6 +22,11 @@ export async function loginUser(
     if (response.status === 200) {
       const data = await response.json();
       localStorage.setItem("access_token", data.access_token);
+      // Admin/superadmin onboarding: track first-login status and role, so
+      // route guards and role-based UI (e.g. "Add Admin") can check them.
+      // Harmless no-op fields for donor accounts, which won't have them.
+      setFirstLoginFlag(Boolean(data.first_login));
+      if (data.user?.role) setRole(data.user.role);
       return { success: true, user: data.user };
     }
 
