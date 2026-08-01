@@ -22,16 +22,7 @@ export default function LandingFooter() {
                 Impact
               </Link>
             </li>
-            <li>
-              <Link href="#how-it-works" className="text-white/80 text-sm hover:text-white transition">
-                How It Works
-              </Link>
-            </li>
-            <li>
-              <Link href="#data-trust" className="text-white/80 text-sm hover:text-white transition">
-                Data &amp; Trust
-              </Link>
-            </li>
+            
           </ul>
         </div>
 

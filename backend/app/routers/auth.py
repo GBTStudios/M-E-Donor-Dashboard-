@@ -28,13 +28,18 @@ async def login(request: Request, credentials: LoginRequest):
     if not user.get("is_verified", False):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=GENERIC_ERROR)
 
+    if not user.get("is_active", True):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=GENERIC_ERROR)
+
     access_token = create_access_token(data={"sub": user["id"], "role": user.get("role", "donor")})
 
     return TokenResponse(
         access_token=access_token,
+        first_login=user.get("first_login", False),
         user=UserOut(
             id=user["id"],
             email=user["email"],
             full_name=user.get("full_name", ""),
+            role=user.get("role", "donor"),
         ),
     )
