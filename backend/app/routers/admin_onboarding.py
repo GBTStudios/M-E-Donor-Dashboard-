@@ -7,6 +7,7 @@ from app.models.onboarding_schemas import (
     SetFirstPasswordRequest, SetFirstPasswordResponse,
     CreateAdminRequest, CreateAdminResponse,
     DeactivateUserRequest, DeactivateUserResponse,
+    AdminUserOut,
 )
 from app.db.supabase_client import supabase
 from app.core.security import hash_password
@@ -106,3 +107,16 @@ async def reactivate_user(
     supabase.table("users").update({"is_active": True}).eq("id", payload.user_id).execute()
 
     return DeactivateUserResponse(message="Account reactivated.")
+
+
+@router.get("/admin/users", response_model=list[AdminUserOut])
+async def list_admin_users(_: dict = Depends(get_current_superadmin_user)):
+    result = (
+        supabase.table("users")
+        .select("id, email, full_name, role, is_active, first_login")
+        .in_("role", ["admin", "superadmin"])
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    return result.data or []
