@@ -39,11 +39,23 @@ export default function LoginForm() {
     setLoading(false);
 
     if (!result.success) {
-      const errorResult = result as { success: false; error: string };
-      setError(errorResult.error);
+      setError(result.error);
       return;
     }
-    router.push("/dashboard");
+
+    // Route based on the account's onboarding state and role, per the RBAC
+    // contract — not every successful login goes to the same place:
+    // - first_login: true (admin/superadmin with a temp password) must
+    //   complete forced password setup before anything else.
+    // - admin/superadmin (past first-login) go to the admin dashboard.
+    // - everyone else (donors) go to the donor dashboard.
+    if (result.first_login) {
+      router.push("/admin/set-password");
+    } else if (result.role === "admin" || result.role === "superadmin") {
+      router.push("/admin-dashboard");
+    } else {
+      router.push("/dashboard");
+    }
   }
 
   return (

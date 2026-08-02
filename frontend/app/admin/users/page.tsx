@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { RequireSuperadmin } from "@/components/admin/RequireSuperadmin";
 import { CreateAdminForm } from "@/components/admin/CreateAdminForm";
 import { AdminAccountList } from "@/components/admin/AdminAccountList";
@@ -47,7 +49,21 @@ export default function UserManagementPage() {
           </div>
 
           <div className="flex justify-center">
-            {activeTab === "add" ? <CreateAdminForm /> : <AdminAccountList />}
+            {activeTab === "add" ? (
+              <CreateAdminForm onViewAccounts={() => setActiveTab("manage")} />
+            ) : (
+              <AdminAccountList />
+            )}
+          </div>
+
+          <div className="flex justify-center mt-8">
+            <Link
+              href="/admin-dashboard"
+              className="inline-flex items-center gap-1.5 text-sm text-[#5B7571] hover:text-[#1A534A] transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Dashboard
+            </Link>
           </div>
         </div>
       </div>

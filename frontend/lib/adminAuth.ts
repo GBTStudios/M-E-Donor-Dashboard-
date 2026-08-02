@@ -59,6 +59,8 @@ export interface CreateAdminResult {
   message: string;
   /** Present on success — the superadmin must share this with the new admin out-of-band. */
   temporaryPassword?: string;
+  /** Present on success — used to add this account to the local tracked list. */
+  createdAccount?: TrackedAdminAccount;
 }
 
 /**
@@ -83,10 +85,19 @@ export async function createAdminUser(
     const data = await response.json().catch(() => ({}));
 
     if (response.status === 201) {
+      const createdAccount: TrackedAdminAccount = {
+        id: data.id,
+        fullName: data.full_name,
+        email: data.email,
+        role: data.role === "superadmin" ? "superadmin" : "admin",
+        isActive: true,
+      };
+      addTrackedAdminAccount(createdAccount);
       return {
         success: true,
         message: data.message ?? "Admin account created.",
         temporaryPassword: data.temporary_password,
+        createdAccount,
       };
     }
 
@@ -104,6 +115,46 @@ export async function createAdminUser(
   }
 }
 
+const TRACKED_ADMIN_ACCOUNTS_KEY = "tracked_admin_accounts";
+
+export interface TrackedAdminAccount {
+  id: string;
+  fullName: string;
+  email: string;
+  role: "admin" | "superadmin";
+  isActive: boolean;
+}
+
+/**
+ * STOPGAP, NOT A REAL BACKEND LIST — there is currently no GET /admin/users
+ * (or similar) endpoint to fetch the real set of admin accounts from the
+ * database. Until that exists, this tracks accounts created through this
+ * exact browser via createAdminUser(), stored in localStorage, so the
+ * "Manage Accounts" list reflects real accounts instead of hardcoded fake
+ * ones. Limitations: only shows accounts created from this browser going
+ * forward; won't show the seeded superadmin or accounts created elsewhere.
+ * Replace this entirely once a real list endpoint exists.
+ */
+export function getTrackedAdminAccounts(): TrackedAdminAccount[] {
+  try {
+    const raw = localStorage.getItem(TRACKED_ADMIN_ACCOUNTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function addTrackedAdminAccount(account: TrackedAdminAccount): void {
+  const current = getTrackedAdminAccounts();
+  localStorage.setItem(TRACKED_ADMIN_ACCOUNTS_KEY, JSON.stringify([...current, account]));
+}
+
+export function setTrackedAdminAccountActive(id: string, isActive: boolean): void {
+  const current = getTrackedAdminAccounts();
+  const updated = current.map((a) => (a.id === id ? { ...a, isActive } : a));
+  localStorage.setItem(TRACKED_ADMIN_ACCOUNTS_KEY, JSON.stringify(updated));
+}
+
 export interface AccountStatusChangeResult {
   success: boolean;
   message: string;
@@ -114,7 +165,9 @@ export async function deactivateUser(
   accessToken: string,
   userId: string
 ): Promise<AccountStatusChangeResult> {
-  return changeAccountStatus(accessToken, userId, "deactivate-user");
+  const result = await changeAccountStatus(accessToken, userId, "deactivate-user");
+  if (result.success) setTrackedAdminAccountActive(userId, false);
+  return result;
 }
 
 /** Calls POST /admin/reactivate-user (superadmin only). */
@@ -122,7 +175,9 @@ export async function reactivateUser(
   accessToken: string,
   userId: string
 ): Promise<AccountStatusChangeResult> {
-  return changeAccountStatus(accessToken, userId, "reactivate-user");
+  const result = await changeAccountStatus(accessToken, userId, "reactivate-user");
+  if (result.success) setTrackedAdminAccountActive(userId, true);
+  return result;
 }
 
 async function changeAccountStatus(

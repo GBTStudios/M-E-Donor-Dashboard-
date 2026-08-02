@@ -6,13 +6,19 @@ import { createAdminUser } from "@/lib/adminAuth";
 
 const ACCESS_TOKEN_KEY = "access_token";
 
+interface CreateAdminFormProps {
+  /** Called when the user wants to jump straight to the Manage Accounts tab
+   * after successfully creating an admin, to see it in the list right away. */
+  onViewAccounts?: () => void;
+}
+
 /**
  * "Add Admin" form — only meant to be rendered when the current user's role
  * is superadmin (the parent dashboard page is responsible for that check;
  * this component doesn't re-verify role itself, since the real enforcement
  * is server-side per the contract's 403 rule).
  */
-export function CreateAdminForm() {
+export function CreateAdminForm({ onViewAccounts }: CreateAdminFormProps) {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState<string | undefined>(undefined);
@@ -95,6 +101,15 @@ export function CreateAdminForm() {
           <p className="text-xs text-[#7C9791] mt-2">
             This isn&apos;t sent automatically — share it with the new admin yourself, outside of this app.
           </p>
+          {onViewAccounts && (
+            <button
+              type="button"
+              onClick={onViewAccounts}
+              className="text-sm font-semibold text-[#1A534A] hover:underline mt-3"
+            >
+              View in Manage Accounts →
+            </button>
+          )}
         </div>
       )}
 

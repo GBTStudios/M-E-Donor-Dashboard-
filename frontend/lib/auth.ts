@@ -4,7 +4,12 @@ import { setFirstLoginFlag, setRole } from "@/lib/adminAuth";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type LoginResult =
-  | { success: true; user: { id: string; email: string; full_name: string } }
+  | {
+      success: true;
+      user: { id: string; email: string; full_name: string };
+      first_login: boolean;
+      role: string;
+    }
   | { success: false; error: string };
 
 export async function loginUser(
@@ -27,7 +32,12 @@ export async function loginUser(
       // Harmless no-op fields for donor accounts, which won't have them.
       setFirstLoginFlag(Boolean(data.first_login));
       if (data.user?.role) setRole(data.user.role);
-      return { success: true, user: data.user };
+      return {
+        success: true,
+        user: data.user,
+        first_login: Boolean(data.first_login),
+        role: data.user?.role,
+      };
     }
 
     const data = await response.json().catch(() => ({}));
