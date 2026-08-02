@@ -40,3 +40,12 @@ class DeactivateUserRequest(BaseModel):
 
 class DeactivateUserResponse(BaseModel):
     message: str
+
+
+class AdminUserOut(BaseModel):
+    id: str
+    email: str
+    full_name: str
+    role: str
+    is_active: bool
+    first_login: bool
