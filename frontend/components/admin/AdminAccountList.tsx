@@ -1,26 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import {
   deactivateUser,
   reactivateUser,
-  getTrackedAdminAccounts,
-  type TrackedAdminAccount,
+  getAdminUsersList,
+  type AdminUser,
 } from "@/lib/adminAuth";
 
 const ACCESS_TOKEN_KEY = "access_token";
 
 export function AdminAccountList() {
-  const [accounts, setAccounts] = useState<TrackedAdminAccount[]>([]);
+  const [accounts, setAccounts] = useState<AdminUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | undefined>(undefined);
 
-  useEffect(() => {
-    setAccounts(getTrackedAdminAccounts());
+  const loadAccounts = useCallback(async () => {
+    setError(undefined);
+    const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (!accessToken) {
+      setError("Your session has expired. Please log in again.");
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const result = await getAdminUsersList(accessToken);
+    setIsLoading(false);
+
+    if (!result.success) {
+      setError(result.message);
+      return;
+    }
+    setAccounts(result.users);
   }, []);
 
-  async function handleToggleActive(account: TrackedAdminAccount) {
+  useEffect(() => {
+    loadAccounts();
+  }, [loadAccounts]);
+
+  async function handleToggleActive(account: AdminUser) {
     setError(undefined);
     const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
     if (!accessToken) {
@@ -49,12 +70,7 @@ export function AdminAccountList() {
 
   return (
     <div className="bg-[#eaf5f0] rounded-2xl w-full max-w-md p-6 shadow-sm border border-black/10">
-      <h2 className="text-lg font-semibold text-[#1A534A] mb-1">Admin Accounts</h2>
-      <p className="text-xs text-[#B3402A] mb-4">
-        Showing admins created from this browser only — a real account list endpoint
-        (e.g. GET /admin/users) is not yet available, so this can&apos;t show accounts
-        created elsewhere or the seeded superadmin.
-      </p>
+      <h2 className="text-lg font-semibold text-[#1A534A] mb-4">Admin Accounts</h2>
 
       {error && (
         <p role="alert" className="text-sm text-red-600 mb-3">
@@ -62,11 +78,12 @@ export function AdminAccountList() {
         </p>
       )}
 
-      {accounts.length === 0 ? (
-        <p className="text-sm text-[#7C9791]">
-          No admin accounts created from this browser yet. Use the &quot;Add Admin&quot; tab
-          to create one.
-        </p>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8 text-[#7C9791]">
+          <Loader2 className="w-5 h-5 animate-spin" />
+        </div>
+      ) : accounts.length === 0 && !error ? (
+        <p className="text-sm text-[#7C9791]">No admin accounts found.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {accounts.map((account) => (

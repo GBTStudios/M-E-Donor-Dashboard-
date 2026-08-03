@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { RequireSuperadmin } from "@/components/admin/RequireSuperadmin";
+import { SessionTimeoutGuard } from "@/components/admin/SessionTimeoutGuard";
 import { CreateAdminForm } from "@/components/admin/CreateAdminForm";
 import { AdminAccountList } from "@/components/admin/AdminAccountList";
 
@@ -14,6 +15,7 @@ export default function UserManagementPage() {
 
   return (
     <RequireSuperadmin>
+      <SessionTimeoutGuard>
       <div className="min-h-screen bg-[#f5efe4] flex flex-col items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-6">
@@ -67,6 +69,7 @@ export default function UserManagementPage() {
           </div>
         </div>
       </div>
+      </SessionTimeoutGuard>
     </RequireSuperadmin>
   );
 }
