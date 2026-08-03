@@ -14,6 +14,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { RequireFirstLoginComplete } from "@/components/admin/RequireFirstLoginComplete";
+import { SessionTimeoutGuard } from "@/components/admin/SessionTimeoutGuard";
 import { getRole, type UserRole } from "@/lib/adminAuth";
 import { logoutUser } from "@/lib/auth";
 
@@ -154,7 +155,9 @@ function DashboardContent() {
 export default function AdminDashboardPage() {
   return (
     <RequireFirstLoginComplete>
-      <DashboardContent />
+      <SessionTimeoutGuard>
+        <DashboardContent />
+      </SessionTimeoutGuard>
     </RequireFirstLoginComplete>
   );
 }
