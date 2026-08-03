@@ -31,7 +31,8 @@ export function AdminAccountList() {
     setIsLoading(false);
 
     if (!result.success) {
-      setError(result.message);
+      const failure = result as { success: false; message: string };
+      setError(failure.message);
       return;
     }
     setAccounts(result.users);
