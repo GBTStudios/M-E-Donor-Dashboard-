@@ -29,7 +29,7 @@ import { logoutUser } from "@/lib/auth";
  */
 const PRIMARY_NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/admin-dashboard" },
-  { label: "Knowledge Base", icon: BookOpen, href: "#" },
+  { label: "Knowledge Base", icon: BookOpen, href: "/admin/knowledge-base" },
   { label: "Uploaded Documents", icon: FileText, href: "#" },
   { label: "Q&A Logs", icon: HelpCircle, href: "#" },
   { label: "Chat Audit Logs", icon: ClipboardList, href: "#" },
