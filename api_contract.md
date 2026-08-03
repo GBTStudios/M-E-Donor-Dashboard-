@@ -486,4 +486,232 @@ Full updated row, same shape as the GET response. `updated_at` and `updated_by` 
 - [ ] Image upload on `POST /admin/stories` / `PUT /admin/stories/{id}` — endpoint built but not yet tested with a real file; treat as unverified until confirmed
 - [ ] AI assistant / chatbot for donor dashboard — still in planning, no spec written yet, out of scope for current work
 
-_Last updated: by [your name], [date]_
+
+## Knowledge Base: Document Curation (Stage 1)
+
+### What this is
+
+An admin-only workflow for turning raw documents (PDF, Word, Excel, CSV) into reviewed, approved content that will eventually feed the donor-facing chatbot. **This contract covers Stage 1 only**: upload → parse → AI summarize → human review/edit → publish or exclude. It does **not** yet cover embeddings, vector search, or the chatbot's retrieval logic — that's a separate Stage 2, deferred until this stage is stable and has real published content to work with.
+
+**Nothing here reaches the chatbot or donors until a document's status is `published`.** This is the core safety guarantee of the whole feature — treat it as non-negotiable when building the frontend review screen.
+
+### Status lifecycle
+
+A document moves through these states, in order (except `excluded`, which can happen from `pending` at any point):
+
+```
+processing → pending → published
+                　  ↳ excluded
+```
+
+| Status | Meaning |
+|---|---|
+| `processing` | File uploaded, parsing + AI summarization running in the background. Not yet visible to an admin for review. |
+| `pending` | Extraction + AI summary complete. Waiting for an admin to review, optionally edit, and either publish or exclude it. |
+| `published` | Approved. This is the only status the future chatbot retrieval will ever read from. |
+| `excluded` | Admin explicitly rejected this document. Permanently out of consideration (not deleted, just never used). |
+
+### Admin auth
+
+Same pattern as every other `/admin/*` route in this app — see the **Admin Auth** section above. All endpoints below require `Authorization: Bearer <access_token>` and `is_admin`/role-based admin access (401 vs 403 rules identical to elsewhere).
+
+---
+
+### Upload a Document
+
+**Endpoint:** `POST /admin/documents`
+
+`multipart/form-data`. Accepts one file: PDF, DOCX, XLSX, or CSV. Max size 25MB.
+
+**Important: this returns immediately** — it does not wait for parsing or AI summarization to finish. Those happen in the background. The response confirms the upload was received and processing has started; poll `GET /admin/documents/{id}` afterward to see when the summary is ready.
+
+### Request (form fields)
+
+| Field | Type | Required |
+|---|---|---|
+| `file` | file (PDF/DOCX/XLSX/CSV, max 25MB) | yes |
+
+### Success Response — `202 Accepted`
+
+```json
+{
+  "id": "uuid-string",
+  "filename": "Cohort 5 endline results.pdf",
+  "status": "processing"
+}
+```
+
+Note the status code is `202 Accepted`, not `200` or `201` — this is the standard HTTP way of saying "request accepted, work is happening asynchronously, check back later."
+
+### Error Responses
+
+| Status | Meaning |
+|---|---|
+| `401` / `403` | See Admin Auth section |
+| `422` | Wrong file type, file exceeds 25MB, or no file provided |
+
+---
+
+### List Documents (Registry)
+
+**Endpoint:** `GET /admin/documents`
+
+Optional query param: `status` (filter to just `processing`, `pending`, `published`, or `excluded`). Omit to get all.
+
+### Success Response — `200 OK`
+
+```json
+[
+  {
+    "id": "uuid-string",
+    "filename": "Cohort 5 endline results.pdf",
+    "file_type": "pdf",
+    "status": "pending",
+    "uploaded_by": "uuid-string",
+    "created_at": "2026-08-03T10:00:00Z",
+    "updated_at": "2026-08-03T10:00:45Z",
+    "published_at": null
+  }
+]
+```
+
+This is the list view only — no `raw_text`, `ai_summary`, or `final_content` included, since those can be large. Use the detail endpoint below for the full document.
+
+---
+
+### Get Document Detail
+
+**Endpoint:** `GET /admin/documents/{id}`
+
+### Success Response — `200 OK`
+
+```json
+{
+  "id": "uuid-string",
+  "filename": "Cohort 5 endline results.pdf",
+  "file_type": "pdf",
+  "file_url": "https://.../knowledge-documents/abc123.pdf",
+  "status": "pending",
+  "raw_text": "... full extracted raw text from the file ...",
+  "ai_summary": "COHORT 5 ENDLINE RESULTS - EXECUTIVE SUMMARY\n\n...",
+  "final_content": "COHORT 5 ENDLINE RESULTS - EXECUTIVE SUMMARY\n\n...",
+  "uploaded_by": "uuid-string",
+  "created_at": "2026-08-03T10:00:00Z",
+  "updated_at": "2026-08-03T10:00:45Z",
+  "published_at": null
+}
+```
+
+`final_content` starts as an exact copy of `ai_summary` the moment processing finishes. The frontend's editable "OVERRIDE / REFINE" panel edits `final_content`, never `ai_summary` directly — `ai_summary` is preserved as the original AI output for reference, in case an admin wants to revert or compare.
+
+While `status` is `"processing"`, `raw_text`, `ai_summary`, and `final_content` will all be `null` — frontend should show a loading/processing state, not attempt to render them.
+
+### Error Responses
+
+| Status | Meaning |
+|---|---|
+| `401` / `403` | See Admin Auth section |
+| `404` | No document exists with that `id` |
+
+---
+
+### Save Edited Content
+
+**Endpoint:** `PUT /admin/documents/{id}`
+
+This is the "Save Edit" button. Updates `final_content` only — does not change status, does not publish anything.
+
+### Request
+
+```json
+{
+  "final_content": "The admin's edited version of the summary text..."
+}
+```
+
+### Success Response — `200 OK`
+
+Full document object, same shape as the detail endpoint, with `final_content` and `updated_at` updated.
+
+### Error Responses
+
+| Status | Meaning |
+|---|---|
+| `401` / `403` | See Admin Auth section |
+| `404` | No document exists with that `id` |
+| `422` | `final_content` missing or empty |
+
+---
+
+### Publish a Document
+
+**Endpoint:** `POST /admin/documents/{id}/publish`
+
+This is the "Approve & Publish" button. Sets `status` to `"published"` and `published_at` to the current time. Whatever is currently saved in `final_content` at this moment becomes the permanent published version.
+
+**Stage 1 note:** this endpoint does *not* yet trigger embedding generation or make anything available to a chatbot — that's Stage 2, not built yet. Right now, "publish" only means "marked as approved in this admin tool."
+
+### Success Response — `200 OK`
+
+Full document object, `status: "published"`, `published_at` set.
+
+### Error Responses
+
+| Status | Meaning |
+|---|---|
+| `401` / `403` | See Admin Auth section |
+| `404` | No document exists with that `id` |
+| `409` | Document is not in `pending` status (e.g. already published, or still processing) — can't publish from any other state |
+
+---
+
+### Exclude a Document
+
+**Endpoint:** `POST /admin/documents/{id}/exclude`
+
+Sets `status` to `"excluded"`. The document record and file are kept (not deleted), just permanently marked as rejected.
+
+### Success Response — `200 OK`
+
+Full document object, `status: "excluded"`.
+
+### Error Responses
+
+| Status | Meaning |
+|---|---|
+| `401` / `403` | See Admin Auth section |
+| `404` | No document exists with that `id` |
+
+---
+
+### Delete a Document
+
+**Endpoint:** `DELETE /admin/documents/{id}`
+
+Fully removes the document record and its file from Storage. Unlike "exclude," this is permanent and irreversible.
+
+### Success Response — `200 OK`
+
+```json
+{ "message": "Document deleted.", "id": "uuid-string" }
+```
+
+### Error Responses
+
+| Status | Meaning |
+|---|---|
+| `401` / `403` | See Admin Auth section |
+| `404` | No document exists with that `id` |
+
+---
+
+### Explicitly out of scope for Stage 1 (do not build against these yet)
+
+- No embedding generation happens on publish yet.
+- No vector database is populated yet.
+- There is no chatbot retrieval endpoint yet.
+- Vector DB is planned to be **Supabase pgvector** (not Pinecone/Qdrant) once Stage 2 starts, to avoid standing up a separate service.
+- Summarization LLM is **OpenAI** — exact model choice not yet finalized/documented.
+
+If the frontend needs to show "this document powers the chatbot" messaging, it should say so only for `published` documents, and should not imply real-time sync until Stage 2 actually exists.
+_Last updated: by [Janet], [03/08/2026]_
