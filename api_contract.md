@@ -714,4 +714,8 @@ Fully removes the document record and its file from Storage. Unlike "exclude," t
 - Summarization LLM is **OpenAI** — exact model choice not yet finalized/documented.
 
 If the frontend needs to show "this document powers the chatbot" messaging, it should say so only for `published` documents, and should not imply real-time sync until Stage 2 actually exists.
+
+### Known gap: OpenAI summarization untested end-to-end
+
+The full pipeline (upload → parse → background task → OpenAI summarization → save) has been built and the error-handling path is confirmed working (a real API failure was caught cleanly and surfaced in `ai_summary` rather than crashing). However, a **successful** OpenAI response has not yet been observed — testing is currently blocked on OpenAI account credits being exhausted. Until this is confirmed, treat `ai_summary`/`final_content` output as unverified. Embedded-image text extraction (via OpenAI vision) is similarly untested for the same reason.
 _Last updated: by [Janet], [03/08/2026]_
