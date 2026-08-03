@@ -1,8 +1,6 @@
-import { fetchLandingStats } from "@/lib/landing-data";
+import type { LandingStats } from "@/lib/landing-data";
 
-export default async function ImpactStatsSection() {
-  const stats = await fetchLandingStats();
-
+export default function ImpactStatsSection({ stats }: { stats: LandingStats }) {
   const cards = [
     { label: "Participants", value: `${stats.participants}` },
     { label: "Graduation Rate", value: `${stats.graduation_rate}%` },

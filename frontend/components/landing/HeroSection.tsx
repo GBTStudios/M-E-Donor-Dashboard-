@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import type { LandingStats } from "@/lib/landing-data";
 
-export default function HeroSection() {
+export default function HeroSection({ stats }: { stats: LandingStats }) {
   return (
     <section className="bg-[#f5efe4]">
       <div className="max-w-7xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-12 items-center">
@@ -38,13 +39,22 @@ export default function HeroSection() {
           </div>
         </div>
 
-        <JourneyCard />
+        <JourneyCard incomeGrowthMultiplier={stats.income_growth_multiplier} />
       </div>
     </section>
   );
 }
 
-function JourneyCard() {
+/**
+ * The "before programme" baseline ($11/month) has no backing field in
+ * LandingStats yet — only income_growth_multiplier is tracked/editable in
+ * the admin panel. If this baseline figure needs to become admin-editable
+ * too, it needs a new field added to the stats table and API contract.
+ * The multiplier itself IS live — editing it in /admin/stats updates this
+ * card and the number below together, since both read from the same
+ * fetch in page.tsx.
+ */
+function JourneyCard({ incomeGrowthMultiplier }: { incomeGrowthMultiplier: number }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-black/5 p-6">
       <div className="flex items-start justify-between mb-2">
@@ -73,7 +83,7 @@ function JourneyCard() {
           <p className="text-xs text-gray-400">Before the programme</p>
         </div>
         <div className="text-right">
-          <p className="text-lg font-semibold text-[#1A534A]">22&times; income</p>
+          <p className="text-lg font-semibold text-[#1A534A]">{incomeGrowthMultiplier}&times; income</p>
         </div>
       </div>
 

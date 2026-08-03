@@ -5,16 +5,16 @@ import ImpactStoriesSection from "@/components/landing/ImpactStoriesSection";
 import FAQSection from "@/components/landing/FAQSection";
 import LandingFooter from "@/components/landing/LandingFooter";
 import ChatbotButton from "@/components/landing/ChatbotButton";
-import { fetchStories } from "@/lib/landing-data";
+import { fetchStories, fetchLandingStats } from "@/lib/landing-data";
 
 export default async function LandingPage() {
-  const stories = await fetchStories(6);
+  const [stories, stats] = await Promise.all([fetchStories(6), fetchLandingStats()]);
 
   return (
     <main>
       <LandingHeader />
-      <HeroSection />
-      <ImpactStatsSection />
+      <HeroSection stats={stats} />
+      <ImpactStatsSection stats={stats} />
       <ImpactStoriesSection stories={stories} />
       <FAQSection />
       <LandingFooter />
