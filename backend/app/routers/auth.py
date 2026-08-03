@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Request, HTTPException, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -30,6 +32,10 @@ async def login(request: Request, credentials: LoginRequest):
 
     if not user.get("is_active", True):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=GENERIC_ERROR)
+
+    supabase.table("users").update({
+        "last_active_at": datetime.now(timezone.utc).isoformat()
+    }).eq("id", user["id"]).execute()
 
     access_token = create_access_token(data={"sub": user["id"], "role": user.get("role", "donor")})
 
