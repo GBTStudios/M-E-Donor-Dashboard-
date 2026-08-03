@@ -12,6 +12,8 @@ import {
   User,
   Settings,
   LogOut,
+  BarChart3,
+  Images,
 } from "lucide-react";
 import { RequireFirstLoginComplete } from "@/components/admin/RequireFirstLoginComplete";
 import { getRole, type UserRole } from "@/lib/adminAuth";
@@ -31,6 +33,16 @@ const PRIMARY_NAV_ITEMS = [
   { label: "Uploaded Documents", icon: FileText, href: "#", active: false },
   { label: "Q&A Logs", icon: HelpCircle, href: "#", active: false },
   { label: "Chat Audit Logs", icon: ClipboardList, href: "#", active: false },
+] as const;
+
+/**
+ * Landing page content management — available to any admin (not
+ * superadmin-only, unlike Manage Users), since editing stats/stories
+ * doesn't touch account or access control.
+ */
+const CONTENT_NAV_ITEMS = [
+  { label: "Landing Stats", icon: BarChart3, href: "/admin/stats" },
+  { label: "Impact Stories", icon: Images, href: "/admin/stories" },
 ] as const;
 
 function NavLink({
@@ -98,6 +110,14 @@ function DashboardContent() {
         <div className="my-4 border-t border-white/10" />
 
         <nav className="flex flex-col gap-1">
+          {CONTENT_NAV_ITEMS.map((item) => (
+            <NavLink key={item.label} {...item} />
+          ))}
+        </nav>
+
+        <div className="my-4 border-t border-white/10" />
+
+        <nav className="flex flex-col gap-1">
           {/* Per the RBAC contract, only superadmin can create/manage admin
               accounts — regular admins never see this link. */}
           {role === "superadmin" && (
@@ -133,19 +153,40 @@ function DashboardContent() {
             : "Welcome back."}
         </p>
 
-        <div className="bg-[#eaf5f0] rounded-2xl border border-black/10 p-10 text-center text-[#5B7571] text-sm max-w-lg shadow-sm">
-          Dashboard content (donor metrics, knowledge base, etc.) is being built separately.
-          {role === "superadmin" && (
-            <>
-              {" "}
-              In the meantime, use{" "}
-              <Link href="/admin/users" className="text-[#1A534A] font-semibold hover:underline">
-                Manage Users
-              </Link>{" "}
-              to add or manage admin accounts.
-            </>
-          )}
+        <div className="grid sm:grid-cols-2 gap-5 max-w-2xl">
+          <Link
+            href="/admin/stats"
+            className="bg-[#eaf5f0] rounded-2xl border border-black/10 p-6 shadow-sm hover:shadow-md transition block"
+          >
+            <BarChart3 className="w-6 h-6 text-[#1A534A] mb-3" />
+            <p className="font-semibold text-gray-800">Landing Stats</p>
+            <p className="text-sm text-[#5B7571] mt-1">
+              Update the impact numbers shown on the public landing page.
+            </p>
+          </Link>
+
+          <Link
+            href="/admin/stories"
+            className="bg-[#eaf5f0] rounded-2xl border border-black/10 p-6 shadow-sm hover:shadow-md transition block"
+          >
+            <Images className="w-6 h-6 text-[#1A534A] mb-3" />
+            <p className="font-semibold text-gray-800">Impact Stories</p>
+            <p className="text-sm text-[#5B7571] mt-1">
+              Add, edit, or remove graduate stories shown on the landing page.
+            </p>
+          </Link>
         </div>
+
+        {role === "superadmin" && (
+          <div className="mt-6 max-w-2xl">
+            <Link
+              href="/admin/users"
+              className="text-sm text-[#1A534A] font-semibold hover:underline"
+            >
+              Manage admin accounts →
+            </Link>
+          </div>
+        )}
       </main>
     </div>
   );

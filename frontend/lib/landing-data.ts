@@ -1,13 +1,12 @@
 /**
  * Data fetchers for the landing page's "live" sections.
  *
- * Both endpoints don't exist on the backend yet (see backend-guide-stories-and-stats.md).
- * Until they're live, these fall back to placeholder data so the page renders
- * correctly during frontend development. Once the backend endpoints exist,
- * remove the try/catch fallback and let failures surface normally (or add
- * proper error UI instead of silently falling back).
+ * cache: "no-store" means every page load fetches fresh data directly from
+ * the backend, no caching layer in between. Admin edits to stats/stories
+ * are reflected on the very next normal page load — no hard refresh, no
+ * cache clearing needed. This trades a small amount of backend load for
+ * correctness, which is the right tradeoff for admin-editable content.
  */
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export interface LandingStats {
@@ -31,7 +30,7 @@ const FALLBACK_STATS: LandingStats = {
 export async function fetchLandingStats(): Promise<LandingStats> {
   try {
     const res = await fetch(`${API_URL}/stats/landing-summary`, {
-      next: { revalidate: 3600 }, // re-check once an hour; data barely changes.
+      cache: "no-store",
     });
     if (!res.ok) throw new Error("Failed to fetch landing stats");
     return await res.json();
@@ -75,7 +74,7 @@ const FALLBACK_STORIES: Story[] = [
 export async function fetchStories(limit = 6): Promise<Story[]> {
   try {
     const res = await fetch(`${API_URL}/stories?limit=${limit}`, {
-      next: { revalidate: 3600 },
+      cache: "no-store",
     });
     if (!res.ok) throw new Error("Failed to fetch stories");
     return await res.json();

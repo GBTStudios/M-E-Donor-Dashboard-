@@ -39,7 +39,8 @@ export default function LoginForm() {
     setLoading(false);
 
     if (!result.success) {
-      setError(result.error);
+      const failure = result as { success: false; error: string };
+      setError(failure.error);
       return;
     }
 
