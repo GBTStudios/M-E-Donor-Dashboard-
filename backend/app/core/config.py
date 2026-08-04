@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
     resend_api_key: str
-    openai_api_key: str
+    anthropic_api_key: str
 
     class Config:
         env_file = ".env"

@@ -1,7 +1,7 @@
-from openai import OpenAI
+from anthropic import Anthropic
 from app.core.config import settings
 
-client = OpenAI(api_key=settings.openai_api_key)
+client = Anthropic(api_key=settings.anthropic_api_key)
 
 SUMMARY_PROMPT = """You are helping an NGO turn a raw document into a structured executive summary for internal knowledge base use.
 
@@ -32,11 +32,11 @@ Raw document text:
 def summarize_document(raw_text: str) -> str:
     truncated = raw_text[:15000]  # keep prompt size reasonable; long docs get truncated for now
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1000,
         messages=[
             {"role": "user", "content": SUMMARY_PROMPT.format(raw_text=truncated)}
         ],
-        temperature=0.3,
     )
-    return response.choices[0].message.content
+    return response.content[0].text
