@@ -8,7 +8,7 @@ from app.models.password_reset_schemas import (
     ResetPasswordRequest, ResetPasswordResponse,
 )
 from app.db.supabase_client import supabase
-from app.services.email_service import generate_verification_code
+from app.services.email_service import generate_verification_code, send_password_reset_email
 from app.core.security import hash_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -95,24 +95,3 @@ async def reset_password(payload: ResetPasswordRequest):
     supabase.table("password_reset_codes").update({"used": True}).eq("id", record["id"]).execute()
 
     return ResetPasswordResponse()
-
-
-def send_password_reset_email(to_email: str, code: str) -> None:
-    import resend
-    from app.core.config import settings
-
-    resend.api_key = settings.resend_api_key
-    resend.Emails.send({
-        "from": "Groundbreaker Donor Dashboard <onboarding@resend.dev>",
-        "to": [to_email],
-        "subject": "Reset your password — Groundbreaker Donor Dashboard",
-        "html": f"""
-            <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-                <h2>Reset your password</h2>
-                <p>Use the code below to reset your password:</p>
-                <p style="font-size: 32px; font-weight: bold; letter-spacing: 4px;">{code}</p>
-                <p>This code expires in 30 minutes.</p>
-                <p>If you didn't request this, you can safely ignore this email.</p>
-            </div>
-        """
-    })
