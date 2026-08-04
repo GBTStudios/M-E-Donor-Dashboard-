@@ -715,7 +715,7 @@ Fully removes the document record and its file from Storage. Unlike "exclude," t
 
 If the frontend needs to show "this document powers the chatbot" messaging, it should say so only for `published` documents, and should not imply real-time sync until Stage 2 actually exists.
 
-### Known gap: OpenAI summarization untested end-to-end
+### Known gap: AI summarization untested end-to-end
 
-The full pipeline (upload → parse → background task → OpenAI summarization → save) has been built and the error-handling path is confirmed working (a real API failure was caught cleanly and surfaced in `ai_summary` rather than crashing). However, a **successful** OpenAI response has not yet been observed — testing is currently blocked on OpenAI account credits being exhausted. Until this is confirmed, treat `ai_summary`/`final_content` output as unverified. Embedded-image text extraction (via OpenAI vision) is similarly untested for the same reason.
+The full pipeline (upload → parse → background task → AI summarization → save) has been built. The provider was switched from OpenAI to **Anthropic** (Claude) partway through — `summarizer.py` and `image_text_extractor.py` both now use the Anthropic SDK (`claude-haiku-4-5-20251001`). The integration is confirmed correctly wired end-to-end: a real request reaches Anthropic's API and returns a clean, expected `401 authentication_error` against a placeholder key. However, a **successful** response has not yet been observed — testing is blocked on a real, funded Anthropic API key being added to `.env`. Until confirmed, treat `ai_summary`/`final_content` output as unverified. Embedded-image text extraction (via Claude vision) is similarly untested for the same reason.
 _Last updated: by [Janet], [03/08/2026]_
