@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import AdminLayout from "@/components/admin/AdminLayout";
 import { RequireSuperadmin } from "@/components/admin/RequireSuperadmin";
-import { SessionTimeoutGuard } from "@/components/admin/SessionTimeoutGuard";
 import { CreateAdminForm } from "@/components/admin/CreateAdminForm";
 import { AdminAccountList } from "@/components/admin/AdminAccountList";
 
@@ -14,10 +12,9 @@ export default function UserManagementPage() {
   const [activeTab, setActiveTab] = useState<Tab>("add");
 
   return (
-    <RequireSuperadmin>
-      <SessionTimeoutGuard>
-      <div className="min-h-screen bg-[#f5efe4] flex flex-col items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
+    <AdminLayout>
+      <RequireSuperadmin>
+        <div className="max-w-md mx-auto">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-semibold text-[#1A534A] mb-1">User Management</h1>
             <p className="text-sm text-[#5B7571]">Manage admin accounts and access.</p>
@@ -57,19 +54,8 @@ export default function UserManagementPage() {
               <AdminAccountList />
             )}
           </div>
-
-          <div className="flex justify-center mt-8">
-            <Link
-              href="/admin-dashboard"
-              className="inline-flex items-center gap-1.5 text-sm text-[#5B7571] hover:text-[#1A534A] transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Link>
-          </div>
         </div>
-      </div>
-      </SessionTimeoutGuard>
-    </RequireSuperadmin>
+      </RequireSuperadmin>
+    </AdminLayout>
   );
 }

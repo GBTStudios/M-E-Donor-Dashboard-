@@ -19,14 +19,6 @@ import {
 import { getRole, type UserRole } from "@/lib/adminAuth";
 import { logoutUser } from "@/lib/auth";
 
-/**
- * Sidebar nav items matching the approved mockup's order. Everything except
- * "Dashboard" and "Manage Users" links to a page that doesn't exist yet
- * (Knowledge Base, Uploaded Documents, Q&A Logs, Chat Audit Logs, Profile,
- * Settings are all separate, unbuilt features) — these render as inert
- * placeholders (href="#") for now so the sidebar's visual layout matches
- * the mockup, without pretending those pages actually work.
- */
 const PRIMARY_NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/admin-dashboard" },
   { label: "Knowledge Base", icon: BookOpen, href: "/admin/knowledge-base" },
@@ -35,11 +27,6 @@ const PRIMARY_NAV_ITEMS = [
   { label: "Chat Audit Logs", icon: ClipboardList, href: "#" },
 ] as const;
 
-/**
- * Landing page content management — available to any admin (not
- * superadmin-only, unlike Manage Users), since editing stats/stories
- * doesn't touch account or access control.
- */
 const CONTENT_NAV_ITEMS = [
   { label: "Landing Stats", icon: BarChart3, href: "/admin/stats" },
   { label: "Impact Stories", icon: Images, href: "/admin/stories" },
@@ -55,9 +42,6 @@ function NavLink({
   href: string;
 }) {
   const pathname = usePathname();
-  // Treat any path under a nav item's href as "active" (e.g. /admin/stories
-  // and /admin/stories/new both highlight "Impact Stories"), not just an
-  // exact match.
   const active = href !== "#" && (pathname === href || pathname?.startsWith(href + "/"));
 
   return (
@@ -120,12 +104,10 @@ export default function AdminSidebar() {
       <div className="my-4 border-t border-white/10" />
 
       <nav className="flex flex-col gap-1">
-        {/* Per the RBAC contract, only superadmin can create/manage admin
-            accounts — regular admins never see this link. */}
         {role === "superadmin" && (
           <NavLink label="Manage Users" icon={Users} href="/admin/users" />
         )}
-        <NavLink label="Profile" icon={User} href="#" />
+        <NavLink label="Profile" icon={User} href="/admin/profile" />
         <NavLink label="Settings" icon={Settings} href="#" />
       </nav>
 
