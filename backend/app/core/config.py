@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     sendgrid_api_key: str
     sender_email: str
     sender_name: str = "Groundbreaker Donor Dashboard"
+    openai_api_key: str
 
     class Config:
         env_file = ".env"
