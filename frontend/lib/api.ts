@@ -52,6 +52,14 @@ export interface SignUpErrorResult {
 
 export type SignUpResponse = SignUpSuccessResult | SignUpErrorResult;
 
+/** Explicit type guard — used instead of relying on `if (!result.success)`
+ * control-flow narrowing, which has been unreliable in this project's dev
+ * environment for reasons not yet identified. Same runtime check, just
+ * expressed as a predicate function instead. */
+export function isSignUpError(result: SignUpResponse): result is SignUpErrorResult {
+  return result.success === false;
+}
+
 /**
  * Thrown for genuinely unexpected failures — the network is down, the
  * response isn't valid JSON, or the response doesn't match any documented

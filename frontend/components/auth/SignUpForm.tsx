@@ -10,7 +10,7 @@ import {
   type SignUpFormValues,
   type SignUpFieldErrors,
 } from "@/lib/validation";
-import { signUp } from "@/lib/api";
+import { signUp, isSignUpError } from "@/lib/api";
 import { signInWithGoogle } from "@/lib/auth";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { PasswordStrengthMeter } from "@/components/ui/PasswordStrengthMeter";
@@ -73,22 +73,17 @@ export function SignUpForm() {
         password: values.password,
       });
 
-      if (!result.success) {
-        const errorResult = result as {
-          success: false;
-          message: string;
-          fieldErrors?: Record<string, string>;
-        };
-        setFormError(errorResult.message);
+      if (isSignUpError(result)) {
+        setFormError(result.message);
         // Surface backend field-level errors (e.g. from a 422 response) as
         // if they were client-side validation errors, so they render inline
         // next to the right input rather than only in the top banner.
-        if (errorResult.fieldErrors) {
+        if (result.fieldErrors) {
           setErrors((prev) => ({
             ...prev,
-            ...(errorResult.fieldErrors?.full_name ? { name: errorResult.fieldErrors.full_name } : {}),
-            ...(errorResult.fieldErrors?.email ? { email: errorResult.fieldErrors.email } : {}),
-            ...(errorResult.fieldErrors?.password ? { password: errorResult.fieldErrors.password } : {}),
+            ...(result.fieldErrors?.full_name ? { name: result.fieldErrors.full_name } : {}),
+            ...(result.fieldErrors?.email ? { email: result.fieldErrors.email } : {}),
+            ...(result.fieldErrors?.password ? { password: result.fieldErrors.password } : {}),
           }));
         }
         return;
@@ -135,9 +130,9 @@ export function SignUpForm() {
 
   return (
     <div className="w-screen min-h-screen bg-[#f5efe4] flex flex-col items-center justify-center p-6 sm:p-10">
-      <div className="bg-[#eaf5f0] rounded-2xl w-full max-w-md p-8 shadow-sm border border-black/10">
-        <h1 className="text-2xl font-semibold text-[#1A534A] mb-1">Create your account</h1>
-        <p className="text-sm text-[#5B7571] mb-6">
+      <div className="bg-[#eaf5f0] rounded-2xl w-full max-w-lg p-10 shadow-sm border border-black/10">
+        <h1 className="text-3xl font-semibold text-[#1A534A] mb-1.5">Create your account</h1>
+        <p className="text-sm text-[#5B7571] mb-8">
           Enter your details to access your impact dashboard.
         </p>
 
@@ -151,7 +146,7 @@ export function SignUpForm() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
           <div>
             <label htmlFor="name" className="block text-sm font-semibold text-[#3D524C] mb-2">
               Full name
@@ -231,7 +226,7 @@ export function SignUpForm() {
           <button
             type="submit"
             disabled={!isValid || isSubmitting}
-            className="w-full flex items-center justify-center gap-2 bg-[#1A534A] hover:bg-[#134038] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-full transition-colors shadow-sm mt-1"
+            className="w-full flex items-center justify-center gap-2 bg-[#1A534A] hover:bg-[#134038] disabled:bg-[#1A534A]/90 disabled:cursor-not-allowed text-white text-sm font-semibold py-3 rounded-full transition-colors shadow-sm mt-2"
           >
             {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" data-testid="spinner" />}
             {isSubmitting ? "Creating account…" : "Continue"}
