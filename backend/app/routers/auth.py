@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Request, HTTPException, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from user_agents import parse as parse_user_agent
 
 from app.models.auth_schemas import LoginRequest, TokenResponse, UserOut
 from app.db.supabase_client import supabase
@@ -37,7 +38,27 @@ async def login(request: Request, credentials: LoginRequest):
         "last_active_at": datetime.now(timezone.utc).isoformat()
     }).eq("id", user["id"]).execute()
 
-    access_token = create_access_token(data={"sub": user["id"], "role": user.get("role", "donor")})
+    # Parse device info from the User-Agent header
+    ua_string = request.headers.get("user-agent", "")
+    ua = parse_user_agent(ua_string)
+    browser = ua.browser.family or "Unknown"
+    os_name = ua.os.family or "Unknown"
+    ip_address = request.client.host if request.client else None
+
+    session_result = supabase.table("sessions").insert({
+        "user_id": user["id"],
+        "browser": browser,
+        "os": os_name,
+        "ip_address": ip_address,
+    }).execute()
+
+    session_id = session_result.data[0]["id"]
+
+    access_token = create_access_token(data={
+        "sub": user["id"],
+        "role": user.get("role", "donor"),
+        "sid": session_id,
+    })
 
     return TokenResponse(
         access_token=access_token,

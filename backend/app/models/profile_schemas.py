@@ -9,16 +9,18 @@ class StaffProfileResponse(BaseModel):
     phone: Optional[str] = None
     role: str
     department: Optional[str] = None
+    location: Optional[str] = None
     profile_photo_url: Optional[str] = None
     bio: Optional[str] = None
+    created_at: Optional[str] = None
     updated_at: Optional[str] = None
 
 
 class StaffProfileUpdateRequest(BaseModel):
-    """Deliberately excludes role/permissions — those are never user-editable."""
     full_name: Optional[str] = None
     phone: Optional[str] = None
     department: Optional[str] = None
+    location: Optional[str] = None
     profile_photo_url: Optional[str] = None
     bio: Optional[str] = None
 
