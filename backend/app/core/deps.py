@@ -18,6 +18,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(b
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
     user_id = payload.get("sub")
+    session_id = payload.get("sid")
+
     result = supabase.table("users").select("*").eq("id", user_id).execute()
 
     if not result.data:
@@ -27,6 +29,18 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(b
 
     if not user.get("is_active", True):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+    # Check the session tied to this specific token hasn't been revoked
+    if session_id:
+        session_result = supabase.table("sessions").select("*").eq("id", session_id).execute()
+        if not session_result.data or session_result.data[0].get("is_revoked", False):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="This session has been signed out. Please log in again."
+            )
+        supabase.table("sessions").update({
+            "last_active_at": datetime.now(timezone.utc).isoformat()
+        }).eq("id", session_id).execute()
 
     # Inactivity-based session timeout — independent of the JWT's own expiry
     last_active_raw = user.get("last_active_at")
@@ -39,16 +53,15 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(b
                 detail="Session expired due to inactivity. Please log in again."
             )
 
-    # Refresh last_active_at — sliding window
     supabase.table("users").update({
         "last_active_at": datetime.now(timezone.utc).isoformat()
     }).eq("id", user["id"]).execute()
 
+    user["_session_id"] = session_id
     return user
 
 
 async def get_current_admin_user(user: dict = Depends(get_current_user)) -> dict:
-    """Backward compatible with stories/stats routers. Allows admin and superadmin."""
     if user.get("role") not in ("admin", "superadmin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     if user.get("first_login", False):

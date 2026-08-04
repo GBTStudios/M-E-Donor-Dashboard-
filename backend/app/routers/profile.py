@@ -44,8 +44,10 @@ def _to_profile_response(user: dict) -> StaffProfileResponse:
         phone=user.get("phone"),
         role=user["role"],
         department=user.get("department"),
+        location=user.get("location"),
         profile_photo_url=user.get("profile_photo_url"),
         bio=user.get("bio"),
+        created_at=user.get("created_at"),
         updated_at=user.get("updated_at"),
     )
 
@@ -91,14 +93,13 @@ async def update_my_profile_photo(
 ):
     new_url = await _upload_profile_photo(image)
 
-    # Best-effort cleanup of the old photo, if one existed
     old_url = user.get("profile_photo_url")
     if old_url:
         try:
             old_path = old_url.split("/profile-photos/")[-1]
             supabase.storage.from_("profile-photos").remove([old_path])
         except Exception:
-            pass  # cleanup failure shouldn't block the update
+            pass
 
     result = (
         supabase.table("users")
