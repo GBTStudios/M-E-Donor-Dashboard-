@@ -718,4 +718,88 @@ If the frontend needs to show "this document powers the chatbot" messaging, it s
 ### Known gap: AI summarization untested end-to-end
 
 The full pipeline (upload → parse → background task → AI summarization → save) has been built. The provider was switched from OpenAI to **Anthropic** (Claude) partway through — `summarizer.py` and `image_text_extractor.py` both now use the Anthropic SDK (`claude-haiku-4-5-20251001`). The integration is confirmed correctly wired end-to-end: a real request reaches Anthropic's API and returns a clean, expected `401 authentication_error` against a placeholder key. However, a **successful** response has not yet been observed — testing is blocked on a real, funded Anthropic API key being added to `.env`. Until confirmed, treat `ai_summary`/`final_content` output as unverified. Embedded-image text extraction (via Claude vision) is similarly untested for the same reason.
+
+
+## Uploaded Documents (Audit Log & Export)
+
+### What this is
+
+A separate admin screen from Knowledge Base — a full audit table of every uploaded document (not just pending/review items), with search, pagination, and CSV export. **This uses a different endpoint from the Knowledge Base page on purpose**, to avoid a breaking change to `GET /admin/documents` (which the Knowledge Base page already depends on and returns a plain array, unpaginated). Do not confuse the two:
+
+| Page | Endpoint | Response shape |
+|---|---|---|
+| Knowledge Base (curation) | `GET /admin/documents` | Plain array `[...]` |
+| Uploaded Documents (audit) | `GET /admin/documents/audit` | Paginated envelope `{ documents, total, page, limit }` |
+
+Both read from the same underlying `documents` table — just shaped differently for their respective screens.
+
+### Admin auth
+
+Same as every other `/admin/*` route — see the Admin Auth section.
+
+---
+
+### List Documents (Audit View)
+
+**Endpoint:** `GET /admin/documents/audit`
+
+**Query params:**
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `page` | int | `1` | 1-indexed |
+| `limit` | int | `20` | max `100` |
+| `search` | string | none | **Currently matches filename only** — see Known Limitations below |
+| `status` | string | none | `processing` / `pending` / `published` / `excluded` / omit for all |
+
+### Success Response — `200 OK`
+
+```json
+{
+  "documents": [
+    {
+      "id": "uuid-string",
+      "display_id": "DOC-1824",
+      "filename": "Cohort 5 endline results.pdf",
+      "file_size_bytes": 2516582,
+      "status": "pending",
+      "uploaded_by": "uuid-string",
+      "uploaded_by_name": "Alex Rivers",
+      "created_at": "2026-08-04T10:00:00Z",
+      "updated_at": "2026-08-04T10:00:45Z",
+      "published_at": null
+    }
+  ],
+  "total": 1284,
+  "page": 1,
+  "limit": 20
+}
+```
+
+- `display_id` is a human-readable ID (`DOC-<number>`), auto-generated, not the same as `id` (the real UUID used for all other operations — publish/exclude/delete still use `id`, not `display_id`).
+- `file_size_bytes` will be `null` for any document uploaded **before** this feature was added (size wasn't captured historically) — frontend should handle `null` gracefully (e.g. show "—" rather than "0 bytes" or crashing).
+- `uploaded_by_name` will be `null` if the uploader's account was deleted, or in edge cases where the join fails.
+
+---
+
+### Export as CSV
+
+**Endpoint:** `GET /admin/documents/audit/export`
+
+Same `search` and `status` query params as the list endpoint above — the export reflects whatever's currently filtered/searched, not always the full table. No `page`/`limit` — export always includes every matching row.
+
+### Response
+
+`200 OK`, `Content-Type: text/csv`, triggers a file download (`Content-Disposition: attachment`). Not JSON — frontend should trigger this as a direct browser download / link click, not parse it as an API response.
+
+**Columns, in order:** Document ID, Filename, File Size (bytes), Status, Uploaded By, Uploaded At, Last Updated, Published At.
+
+**Note:** this is a **CSV file**, not a native `.xlsx` Excel file — opens correctly in Excel/Google Sheets, but if a genuine `.xlsx` (with formatting, multiple sheets, etc.) is required, that's a different, not-yet-built feature.
+
+---
+
+### Known limitations
+
+- **Search only matches `filename`**, not `uploaded_by_name`. Searching by uploader requires filtering across the joined `users` table, which isn't implemented yet. Flag if this is a launch blocker.
+- **`file_size_bytes` is `null` for documents uploaded before this feature shipped** — no retroactive backfill has been done.
 _Last updated: by [Janet], [03/08/2026]_

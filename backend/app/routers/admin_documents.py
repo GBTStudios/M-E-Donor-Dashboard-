@@ -8,7 +8,7 @@ from app.core.deps import get_current_admin_user
 from app.db.supabase_client import supabase
 from app.models.document_schemas import (
     DocumentListItem, DocumentDetail, UploadResponse,
-    UpdateContentRequest, DocumentActionResponse,
+    UpdateContentRequest, UpdateMetadataRequest, DocumentActionResponse,
 )
 from app.services.document_parser import extract_text
 from app.services.summarizer import summarize_document
@@ -20,7 +20,6 @@ ALLOWED_EXTENSIONS = {"pdf", "docx", "xlsx", "csv"}
 
 
 def _process_document(document_id: str, filename: str, file_bytes: bytes):
-    """Runs in the background: parse the file, summarize it, update the row."""
     try:
         raw_text = extract_text(filename, file_bytes)
         ai_summary = summarize_document(raw_text)
@@ -34,7 +33,6 @@ def _process_document(document_id: str, filename: str, file_bytes: bytes):
         }).eq("id", document_id).execute()
 
     except Exception as e:
-        # Don't leave the document stuck in "processing" forever if something fails
         supabase.table("documents").update({
             "status": "pending",
             "ai_summary": f"[Processing failed: {e}]",
@@ -57,7 +55,8 @@ async def upload_document(
         )
 
     file_bytes = await file.read()
-    if len(file_bytes) > MAX_FILE_SIZE:
+    file_size = len(file_bytes)
+    if file_size > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="File must be under 25MB.",
@@ -75,8 +74,10 @@ async def upload_document(
             "filename": file.filename,
             "file_url": file_url,
             "file_type": ext,
+            "file_size": file_size,
             "status": "processing",
             "uploaded_by": admin["id"],
+            "file_size": len(file_bytes),
         })
         .execute()
     )
@@ -93,7 +94,7 @@ async def list_documents(
     admin: dict = Depends(get_current_admin_user),
 ):
     query = supabase.table("documents").select(
-        "id, filename, file_type, status, uploaded_by, created_at, updated_at, published_at"
+        "id, filename, file_type, file_size, status, uploaded_by, created_at, updated_at, published_at"
     ).order("created_at", desc=True)
 
     if status_filter:
@@ -130,6 +131,37 @@ async def update_document_content(
             "final_content": payload.final_content,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         })
+        .eq("id", document_id)
+        .execute()
+    )
+    return result.data[0]
+
+
+@router.patch("/{document_id}/metadata", response_model=DocumentDetail)
+async def update_document_metadata(
+    document_id: str,
+    payload: UpdateMetadataRequest,
+    admin: dict = Depends(get_current_admin_user),
+):
+    existing = supabase.table("documents").select("id").eq("id", document_id).execute()
+    if not existing.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
+
+    update_data = payload.model_dump(exclude_unset=True, exclude_none=True)
+    if not update_data:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="No fields provided to update.",
+        )
+
+    if "filename" in update_data and not update_data["filename"].strip():
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="filename cannot be empty.")
+
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+    result = (
+        supabase.table("documents")
+        .update(update_data)
         .eq("id", document_id)
         .execute()
     )

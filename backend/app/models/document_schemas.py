@@ -1,12 +1,13 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 
 class DocumentListItem(BaseModel):
     id: str
     filename: str
     file_type: str
+    file_size: Optional[int] = None
     status: str
     uploaded_by: Optional[str] = None
     created_at: datetime
@@ -18,6 +19,7 @@ class DocumentDetail(BaseModel):
     id: str
     filename: str
     file_type: str
+    file_size: Optional[int] = None
     file_url: str
     status: str
     raw_text: Optional[str] = None
@@ -39,6 +41,30 @@ class UpdateContentRequest(BaseModel):
     final_content: str
 
 
+class UpdateMetadataRequest(BaseModel):
+    filename: Optional[str] = None
+
+
 class DocumentActionResponse(BaseModel):
     message: str
     id: Optional[str] = None
+
+
+class AuditDocumentItem(BaseModel):
+    id: str
+    display_id: str
+    filename: str
+    file_size: Optional[int] = None
+    status: str
+    uploaded_by: Optional[str] = None
+    uploaded_by_name: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    published_at: Optional[datetime] = None
+
+
+class AuditDocumentsResponse(BaseModel):
+    documents: List[AuditDocumentItem]
+    total: int
+    page: int
+    limit: int

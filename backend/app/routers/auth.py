@@ -8,6 +8,7 @@ from user_agents import parse as parse_user_agent
 from app.models.auth_schemas import LoginRequest, TokenResponse, UserOut
 from app.db.supabase_client import supabase
 from app.core.security import verify_password, create_access_token
+from app.services.geolocation import get_location_from_ip
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
@@ -38,18 +39,19 @@ async def login(request: Request, credentials: LoginRequest):
         "last_active_at": datetime.now(timezone.utc).isoformat()
     }).eq("id", user["id"]).execute()
 
-    # Parse device info from the User-Agent header
     ua_string = request.headers.get("user-agent", "")
     ua = parse_user_agent(ua_string)
     browser = ua.browser.family or "Unknown"
     os_name = ua.os.family or "Unknown"
     ip_address = request.client.host if request.client else None
+    location = get_location_from_ip(ip_address) if ip_address else None
 
     session_result = supabase.table("sessions").insert({
         "user_id": user["id"],
         "browser": browser,
         "os": os_name,
         "ip_address": ip_address,
+        "location": location,
     }).execute()
 
     session_id = session_result.data[0]["id"]

@@ -103,3 +103,13 @@ async def revoke_other_sessions(user: dict = Depends(get_current_user)):
         message=f"Signed out of {len(session_ids)} other device(s).",
         revoked_count=len(session_ids),
     )
+
+
+@router.post("/logout", response_model=RevokeSessionResponse)
+async def logout(user: dict = Depends(get_current_user)):
+    session_id = user.get("_session_id")
+
+    if session_id:
+        supabase.table("sessions").update({"is_revoked": True}).eq("id", session_id).execute()
+
+    return RevokeSessionResponse(message="Logged out successfully.")
