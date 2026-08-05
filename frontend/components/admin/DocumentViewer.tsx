@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, XCircle, Trash2, FileText, Sparkles, ShieldAlert, Eye, Pencil } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   fetchDocumentDetail,
   saveDocumentEdit,
@@ -360,8 +362,10 @@ export default function DocumentViewer({ documentId, onChanged, onDeleted }: Doc
         <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-2">
           Extracted Knowledge Payload
         </p>
-        <div className="bg-gray-50 border border-black/5 rounded-xl p-4 text-sm text-gray-600 whitespace-pre-wrap font-mono">
-          {doc.ai_summary}
+        <div className="bg-gray-50 border border-black/5 rounded-xl p-5 text-sm text-gray-700 prose prose-sm max-w-none prose-headings:text-[#1A534A] prose-headings:font-semibold prose-h2:text-base prose-h2:mt-4 prose-h2:mb-2 prose-h3:text-sm prose-h3:mt-3 prose-h3:mb-1.5 prose-strong:text-gray-900 prose-strong:font-semibold prose-ul:my-2 prose-li:my-0.5 prose-p:my-2 prose-table:text-xs">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {doc.ai_summary}
+          </ReactMarkdown>
         </div>
       </div>
 
@@ -377,13 +381,21 @@ export default function DocumentViewer({ documentId, onChanged, onDeleted }: Doc
             </span>
           )}
         </div>
-        <textarea
-          value={finalContent}
-          onChange={(e) => setFinalContent(e.target.value)}
-          disabled={!isEditing}
-          rows={12}
-          className="flex-1 w-full rounded-xl border border-black/10 bg-white p-4 text-sm text-gray-800 font-mono focus:outline-none focus:ring-2 focus:ring-teal-700 disabled:bg-gray-50 disabled:text-gray-500"
-        />
+
+        {isEditing ? (
+          <textarea
+            value={finalContent}
+            onChange={(e) => setFinalContent(e.target.value)}
+            rows={12}
+            className="flex-1 w-full rounded-xl border border-black/10 bg-white p-4 text-sm text-gray-800 font-mono focus:outline-none focus:ring-2 focus:ring-teal-700"
+          />
+        ) : (
+          <div className="flex-1 w-full rounded-xl border border-black/10 bg-white p-5 text-sm text-gray-700 prose prose-sm max-w-none prose-headings:text-[#1A534A] prose-headings:font-semibold prose-h2:text-base prose-h2:mt-4 prose-h2:mb-2 prose-h3:text-sm prose-h3:mt-3 prose-h3:mb-1.5 prose-strong:text-gray-900 prose-strong:font-semibold prose-ul:my-2 prose-li:my-0.5 prose-p:my-2 prose-table:text-xs">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {finalContent}
+            </ReactMarkdown>
+          </div>
+        )}
       </div>
     </div>
   );
