@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 
 class DocumentListItem(BaseModel):
@@ -48,3 +48,23 @@ class UpdateMetadataRequest(BaseModel):
 class DocumentActionResponse(BaseModel):
     message: str
     id: Optional[str] = None
+
+
+class AuditDocumentItem(BaseModel):
+    id: str
+    display_id: str
+    filename: str
+    file_size: Optional[int] = None
+    status: str
+    uploaded_by: Optional[str] = None
+    uploaded_by_name: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    published_at: Optional[datetime] = None
+
+
+class AuditDocumentsResponse(BaseModel):
+    documents: List[AuditDocumentItem]
+    total: int
+    page: int
+    limit: int
