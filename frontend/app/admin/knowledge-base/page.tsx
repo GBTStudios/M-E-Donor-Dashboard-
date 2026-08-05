@@ -1,13 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import AdminLayout from "@/components/admin/AdminLayout";
 import DocumentRegistry from "@/components/admin/DocumentRegistry";
 import DocumentViewer from "@/components/admin/DocumentViewer";
 
 export default function KnowledgeBasePage() {
+  const searchParams = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Support deep linking from the Uploaded Documents audit page, e.g.
+  // /admin/knowledge-base?document=<id> — auto-selects that document on
+  // load instead of leaving the admin to find it manually in the list.
+  useEffect(() => {
+    const documentParam = searchParams.get("document");
+    if (documentParam) {
+      setSelectedId(documentParam);
+    }
+  }, [searchParams]);
 
   function handleChanged() {
     setRefreshKey((k) => k + 1);
