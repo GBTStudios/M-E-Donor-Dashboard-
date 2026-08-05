@@ -8,6 +8,7 @@ import DocumentSearchBar from "@/components/admin/DocumentSearchBar";
 import DocumentExportButton from "@/components/admin/DocumentExportButton";
 import UploadedDocumentsTable from "@/components/admin/UploadedDocumentsTable";
 import DocumentPagination from "@/components/admin/DocumentPagination";
+import DocumentDetailPanel from "@/components/admin/DocumentDetailPanel";
 import { fetchDocumentsAudit, AuditDocument } from "@/lib/adminDocumentsAudit";
 
 const LIMIT = 20;
@@ -22,6 +23,7 @@ export default function UploadedDocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
   const [error, setError] = useState("");
+  const [selectedDoc, setSelectedDoc] = useState<AuditDocument | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,8 +60,6 @@ export default function UploadedDocumentsPage() {
     load();
   }, [load]);
 
-  // Reset to page 1 whenever the filter or search changes, so we don't
-  // end up on a page number that no longer has results.
   useEffect(() => {
     setPage(1);
   }, [status, search]);
@@ -100,10 +100,19 @@ export default function UploadedDocumentsPage() {
         </p>
       )}
 
-      <UploadedDocumentsTable documents={documents} loading={loading} />
+      <UploadedDocumentsTable
+        documents={documents}
+        loading={loading}
+        selectedId={selectedDoc?.id ?? null}
+        onSelect={setSelectedDoc}
+      />
 
       {!loading && total > 0 && (
         <DocumentPagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
+      )}
+
+      {selectedDoc && (
+        <DocumentDetailPanel document={selectedDoc} onClose={() => setSelectedDoc(null)} />
       )}
     </AdminLayout>
   );

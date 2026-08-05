@@ -22,9 +22,16 @@ const STATUS_LABELS: Record<DocumentStatus, string> = {
 interface UploadedDocumentsTableProps {
   documents: AuditDocument[];
   loading: boolean;
+  selectedId: string | null;
+  onSelect: (doc: AuditDocument) => void;
 }
 
-export default function UploadedDocumentsTable({ documents, loading }: UploadedDocumentsTableProps) {
+export default function UploadedDocumentsTable({
+  documents,
+  loading,
+  selectedId,
+  onSelect,
+}: UploadedDocumentsTableProps) {
   if (loading) {
     return (
       <div className="bg-white rounded-xl border border-black/5 p-10 text-center text-sm text-gray-400">
@@ -62,7 +69,13 @@ export default function UploadedDocumentsTable({ documents, loading }: UploadedD
         </thead>
         <tbody>
           {documents.map((doc) => (
-            <tr key={doc.id} className="border-b border-black/5 last:border-0 hover:bg-gray-50">
+            <tr
+              key={doc.id}
+              onClick={() => onSelect(doc)}
+              className={`border-b border-black/5 last:border-0 cursor-pointer transition-colors ${
+                selectedId === doc.id ? "bg-teal-50" : "hover:bg-gray-50"
+              }`}
+            >
               <td className="px-5 py-4">
                 <div className="flex items-start gap-3">
                   <FileText className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
