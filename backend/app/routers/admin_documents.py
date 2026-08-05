@@ -77,6 +77,7 @@ async def upload_document(
             "file_type": ext,
             "status": "processing",
             "uploaded_by": admin["id"],
+            "file_size": len(file_bytes),
         })
         .execute()
     )
