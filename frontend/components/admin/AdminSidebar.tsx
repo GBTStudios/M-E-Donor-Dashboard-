@@ -108,7 +108,7 @@ export default function AdminSidebar() {
           <NavLink label="Manage Users" icon={Users} href="/admin/users" />
         )}
         <NavLink label="Profile" icon={User} href="/admin/profile" />
-        <NavLink label="Settings" icon={Settings} href="#" />
+        <NavLink label="Settings" icon={Settings} href="/admin/settings" />
       </nav>
 
       <div className="flex-1" />
