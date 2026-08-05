@@ -7,6 +7,7 @@ class DocumentListItem(BaseModel):
     id: str
     filename: str
     file_type: str
+    file_size: Optional[int] = None
     status: str
     uploaded_by: Optional[str] = None
     created_at: datetime
@@ -18,6 +19,7 @@ class DocumentDetail(BaseModel):
     id: str
     filename: str
     file_type: str
+    file_size: Optional[int] = None
     file_url: str
     status: str
     raw_text: Optional[str] = None
@@ -37,6 +39,10 @@ class UploadResponse(BaseModel):
 
 class UpdateContentRequest(BaseModel):
     final_content: str
+
+
+class UpdateMetadataRequest(BaseModel):
+    filename: Optional[str] = None
 
 
 class DocumentActionResponse(BaseModel):
