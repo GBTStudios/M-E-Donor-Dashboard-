@@ -890,3 +890,151 @@ Public + unauthenticated means real abuse/cost exposure — anyone can call it r
 An `ivfflat` index was initially added to `document_chunks` but caused **silent retrieval failures** — queries returning empty results with no error — when the table had very few rows. This is a known `pgvector` limitation: `ivfflat` clusters vectors into "lists" for approximate search, and with too few rows the clustering is degenerate, causing valid queries to land in empty clusters and return nothing even though matching data exists.
 
 The index was dropped. **Do not re-add an `ivfflat` index until the table has a meaningful number of chunks (hundreds+)**, and when you do, tune the `lists` parameter properly or consider `hnsw` instead, which handles small-to-medium data more gracefully. Without an index, `document_chunks` currently relies on a full sequential scan for similarity search — fine at current scale, but worth revisiting as the table grows.
+
+
+## Q&A Analytics & Moderation (Flagged Conversations)
+
+### Status: Planning / Not Yet Built
+
+Nothing in this section exists as working code yet. Documents the agreed design before build.
+
+### Key design decisions
+
+- **Donor identity:** `/chat/message` moves from fully anonymous to **optional auth**. If a valid `Authorization: Bearer <token>` is sent, the real logged-in user's name is captured. If no token (or an invalid one) is sent, the request still succeeds — logged as "Anonymous donor." This is a change to the existing endpoint, not just the new logging feature — no error is ever thrown for a missing/bad token here, unlike admin routes.
+- **Flagging is auto-detected**, not manual: a second AI classification step reviews each Q&A exchange for sensitive topics (financials, legal matters, personal/PII data, etc.) and assigns `status`.
+- **Flagging runs in the background**, after the donor already has their answer — not synchronously. Stacking a third sequential AI call onto the existing ~4.5s response time (see prior latency investigation) would make the chat feel slow again. Practical effect: a Q&A log entry (and its flagged/declined/answered status) appears in the admin page a few seconds after the actual chat exchange, not instantly.
+- **Confidence score: not implemented.** Don't build UI for this field — it doesn't exist and there's no current plan to add it.
+
+### Data model (planned)
+
+**`qa_logs`**
+| Field | Type | Notes |
+|---|---|---|
+| `id` | uuid | |
+| `session_id` | uuid | FK to `chat_sessions` |
+| `question` | text | |
+| `response` | text | |
+| `status` | text | `answered` / `declined` / `flagged` |
+| `flag_reason` | text, nullable | Set when `status` is `declined` or `flagged` |
+| `donor_name` | text, nullable | Real name if logged in, else `"Anonymous donor"` |
+| `user_id` | uuid, nullable | FK to `users`, null for anonymous |
+| `response_time_ms` | integer | |
+| `moderation_status` | text, nullable | `pending` / `resolved` / `false_positive` — only meaningful when `status = 'flagged'` |
+| `created_at` | timestamptz | |
+
+**`qa_log_moderator_notes`**
+| Field | Type | Notes |
+|---|---|---|
+| `id` | uuid | |
+| `qa_log_id` | uuid | FK to `qa_logs` |
+| `moderator_id` | uuid | FK to `users` |
+| `note` | text | |
+| `created_at` | timestamptz | |
+
+---
+
+### Endpoints (all admin-protected, standard 401/403 pattern per Admin Auth section)
+
+**`GET /admin/qa-analytics/summary`**
+
+Today's totals.
+
+```json
+{
+  "questions_today": 248,
+  "answered": 232,
+  "declined": 12,
+  "flagged": 4
+}
+```
+
+---
+
+**`GET /admin/qa-analytics/trends`**
+
+Query params: `period` (`daily` / `weekly` / `monthly`), `start`, `end` (dates).
+
+```json
+{
+  "period": "daily",
+  "data": [
+    { "date": "2026-08-01", "answered": 40, "declined": 3, "flagged": 1 },
+    { "date": "2026-08-02", "answered": 55, "declined": 2, "flagged": 0 }
+  ]
+}
+```
+
+---
+
+**`GET /admin/qa-analytics/flagged`**
+
+Query params: `status` (`pending` / `resolved` / `false_positive`, omit for all), `search` (matches `question` text or `donor_name` — both are plain columns, feasible to search directly), `page`, `limit`.
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid-string",
+      "question": "What's your total budget for 2026?",
+      "response": "I can only answer questions based on our published impact data...",
+      "flag_reason": "Financial/budget inquiry",
+      "donor_name": "Anonymous donor",
+      "created_at": "2026-08-06T04:00:00Z",
+      "moderation_status": "pending"
+    }
+  ],
+  "total": 4,
+  "page": 1,
+  "limit": 20
+}
+```
+
+---
+
+**`GET /admin/qa-analytics/flagged/{id}`**
+
+Full detail, including moderator notes history.
+
+```json
+{
+  "id": "uuid-string",
+  "question": "...",
+  "response": "...",
+  "flag_reason": "...",
+  "donor_name": "...",
+  "created_at": "...",
+  "moderation_status": "pending",
+  "moderator_notes": [
+    { "id": "uuid", "moderator_name": "Moses K.", "note": "Confirmed appropriate decline", "created_at": "..." }
+  ]
+}
+```
+
+---
+
+**`PUT /admin/qa-analytics/flagged/{id}/status`**
+
+Request:
+```json
+{ "moderation_status": "resolved" }
+```
+Accepts `resolved`, `false_positive`, or `escalated`.
+
+---
+
+**`POST /admin/qa-analytics/flagged/{id}/notes`**
+
+Request:
+```json
+{ "note": "Confirmed this was an appropriate decline, no action needed." }
+```
+
+---
+
+### Build status
+
+- [ ] `qa_logs`, `qa_log_moderator_notes` tables, RLS + grants
+- [ ] Optional-auth change to `/chat/message`
+- [ ] Background flagging classification step
+- [ ] Logging wired into live chat flow
+- [ ] All five endpoints above
