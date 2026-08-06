@@ -1,44 +1,60 @@
 "use client";
 
-import { useState } from "react";
-import { MessageSquare, X, Send, Loader2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { MessageSquare, X, Send, Loader2, Copy, Check, RotateCcw } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { sendChatMessage } from "@/lib/chat";
-
-/**
- * Floating chatbot trigger, fixed to the bottom-right corner across the
- * whole landing page. Wired to POST /chat/message (public, no auth).
- *
- * Not yet grounded in Knowledge Base documents — RAG retrieval exists as
- * a backend service but isn't wired into the live agent yet, per the
- * contract. Greeting copy below is worded to avoid implying the bot
- * answers from "our data" until that's actually true.
- */
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  timestamp: number;
 }
 
 const SESSION_STORAGE_KEY = "chat_session_id";
+
+function formatTime(timestamp: number) {
+  return new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function GREETING(): ChatMessage {
+  return {
+    role: "assistant",
+    content: "Hi! I'm the Groundbreaker assistant. Ask me about our programs, participant outcomes, or impact data.",
+    timestamp: Date.now(),
+  };
+}
 
 export default function ChatbotButton() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content: "Hi! I'm the Groundbreaker assistant. Ask me about our programs, participant outcomes, or impact data.",
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([GREETING()]);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-focus the input the moment the panel opens.
+  useEffect(() => {
+    if (open) {
+      inputRef.current?.focus();
+    }
+  }, [open]);
+
+  // Auto-scroll to the newest message whenever the conversation changes.
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, sending]);
 
   async function sendMessage() {
     const text = input.trim();
     if (!text || sending) return;
 
     setError("");
-    setMessages((prev) => [...prev, { role: "user", content: text }]);
+    setMessages((prev) => [...prev, { role: "user", content: text, timestamp: Date.now() }]);
     setInput("");
     setSending(true);
 
@@ -51,11 +67,32 @@ export default function ChatbotButton() {
       if (result.sessionId) {
         sessionStorage.setItem(SESSION_STORAGE_KEY, result.sessionId);
       }
-      setMessages((prev) => [...prev, { role: "assistant", content: result.response! }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: result.response!, timestamp: Date.now() },
+      ]);
       return;
     }
 
     setError(result.error ?? "Something went wrong. Please try again.");
+  }
+
+  function handleNewConversation() {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    setMessages([GREETING()]);
+    setError("");
+    inputRef.current?.focus();
+  }
+
+  async function handleCopy(content: string, index: number) {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 1500);
+    } catch {
+      // Clipboard access can fail silently in some browser contexts — not
+      // worth surfacing an error for a non-critical convenience feature.
+    }
   }
 
   return (
@@ -64,22 +101,56 @@ export default function ChatbotButton() {
         <div className="fixed bottom-24 right-6 z-50 w-[26rem] max-w-[calc(100vw-3rem)] h-[34rem] max-h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-xl border border-black/10 flex flex-col overflow-hidden">
           <div className="bg-[#1A534A] px-5 py-4 flex items-center justify-between flex-shrink-0">
             <p className="text-white text-sm font-medium">Groundbreaker Assistant</p>
-            <button onClick={() => setOpen(false)} aria-label="Close chat">
-              <X className="w-4 h-4 text-white/80 hover:text-white" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleNewConversation}
+                aria-label="Start a new conversation"
+                title="New conversation"
+                className="p-1.5 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Close chat"
+                className="p-1.5 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`text-sm max-w-[85%] px-3.5 py-2.5 rounded-lg leading-relaxed ${
-                  m.role === "user"
-                    ? "bg-[#1A534A] text-white ml-auto"
-                    : "bg-[#eaf5f0] text-gray-800"
-                }`}
-              >
-                {m.content}
+              <div key={i} className={m.role === "user" ? "flex flex-col items-end" : "flex flex-col items-start"}>
+                <div
+                  className={`group relative text-sm max-w-[85%] px-3.5 py-2.5 rounded-lg leading-relaxed ${
+                    m.role === "user" ? "bg-[#1A534A] text-white" : "bg-[#eaf5f0] text-gray-800"
+                  }`}
+                >
+                  {m.role === "assistant" ? (
+                    <div className="prose prose-sm max-w-none prose-p:my-1 prose-strong:text-gray-900 prose-ul:my-1 prose-li:my-0">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    m.content
+                  )}
+
+                  {m.role === "assistant" && (
+                    <button
+                      onClick={() => handleCopy(m.content, i)}
+                      aria-label="Copy message"
+                      className="absolute -bottom-2 -right-2 opacity-0 group-hover:opacity-100 bg-white border border-black/10 rounded-full p-1 shadow-sm transition"
+                    >
+                      {copiedIndex === i ? (
+                        <Check className="w-3 h-3 text-green-600" />
+                      ) : (
+                        <Copy className="w-3 h-3 text-gray-400" />
+                      )}
+                    </button>
+                  )}
+                </div>
+                <span className="text-[10px] text-gray-400 mt-1 px-1">{formatTime(m.timestamp)}</span>
               </div>
             ))}
 
@@ -95,10 +166,13 @@ export default function ChatbotButton() {
                 {error}
               </p>
             )}
+
+            <div ref={messagesEndRef} />
           </div>
 
           <div className="flex items-center gap-2 border-t border-black/10 p-3 flex-shrink-0">
             <input
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
