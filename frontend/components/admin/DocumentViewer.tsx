@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle2, XCircle, Trash2, FileText } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Trash2, FileText, Sparkles, ShieldAlert, Eye, Pencil } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   fetchDocumentDetail,
   saveDocumentEdit,
@@ -32,6 +34,7 @@ export default function DocumentViewer({ documentId, onChanged, onDeleted }: Doc
   const [excluding, setExcluding] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
+  const [mode, setMode] = useState<"view" | "edit">("view");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -44,6 +47,7 @@ export default function DocumentViewer({ documentId, onChanged, onDeleted }: Doc
     if (result.success && result.document) {
       setDoc(result.document);
       setFinalContent(result.document.final_content ?? "");
+      setMode("view");
       setLoading(false);
       return;
     }
@@ -73,7 +77,6 @@ export default function DocumentViewer({ documentId, onChanged, onDeleted }: Doc
     load();
   }, [load]);
 
-  // Still processing — poll until the AI summary is ready.
   useEffect(() => {
     if (doc?.status !== "processing") return;
     const interval = setInterval(load, 4000);
@@ -90,6 +93,7 @@ export default function DocumentViewer({ documentId, onChanged, onDeleted }: Doc
     if (result.success && result.document) {
       setDoc(result.document);
       setSavedMessage("Saved.");
+      setMode("view");
       onChanged();
       return;
     }
@@ -239,8 +243,10 @@ export default function DocumentViewer({ documentId, onChanged, onDeleted }: Doc
     );
   }
 
+  const canEdit = doc.status === "pending";
   const canPublish = doc.status === "pending";
   const canExclude = doc.status === "pending";
+  const isEditing = mode === "edit" && canEdit;
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto">
@@ -256,13 +262,43 @@ export default function DocumentViewer({ documentId, onChanged, onDeleted }: Doc
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={handleSave}
-            disabled={saving || doc.status !== "pending"}
-            className="text-sm font-medium text-gray-700 border border-black/10 px-4 py-2 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
-          >
-            {saving ? "Saving..." : "Save Edit"}
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => setMode("view")}
+              aria-label="View"
+              className={`p-2 rounded-lg border transition ${
+                mode === "view"
+                  ? "border-teal-700 bg-teal-50 text-teal-800"
+                  : "border-black/10 text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+          )}
+
+          {canEdit && (
+            <button
+              onClick={() => setMode("edit")}
+              aria-label="Edit"
+              className={`p-2 rounded-lg border transition ${
+                mode === "edit"
+                  ? "border-teal-700 bg-teal-50 text-teal-800"
+                  : "border-black/10 text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
+
+          {isEditing && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="text-sm font-medium text-gray-700 border border-black/10 px-4 py-2 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save Edit"}
+            </button>
+          )}
 
           {canPublish && (
             <button
@@ -289,13 +325,22 @@ export default function DocumentViewer({ documentId, onChanged, onDeleted }: Doc
           <button
             onClick={handleDelete}
             disabled={deleting}
-            aria-label="Delete document"
+            aria-label="Remove"
             className="p-2 rounded-lg border border-black/10 text-red-600 hover:bg-red-50 transition disabled:opacity-50"
           >
             {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
           </button>
         </div>
       </div>
+
+      {canPublish && (
+        <div className="mx-6 mt-4 flex items-start gap-2 text-xs bg-amber-50 text-amber-800 border border-amber-200 rounded-lg px-3 py-2.5">
+          <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <span>
+            <strong>Publishing syncs this content to the live chatbot</strong> — nothing reaches donors before this step. Review carefully before approving.
+          </span>
+        </div>
+      )}
 
       {doc.status === "published" && (
         <div className="mx-6 mt-4 text-xs bg-green-50 text-green-700 border border-green-200 rounded-lg px-3 py-2">
@@ -317,8 +362,10 @@ export default function DocumentViewer({ documentId, onChanged, onDeleted }: Doc
         <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-2">
           Extracted Knowledge Payload
         </p>
-        <div className="bg-gray-50 border border-black/5 rounded-xl p-4 text-sm text-gray-600 whitespace-pre-wrap font-mono">
-          {doc.ai_summary}
+        <div className="bg-gray-50 border border-black/5 rounded-xl p-5 text-sm text-gray-700 prose prose-sm max-w-none prose-headings:text-[#1A534A] prose-headings:font-semibold prose-h2:text-base prose-h2:mt-4 prose-h2:mb-2 prose-h3:text-sm prose-h3:mt-3 prose-h3:mb-1.5 prose-strong:text-gray-900 prose-strong:font-semibold prose-ul:my-2 prose-li:my-0.5 prose-p:my-2 prose-table:text-xs">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {doc.ai_summary}
+          </ReactMarkdown>
         </div>
       </div>
 
@@ -327,14 +374,28 @@ export default function DocumentViewer({ documentId, onChanged, onDeleted }: Doc
           <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase">
             Override / Refine Extracted Knowledge
           </p>
+          {canEdit && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full">
+              <Sparkles className="w-3 h-3" />
+              AI Suggester Active
+            </span>
+          )}
         </div>
-        <textarea
-          value={finalContent}
-          onChange={(e) => setFinalContent(e.target.value)}
-          disabled={doc.status !== "pending"}
-          rows={12}
-          className="flex-1 w-full rounded-xl border border-black/10 bg-white p-4 text-sm text-gray-800 font-mono focus:outline-none focus:ring-2 focus:ring-teal-700 disabled:bg-gray-50 disabled:text-gray-500"
-        />
+
+        {isEditing ? (
+          <textarea
+            value={finalContent}
+            onChange={(e) => setFinalContent(e.target.value)}
+            rows={12}
+            className="flex-1 w-full rounded-xl border border-black/10 bg-white p-4 text-sm text-gray-800 font-mono focus:outline-none focus:ring-2 focus:ring-teal-700"
+          />
+        ) : (
+          <div className="flex-1 w-full rounded-xl border border-black/10 bg-white p-5 text-sm text-gray-700 prose prose-sm max-w-none prose-headings:text-[#1A534A] prose-headings:font-semibold prose-h2:text-base prose-h2:mt-4 prose-h2:mb-2 prose-h3:text-sm prose-h3:mt-3 prose-h3:mb-1.5 prose-strong:text-gray-900 prose-strong:font-semibold prose-ul:my-2 prose-li:my-0.5 prose-p:my-2 prose-table:text-xs">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {finalContent}
+            </ReactMarkdown>
+          </div>
+        )}
       </div>
     </div>
   );
