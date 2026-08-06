@@ -29,7 +29,7 @@ export default function ChatbotButton() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      content: "Hi! I'm the Groundbreaker assistant. Ask me anything and I'll do my best to help.",
+      content: "Hi! I'm the Groundbreaker assistant. Ask me about our programs, participant outcomes, or impact data.",
     },
   ]);
 
