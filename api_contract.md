@@ -1038,3 +1038,292 @@ Request:
 - [ ] Background flagging classification step
 - [ ] Logging wired into live chat flow
 - [ ] All five endpoints above
+
+
+## Donor Dashboard
+
+### Status: Partially planned — two sections blocked pending data confirmation
+
+### Auth
+
+All endpoints below require a valid logged-in user — same bearer token pattern as everywhere else. **Not admin-restricted** — any authenticated user (donor or admin) can view this. No new "donor-only" role check is being added; if that turns out to be wrong, flag it and we'll add one.
+
+---
+
+### 1. Impact Overview (buildable now)
+
+**Endpoint:** `GET /donor/dashboard/summary`
+
+Reuses `landing_stats` — same underlying table and numbers as the public landing page, just displayed differently here. **Displayed values will be whatever is actually in the database, not necessarily matching mockup placeholder numbers** (e.g. mockup shows 92%/25× — actual values depend on what's stored).
+
+Three new fields need adding to `landing_stats` (don't exist yet): `international_roles_pct`, `african_companies_pct`, `income_sent_home_pct` — all numeric 0–100, same validation pattern as the existing percentage fields.
+
+### Response
+
+```json
+{
+  "participants": 153,
+  "graduation_rate": 93.0,
+  "employment_rate": 98.0,
+  "income_growth_multiplier": 22.0,
+  "cohorts": 6,
+  "refugee_participants_pct": 4.0,
+  "international_roles_pct": 19.0,
+  "african_companies_pct": 81.0,
+  "income_sent_home_pct": 33.0,
+  "updated_at": "..."
+}
+```
+
+Admin update goes through the existing `PUT /admin/stats/landing-summary` (with the three new fields added to that schema too) — no new admin endpoint needed.
+
+---
+
+### 2. "Before the Program" Baseline — BLOCKED
+
+**Cannot design this endpoint yet.** This needs household size, pre-program income, breadwinner breakdown, age, education, job type — none of which exist anywhere in the system currently. Before this can be built, need to confirm: **does this raw data already exist in an M&E dataset** (per her question about "Janet's cleaned data"), or does it need to be manually entered by an admin (same pattern as `landing_stats` — one row, admin fills in numbers)?
+
+If real per-participant data exists, this becomes an aggregation query. If not, it becomes a new admin-editable table, much simpler. Please confirm with Janet before this section gets built — building against a guess here risks real rework.
+
+---
+
+### 3. Active Cohort Progress (buildable now)
+
+**Endpoint:** `GET /donor/dashboard/cohorts`
+
+New table needed:
+```sql
+create table cohorts (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  active_participants integer not null default 0,
+  completion_pct numeric not null default 0,
+  status text not null default 'in_progress',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+### Response
+
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Software Engineering C4",
+    "active_participants": 19,
+    "completion_pct": 100.0,
+    "status": "completed"
+  },
+  {
+    "id": "uuid",
+    "name": "Software & AI Engineering C5",
+    "active_participants": 33,
+    "completion_pct": 85.0,
+    "status": "in_progress"
+  }
+]
+```
+
+Admin CRUD for cohorts (create/edit/delete) not yet designed — will follow the same pattern as Stories once needed.
+
+---
+
+### 4. Strategic Insights (buildable now, background-generated)
+
+**Endpoint:** `GET /donor/dashboard/insights`
+
+**Not generated live on page load.** Generated in the background whenever `landing_stats` is updated (triggered from `PUT /admin/stats/landing-summary`, same trigger-on-write pattern as document publishing → embedding), and cached. The GET endpoint just reads the latest cached insights — fast, no AI call on the request path.
+
+```sql
+create table dashboard_insights (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  body text not null,
+  generated_at timestamptz not null default now()
+);
+```
+
+### Response
+
+```json
+[
+  {
+    "title": "Income Growth Milestone",
+    "body": "The 22x income growth observed represents..."
+  }
+]
+```
+
+Old insights are replaced (not accumulated) each time new ones are generated — always reflects the current data, not a history log.
+
+---
+
+### 5. District Origin Map — BLOCKED
+
+**Same blocker as section 2.** Needs participant-level district/country data that doesn't currently exist anywhere in the system. Confirm with Janet whether this raw data exists before this gets designed — could be a real aggregation query, or a new manually-entered dataset, depending on the answer.
+
+---
+
+### 6. Export Report
+
+**Format: formatted PDF**, using `fpdf2` (pure Python, no system-level dependencies — avoids the Windows install pain we hit with other tools today).
+
+**Endpoint:** `GET /donor/dashboard/export` (planned — exact content/layout not yet designed, depends on sections 2 and 5 being unblocked first, since a report excluding baseline/district data would be incomplete)
+
+---
+
+### Build status
+
+- [ ] `landing_stats` — 3 new columns added
+- [ ] `GET /donor/dashboard/summary`
+- [ ] `cohorts` table + `GET /donor/dashboard/cohorts`
+- [ ] `dashboard_insights` table + background generation + `GET /donor/dashboard/insights`
+- [ ] Baseline panel — **blocked, needs data source confirmation**
+- [ ] District map — **blocked, needs data source confirmation**
+- [ ] PDF export — blocked behind the above two
+
+## Participant Data Import & Donor Dashboard: Baseline / Origins
+
+### Status: Planning / Not Yet Built
+
+### Auth
+
+All `/admin/participants/*` import routes require admin auth — same `get_current_admin_user` pattern as every other `/admin/*` route (401 vs 403 rules identical). The two donor-facing GET endpoints (`/donor/dashboard/baseline`, `/donor/dashboard/origins`) only require a logged-in user, same as the rest of the Donor Dashboard section.
+
+### Data model
+
+```sql
+create table participants (
+  id uuid primary key default gen_random_uuid(),
+  cohort_id uuid references cohorts(id),
+  household_size integer,
+  pre_program_income numeric,
+  main_breadwinner text,
+  age integer,
+  highest_education text,
+  employed_before boolean,
+  employed_before_type text,
+  district text,
+  country text default 'Uganda',
+  source_import_id uuid,
+  created_at timestamptz not null default now()
+);
+
+create table participant_imports (
+  id uuid primary key default gen_random_uuid(),
+  filename text not null,
+  file_type text not null,
+  status text not null default 'processing',
+  row_count integer,
+  preview_data jsonb,
+  uploaded_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  confirmed_at timestamptz
+);
+
+create table district_coordinates (
+  district text primary key,
+  latitude numeric not null,
+  longitude numeric not null
+);
+```
+
+`source_import_id` on `participants` traces every row back to the import batch it came from — useful for auditing or rolling back a bad import later.
+
+**`district_coordinates` is populated lazily**, not preloaded with all ~146 Ugandan districts upfront. Coordinates get added only for districts that actually show up in real imported participant data, sourced and verified individually (e.g. from Wikipedia district pages, which carry citable coordinates) rather than bulk-guessed. If a district appears in `participants` but has no matching row here yet, the origins endpoint returns `null` for its lat/long rather than a wrong guess — visible and honest, not silently incorrect on a donor-facing map.
+
+### Import flow — human-reviewed, not blind ingestion
+
+Same review pattern as document curation: **nothing lands in the real `participants` table until an admin explicitly confirms it.**
+
+1. Admin uploads a file (Excel, CSV, PDF, or DOCX).
+2. Backend parses it:
+   - **Excel/CSV**: direct, exact row/column extraction (reuses `document_parser.py`'s existing spreadsheet parsing) — no AI involved, fully reliable.
+   - **PDF/DOCX**: text extracted, then an AI step attempts to structure it into rows. **This carries real accuracy risk** — unlike Excel/CSV, this is AI inference, not exact extraction. Treat PDF/DOCX-sourced data as needing closer admin review than spreadsheet-sourced data.
+3. A preview is generated and stored (`preview_data`) — row count, detected columns, a sample of rows — without touching the real `participants` table yet.
+4. Admin reviews the preview via the admin UI, can reject or confirm.
+5. Only on confirm does the data get inserted into `participants`.
+
+### Endpoints
+
+**`POST /admin/participants/import`**
+
+`multipart/form-data`, one file (Excel/CSV/PDF/DOCX). Admin-protected. Returns immediately with `202 Accepted` — parsing happens in the background.
+
+```json
+{ "id": "uuid", "filename": "...", "status": "processing" }
+```
+
+**`GET /admin/participants/imports/{id}`**
+
+Admin-protected. Poll for status/preview once processing finishes.
+
+```json
+{
+  "id": "uuid",
+  "status": "pending_review",
+  "row_count": 153,
+  "preview_data": { "columns": [...], "sample_rows": [...] }
+}
+```
+
+**`POST /admin/participants/imports/{id}/confirm`**
+
+Admin-protected. Commits the parsed rows into `participants`.
+
+**`POST /admin/participants/imports/{id}/reject`**
+
+Admin-protected. Discards the parsed preview, nothing gets inserted.
+
+---
+
+### Donor Dashboard: Baseline
+
+**Endpoint:** `GET /donor/dashboard/baseline` — logged-in user, not admin-restricted.
+
+Real SQL aggregation over `participants` — not AI-generated, not paraphrased.
+
+```json
+{
+  "avg_household_size": 5.4,
+  "avg_pre_program_income": 10.0,
+  "main_breadwinner_breakdown": { "Mother": 52, "Father": 31, "Other": 17 },
+  "avg_age": 21.0,
+  "highest_education_common": "Senior 6",
+  "employed_before_pct": 42.0,
+  "employed_before_type_common": "Subsistence / Street"
+}
+```
+
+### Donor Dashboard: Origins
+
+**Endpoint:** `GET /donor/dashboard/origins` — logged-in user, not admin-restricted.
+
+```json
+{
+  "uganda_districts": [
+    { "district": "Kampala", "participant_count": 24, "latitude": 0.3476, "longitude": 32.5825 },
+    { "district": "SomeNewDistrict", "participant_count": 2, "latitude": null, "longitude": null }
+  ],
+  "international": [
+    { "country": "South Sudan", "participant_count": 5 },
+    { "country": "DRC", "participant_count": 3 },
+    { "country": "Rwanda", "participant_count": 2 }
+  ]
+}
+```
+
+`latitude`/`longitude` are `null` for any district not yet added to `district_coordinates` — frontend should handle this gracefully (e.g. omit that pin, or show a "location pending" state) rather than assume they're always present.
+
+---
+
+### Build status
+
+- [ ] `participants`, `participant_imports`, `district_coordinates` tables
+- [ ] Excel/CSV import (exact parsing)
+- [ ] PDF/DOCX import (AI-assisted extraction, higher review priority)
+- [ ] Preview/confirm/reject admin flow
+- [ ] `GET /donor/dashboard/baseline`
+- [ ] `GET /donor/dashboard/origins`
+- [ ] District coordinates populated as real district names become known
