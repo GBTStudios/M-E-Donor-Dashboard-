@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, XCircle, Sun, Moon, Monitor } from "lucide-react";
 import { getMySettings, updateTheme, isSettingsError, type Theme } from "@/lib/userSettings";
+import { applyTheme, storeTheme } from "@/lib/theme";
 
 const ACCESS_TOKEN_KEY = "access_token";
 
@@ -32,52 +33,66 @@ export function ThemeSettings() {
         return;
       }
       setTheme(result.settings.theme);
+      // Apply whatever the server says the theme is on load
+      applyTheme(result.settings.theme);
+      storeTheme(result.settings.theme);
     }
     load();
   }, []);
 
-  // Instant optimistic switch — buttons are never disabled or dimmed while a
-  // save is in flight, so selecting a theme always feels immediate. Only
-  // reverts (and shows an error) if the save actually fails. Clicking the
-  // already-selected theme is still a no-op, since there's nothing to save.
   async function handleSelect(next: Theme) {
     if (next === theme) return;
     setError(undefined);
+
     const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
     if (!accessToken) {
       setError("Your session has expired. Please log in again.");
       return;
     }
 
+    // Optimistic: apply immediately so the user sees the change at once
     const previous = theme;
     setTheme(next);
+    applyTheme(next);
+    storeTheme(next);
+
     const result = await updateTheme(accessToken, next);
 
     if (isSettingsError(result)) {
+      // Revert on failure
       setTheme(previous);
+      applyTheme(previous);
+      storeTheme(previous);
       setError(result.message);
       return;
     }
-    setTheme(result.settings.theme);
+
+    // Confirm with what the server actually saved
+    const confirmed = result.settings.theme;
+    setTheme(confirmed);
+    applyTheme(confirmed);
+    storeTheme(confirmed);
   }
 
   if (isLoading) {
     return (
-      <div className="bg-[#eaf5f0] rounded-2xl border border-black/10 p-6 shadow-sm flex items-center justify-center py-10">
-        <Loader2 className="w-5 h-5 animate-spin text-[#7C9791]" />
+      <div className="bg-[#eaf5f0] dark:bg-[#1a2e2b] rounded-2xl border border-black/10 dark:border-white/10 p-6 shadow-sm flex items-center justify-center py-10">
+        <Loader2 className="w-5 h-5 animate-spin text-[#7C9791] dark:text-[#5a9e94]" />
       </div>
     );
   }
 
   return (
-    <div className="bg-[#eaf5f0] rounded-2xl border border-black/10 p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-[#1A534A] mb-1">Appearance</h2>
-      <p className="text-sm text-[#5B7571] mb-4">Choose how the dashboard looks for you.</p>
+    <div className="bg-[#eaf5f0] dark:bg-[#1a2e2b] rounded-2xl border border-black/10 dark:border-white/10 p-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-[#1A534A] dark:text-[#7dd3c0] mb-1">Appearance</h2>
+      <p className="text-sm text-[#5B7571] dark:text-[#8fada9] mb-4">
+        Choose how the dashboard looks for you.
+      </p>
 
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4"
+          className="flex items-start gap-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 text-sm rounded-lg px-4 py-3 mb-4"
         >
           <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{error}</span>
@@ -93,14 +108,18 @@ export function ThemeSettings() {
             aria-pressed={theme === value}
             className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-colors ${
               theme === value
-                ? "border-[#1A534A] bg-white/70 ring-2 ring-[#1A534A]/30"
-                : "border-black/10 bg-white/40 hover:bg-white/60"
+                ? "border-[#1A534A] dark:border-[#7dd3c0] bg-white/70 dark:bg-white/10 ring-2 ring-[#1A534A]/30 dark:ring-[#7dd3c0]/30"
+                : "border-black/10 dark:border-white/10 bg-white/40 dark:bg-white/5 hover:bg-white/60 dark:hover:bg-white/10"
             }`}
           >
-            <Icon className={`w-5 h-5 ${theme === value ? "text-[#1A534A]" : "text-[#7C9791]"}`} />
+            <Icon
+              className={`w-5 h-5 ${
+                theme === value ? "text-[#1A534A] dark:text-[#7dd3c0]" : "text-[#7C9791] dark:text-[#5a9e94]"
+              }`}
+            />
             <span
               className={`text-xs font-semibold text-center ${
-                theme === value ? "text-[#1A534A]" : "text-[#5B7571]"
+                theme === value ? "text-[#1A534A] dark:text-[#7dd3c0]" : "text-[#5B7571] dark:text-[#8fada9]"
               }`}
             >
               {label}

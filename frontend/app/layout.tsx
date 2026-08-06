@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import ThemeProvider from "@/components/ThemeProvider";
 
-// next/font self-hosts Google Fonts at build time (no runtime request to
-// Google, better privacy and performance than a <link> tag), and exposes
-// the font as a CSS variable so it can be referenced from Tailwind classes
-// or plain CSS via var(--font-inter).
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -15,7 +12,6 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: {
     default: "Groundbreaker Impact",
-    // Pages can override just their own segment, e.g. "Sign Up · Groundbreaker Impact"
     template: "%s · Groundbreaker Impact",
   },
   description:
@@ -29,7 +25,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable}>
-      <body>{children}</body>
+      <body>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }
