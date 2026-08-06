@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -22,7 +22,7 @@ import { logoutUser } from "@/lib/auth";
 const PRIMARY_NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/admin-dashboard" },
   { label: "Knowledge Base", icon: BookOpen, href: "/admin/knowledge-base" },
-  { label: "Uploaded Documents", icon: FileText, href: "/admin/documents" },
+  { label: "Uploaded Documents", icon: FileText, href: "#" },
   { label: "Q&A Logs", icon: HelpCircle, href: "#" },
   { label: "Chat Audit Logs", icon: ClipboardList, href: "#" },
 ] as const;
@@ -60,11 +60,11 @@ function NavLink({
 }
 
 export default function AdminSidebar() {
-  const [role, setRole] = useState<UserRole | null>(null);
-
-  useEffect(() => {
-    setRole(getRole());
-  }, []);
+  // Lazy initializer reads role synchronously on first render (client-side
+  // only, since this is a "use client" component) instead of via useEffect
+  // — avoids a brief flash where the role badge / "Manage Users" link
+  // disappear then reappear on every page navigation.
+  const [role] = useState<UserRole | null>(() => getRole());
 
   return (
     <aside className="w-64 bg-[#1A534A] flex flex-col py-7 px-5 flex-shrink-0">

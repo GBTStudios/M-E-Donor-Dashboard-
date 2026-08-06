@@ -14,11 +14,10 @@ interface ToggleRowProps {
   label: string;
   description: string;
   checked: boolean;
-  disabled: boolean;
   onChange: (value: boolean) => void;
 }
 
-function ToggleRow({ label, description, checked, disabled, onChange }: ToggleRowProps) {
+function ToggleRow({ label, description, checked, onChange }: ToggleRowProps) {
   return (
     <div className="flex items-center justify-between gap-4 py-3">
       <div>
@@ -30,14 +29,13 @@ function ToggleRow({ label, description, checked, disabled, onChange }: ToggleRo
         role="switch"
         aria-checked={checked}
         aria-label={label}
-        disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`relative flex-shrink-0 w-10 h-6 rounded-full transition-colors disabled:opacity-50 ${
+        className={`relative flex-shrink-0 w-10 h-6 rounded-full transition-colors duration-150 ${
           checked ? "bg-[#1A534A]" : "bg-black/15"
         }`}
       >
         <span
-          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-150 ${
             checked ? "translate-x-4" : "translate-x-0"
           }`}
         />
@@ -51,7 +49,6 @@ export function NotificationSettings() {
   const [inAppAlerts, setInAppAlerts] = useState(true);
   const [securityAlerts, setSecurityAlerts] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const [pendingField, setPendingField] = useState<string | null>(null);
   const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -75,6 +72,12 @@ export function NotificationSettings() {
     load();
   }, []);
 
+  // Instant optimistic flip — the toggle stays fully interactive at all
+  // times, never disabled or dimmed while a save is in flight, so it always
+  // feels immediate regardless of network speed. Only reverts (and shows an
+  // error) if the save actually fails. If a second click comes in before the
+  // first request resolves, whichever request finishes last simply wins —
+  // fine for a plain boolean preference like this.
   async function handleToggle(
     field: "emailAlerts" | "inAppAlerts" | "securityAlerts",
     value: boolean
@@ -86,20 +89,17 @@ export function NotificationSettings() {
       return;
     }
 
-    // Optimistic update — flip immediately, revert if the request fails.
     const setters = {
       emailAlerts: setEmailAlerts,
       inAppAlerts: setInAppAlerts,
       securityAlerts: setSecurityAlerts,
     };
     setters[field](value);
-    setPendingField(field);
 
     const result = await updateNotificationPreferences(accessToken, { [field]: value });
-    setPendingField(null);
 
     if (isSettingsError(result)) {
-      setters[field](!value); // revert on failure
+      setters[field](!value);
       setError(result.message);
       return;
     }
@@ -136,21 +136,18 @@ export function NotificationSettings() {
           label="Email Alerts"
           description="Receive account and activity notifications by email."
           checked={emailAlerts}
-          disabled={pendingField === "emailAlerts"}
           onChange={(v) => handleToggle("emailAlerts", v)}
         />
         <ToggleRow
           label="In-App Alerts"
           description="Show notifications within the dashboard."
           checked={inAppAlerts}
-          disabled={pendingField === "inAppAlerts"}
           onChange={(v) => handleToggle("inAppAlerts", v)}
         />
         <ToggleRow
           label="Security Alerts"
           description="Be notified about sign-ins and account security events."
           checked={securityAlerts}
-          disabled={pendingField === "securityAlerts"}
           onChange={(v) => handleToggle("securityAlerts", v)}
         />
       </div>

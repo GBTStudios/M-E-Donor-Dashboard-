@@ -15,7 +15,6 @@ const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
 export function ThemeSettings() {
   const [theme, setTheme] = useState<Theme>("light");
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -37,8 +36,12 @@ export function ThemeSettings() {
     load();
   }, []);
 
+  // Instant optimistic switch — buttons are never disabled or dimmed while a
+  // save is in flight, so selecting a theme always feels immediate. Only
+  // reverts (and shows an error) if the save actually fails. Clicking the
+  // already-selected theme is still a no-op, since there's nothing to save.
   async function handleSelect(next: Theme) {
-    if (next === theme || isSaving) return;
+    if (next === theme) return;
     setError(undefined);
     const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
     if (!accessToken) {
@@ -47,10 +50,8 @@ export function ThemeSettings() {
     }
 
     const previous = theme;
-    setTheme(next); // optimistic
-    setIsSaving(true);
+    setTheme(next);
     const result = await updateTheme(accessToken, next);
-    setIsSaving(false);
 
     if (isSettingsError(result)) {
       setTheme(previous);
@@ -89,9 +90,8 @@ export function ThemeSettings() {
             key={value}
             type="button"
             onClick={() => handleSelect(value)}
-            disabled={isSaving}
             aria-pressed={theme === value}
-            className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-colors disabled:opacity-60 ${
+            className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-colors ${
               theme === value
                 ? "border-[#1A534A] bg-white/70 ring-2 ring-[#1A534A]/30"
                 : "border-black/10 bg-white/40 hover:bg-white/60"
