@@ -22,7 +22,7 @@ import { logoutUser } from "@/lib/auth";
 const PRIMARY_NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/admin-dashboard" },
   { label: "Knowledge Base", icon: BookOpen, href: "/admin/knowledge-base" },
-  { label: "Uploaded Documents", icon: FileText, href: "#" },
+  { label: "Uploaded Documents", icon: FileText, href: "/admin/documents" },
   { label: "Q&A Logs", icon: HelpCircle, href: "#" },
   { label: "Chat Audit Logs", icon: ClipboardList, href: "#" },
 ] as const;
@@ -60,14 +60,10 @@ function NavLink({
 }
 
 export default function AdminSidebar() {
-  // Lazy initializer reads role synchronously on first render (client-side
-  // only, since this is a "use client" component) instead of via useEffect
-  // — avoids a brief flash where the role badge / "Manage Users" link
-  // disappear then reappear on every page navigation.
   const [role] = useState<UserRole | null>(() => getRole());
 
   return (
-    <aside className="w-64 bg-[#1A534A] flex flex-col py-7 px-5 flex-shrink-0">
+    <aside className="w-64 h-screen sticky top-0 bg-[#1A534A] flex flex-col py-7 px-5 flex-shrink-0 overflow-y-auto">
       <div className="flex items-center gap-2.5 px-1 mb-1">
         <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
           G
