@@ -55,7 +55,7 @@ export default function LoginForm() {
     } else if (result.role === "admin" || result.role === "superadmin") {
       router.push("/admin-dashboard");
     } else {
-      router.push("/dashboard");
+      router.push("/donor-dashboard");
     }
   }
 

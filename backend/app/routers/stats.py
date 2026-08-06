@@ -1,10 +1,11 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
 from app.core.deps import get_current_admin_user
 from app.db.supabase_client import supabase
 from app.models.stats_schemas import LandingStatsOut, LandingStatsUpdate
+from app.services.insight_generator import regenerate_insights
 
 router = APIRouter(tags=["stats"])
 
@@ -29,6 +30,7 @@ async def get_admin_landing_summary(admin: dict = Depends(get_current_admin_user
 @router.put("/admin/stats/landing-summary", response_model=LandingStatsOut)
 async def update_landing_summary(
     payload: LandingStatsUpdate,
+    background_tasks: BackgroundTasks,
     admin: dict = Depends(get_current_admin_user),
 ):
     updates = payload.model_dump(exclude_none=True)
@@ -49,4 +51,7 @@ async def update_landing_summary(
         .eq("id", current["id"])
         .execute()
     )
+
+    background_tasks.add_task(regenerate_insights)
+
     return result.data[0]

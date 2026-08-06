@@ -802,4 +802,528 @@ Same `search` and `status` query params as the list endpoint above — the expor
 
 - **Search only matches `filename`**, not `uploaded_by_name`. Searching by uploader requires filtering across the joined `users` table, which isn't implemented yet. Flag if this is a launch blocker.
 - **`file_size_bytes` is `null` for documents uploaded before this feature shipped** — no retroactive backfill has been done.
-_Last updated: by [Janet], [03/08/2026]_
+
+
+## Chatbot (RAG-powered Knowledge Assistant)
+
+### Status: Built and tested end-to-end
+
+**Correction from earlier drafts:** an earlier version of this doc stated this reused an existing "analytics dashboard chatbot" system. That was traced back to an unconfirmed assumption (a comment in frontend code, not an actual working system) — there was no pre-existing chatbot backend anywhere in this project. This was built from scratch.
+
+Sits on the public landing page (`ChatbotButton.tsx`), designed for **anonymous, non-logged-in visitors** — not just logged-in dashboard users.
+
+### What this is (current real state)
+
+A conversational assistant that searches **published** Knowledge Base documents (via RAG — retrieval-augmented generation) and answers questions grounded in that content when relevant, falling back to a general response when nothing relevant is found. Confirmed working end-to-end with real test data — not theoretical. No source citations, by design.
+
+### Endpoints
+
+**`POST /chat/message`**
+
+### Request
+
+```json
+{
+  "session_id": "uuid-string or null to start a new session",
+  "message": "How is the current cohort's employment rate trending?"
+}
+```
+
+Send only the latest message plus `session_id` — not full history. Server holds multi-turn memory itself via `chat_sessions`/`chat_messages`.
+
+### Response — single JSON, not streaming
+
+```json
+{
+  "session_id": "uuid-string",
+  "response": "Full reply text, returned all at once."
+}
+```
+
+No token-by-token streaming. Any typing-effect animation in the UI is a pure frontend affordance, not a reflection of how data arrives.
+
+### Auth
+
+**None required.** Public endpoint for anonymous visitors. `session_id` tracks conversation continuity, not a user account.
+
+### Error handling
+
+Same convention as every other endpoint — standard HTTP status codes, `{"detail": "..."}` body.
+
+| Status | Meaning |
+|---|---|
+| `422` | Malformed request |
+| `429` | Rate limited (not yet implemented) |
+| `503` / `504` | AI call failed or timed out |
+
+---
+
+**`GET /admin/chat-sessions`** (planned, not yet built)
+
+Admin-protected. Powers "Q&A Logs" / "Chat Audit Logs" admin screens. Exact response shape not yet designed.
+
+---
+
+### Required before public launch (not yet done)
+
+Public + unauthenticated means real abuse/cost exposure — anyone can call it repeatedly at no cost to themselves.
+
+- [ ] Rate limiting (per-IP or similar)
+- [ ] Message length caps
+- [ ] Monitoring/alerting for unusual volume
+
+### Backend build status
+
+- [x] `document_chunks`, `chat_sessions`, `chat_messages` tables created, RLS + grants set
+- [x] Local embedding generation (`sentence-transformers`, 384-dim) — `embeddings.py`
+- [x] Chunking + storage service — `document_chunker.py`
+- [x] Wired into document-publish flow
+- [x] Retrieval function (`search_knowledge_base`) + `match_document_chunks` Postgres function, filters to `published` documents only
+- [x] `POST /chat/message` endpoint — built and tested end-to-end, confirmed grounded answers
+- [x] Agent/reasoning layer (LangGraph + Claude) — built and tested, tool-calling confirmed working
+- [ ] `GET /admin/chat-sessions` — not yet built
+- [ ] Rate limiting / abuse protection — not yet built
+- [ ] Widget copy updated to reflect real grounded capability now that RAG is actually live
+
+### Known gotcha: no vector index on `document_chunks` (intentional, for now)
+
+An `ivfflat` index was initially added to `document_chunks` but caused **silent retrieval failures** — queries returning empty results with no error — when the table had very few rows. This is a known `pgvector` limitation: `ivfflat` clusters vectors into "lists" for approximate search, and with too few rows the clustering is degenerate, causing valid queries to land in empty clusters and return nothing even though matching data exists.
+
+The index was dropped. **Do not re-add an `ivfflat` index until the table has a meaningful number of chunks (hundreds+)**, and when you do, tune the `lists` parameter properly or consider `hnsw` instead, which handles small-to-medium data more gracefully. Without an index, `document_chunks` currently relies on a full sequential scan for similarity search — fine at current scale, but worth revisiting as the table grows.
+
+
+## Q&A Analytics & Moderation (Flagged Conversations)
+
+### Status: Planning / Not Yet Built
+
+Nothing in this section exists as working code yet. Documents the agreed design before build.
+
+### Key design decisions
+
+- **Donor identity:** `/chat/message` moves from fully anonymous to **optional auth**. If a valid `Authorization: Bearer <token>` is sent, the real logged-in user's name is captured. If no token (or an invalid one) is sent, the request still succeeds — logged as "Anonymous donor." This is a change to the existing endpoint, not just the new logging feature — no error is ever thrown for a missing/bad token here, unlike admin routes.
+- **Flagging is auto-detected**, not manual: a second AI classification step reviews each Q&A exchange for sensitive topics (financials, legal matters, personal/PII data, etc.) and assigns `status`.
+- **Flagging runs in the background**, after the donor already has their answer — not synchronously. Stacking a third sequential AI call onto the existing ~4.5s response time (see prior latency investigation) would make the chat feel slow again. Practical effect: a Q&A log entry (and its flagged/declined/answered status) appears in the admin page a few seconds after the actual chat exchange, not instantly.
+- **Confidence score: not implemented.** Don't build UI for this field — it doesn't exist and there's no current plan to add it.
+
+### Data model (planned)
+
+**`qa_logs`**
+| Field | Type | Notes |
+|---|---|---|
+| `id` | uuid | |
+| `session_id` | uuid | FK to `chat_sessions` |
+| `question` | text | |
+| `response` | text | |
+| `status` | text | `answered` / `declined` / `flagged` |
+| `flag_reason` | text, nullable | Set when `status` is `declined` or `flagged` |
+| `donor_name` | text, nullable | Real name if logged in, else `"Anonymous donor"` |
+| `user_id` | uuid, nullable | FK to `users`, null for anonymous |
+| `response_time_ms` | integer | |
+| `moderation_status` | text, nullable | `pending` / `resolved` / `false_positive` — only meaningful when `status = 'flagged'` |
+| `created_at` | timestamptz | |
+
+**`qa_log_moderator_notes`**
+| Field | Type | Notes |
+|---|---|---|
+| `id` | uuid | |
+| `qa_log_id` | uuid | FK to `qa_logs` |
+| `moderator_id` | uuid | FK to `users` |
+| `note` | text | |
+| `created_at` | timestamptz | |
+
+---
+
+### Endpoints (all admin-protected, standard 401/403 pattern per Admin Auth section)
+
+**`GET /admin/qa-analytics/summary`**
+
+Today's totals.
+
+```json
+{
+  "questions_today": 248,
+  "answered": 232,
+  "declined": 12,
+  "flagged": 4
+}
+```
+
+---
+
+**`GET /admin/qa-analytics/trends`**
+
+Query params: `period` (`daily` / `weekly` / `monthly`), `start`, `end` (dates).
+
+```json
+{
+  "period": "daily",
+  "data": [
+    { "date": "2026-08-01", "answered": 40, "declined": 3, "flagged": 1 },
+    { "date": "2026-08-02", "answered": 55, "declined": 2, "flagged": 0 }
+  ]
+}
+```
+
+---
+
+**`GET /admin/qa-analytics/flagged`**
+
+Query params: `status` (`pending` / `resolved` / `false_positive`, omit for all), `search` (matches `question` text or `donor_name` — both are plain columns, feasible to search directly), `page`, `limit`.
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid-string",
+      "question": "What's your total budget for 2026?",
+      "response": "I can only answer questions based on our published impact data...",
+      "flag_reason": "Financial/budget inquiry",
+      "donor_name": "Anonymous donor",
+      "created_at": "2026-08-06T04:00:00Z",
+      "moderation_status": "pending"
+    }
+  ],
+  "total": 4,
+  "page": 1,
+  "limit": 20
+}
+```
+
+---
+
+**`GET /admin/qa-analytics/flagged/{id}`**
+
+Full detail, including moderator notes history.
+
+```json
+{
+  "id": "uuid-string",
+  "question": "...",
+  "response": "...",
+  "flag_reason": "...",
+  "donor_name": "...",
+  "created_at": "...",
+  "moderation_status": "pending",
+  "moderator_notes": [
+    { "id": "uuid", "moderator_name": "Moses K.", "note": "Confirmed appropriate decline", "created_at": "..." }
+  ]
+}
+```
+
+---
+
+**`PUT /admin/qa-analytics/flagged/{id}/status`**
+
+Request:
+```json
+{ "moderation_status": "resolved" }
+```
+Accepts `resolved`, `false_positive`, or `escalated`.
+
+---
+
+**`POST /admin/qa-analytics/flagged/{id}/notes`**
+
+Request:
+```json
+{ "note": "Confirmed this was an appropriate decline, no action needed." }
+```
+
+---
+
+### Build status
+
+- [ ] `qa_logs`, `qa_log_moderator_notes` tables, RLS + grants
+- [ ] Optional-auth change to `/chat/message`
+- [ ] Background flagging classification step
+- [ ] Logging wired into live chat flow
+- [ ] All five endpoints above
+
+
+## Donor Dashboard
+
+### Status: Partially planned — two sections blocked pending data confirmation
+
+### Auth
+
+All endpoints below require a valid logged-in user — same bearer token pattern as everywhere else. **Not admin-restricted** — any authenticated user (donor or admin) can view this. No new "donor-only" role check is being added; if that turns out to be wrong, flag it and we'll add one.
+
+---
+
+### 1. Impact Overview (buildable now)
+
+**Endpoint:** `GET /donor/dashboard/summary`
+
+Reuses `landing_stats` — same underlying table and numbers as the public landing page, just displayed differently here. **Displayed values will be whatever is actually in the database, not necessarily matching mockup placeholder numbers** (e.g. mockup shows 92%/25× — actual values depend on what's stored).
+
+Three new fields need adding to `landing_stats` (don't exist yet): `international_roles_pct`, `african_companies_pct`, `income_sent_home_pct` — all numeric 0–100, same validation pattern as the existing percentage fields.
+
+### Response
+
+```json
+{
+  "participants": 153,
+  "graduation_rate": 93.0,
+  "employment_rate": 98.0,
+  "income_growth_multiplier": 22.0,
+  "cohorts": 6,
+  "refugee_participants_pct": 4.0,
+  "international_roles_pct": 19.0,
+  "african_companies_pct": 81.0,
+  "income_sent_home_pct": 33.0,
+  "updated_at": "..."
+}
+```
+
+Admin update goes through the existing `PUT /admin/stats/landing-summary` (with the three new fields added to that schema too) — no new admin endpoint needed.
+
+---
+
+### 2. "Before the Program" Baseline — BLOCKED
+
+**Cannot design this endpoint yet.** This needs household size, pre-program income, breadwinner breakdown, age, education, job type — none of which exist anywhere in the system currently. Before this can be built, need to confirm: **does this raw data already exist in an M&E dataset** (per her question about "Janet's cleaned data"), or does it need to be manually entered by an admin (same pattern as `landing_stats` — one row, admin fills in numbers)?
+
+If real per-participant data exists, this becomes an aggregation query. If not, it becomes a new admin-editable table, much simpler. Please confirm with Janet before this section gets built — building against a guess here risks real rework.
+
+---
+
+### 3. Active Cohort Progress (buildable now)
+
+**Endpoint:** `GET /donor/dashboard/cohorts`
+
+New table needed:
+```sql
+create table cohorts (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  active_participants integer not null default 0,
+  completion_pct numeric not null default 0,
+  status text not null default 'in_progress',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+### Response
+
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Software Engineering C4",
+    "active_participants": 19,
+    "completion_pct": 100.0,
+    "status": "completed"
+  },
+  {
+    "id": "uuid",
+    "name": "Software & AI Engineering C5",
+    "active_participants": 33,
+    "completion_pct": 85.0,
+    "status": "in_progress"
+  }
+]
+```
+
+Admin CRUD for cohorts (create/edit/delete) not yet designed — will follow the same pattern as Stories once needed.
+
+---
+
+### 4. Strategic Insights (buildable now, background-generated)
+
+**Endpoint:** `GET /donor/dashboard/insights`
+
+**Not generated live on page load.** Generated in the background whenever `landing_stats` is updated (triggered from `PUT /admin/stats/landing-summary`, same trigger-on-write pattern as document publishing → embedding), and cached. The GET endpoint just reads the latest cached insights — fast, no AI call on the request path.
+
+```sql
+create table dashboard_insights (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  body text not null,
+  generated_at timestamptz not null default now()
+);
+```
+
+### Response
+
+```json
+[
+  {
+    "title": "Income Growth Milestone",
+    "body": "The 22x income growth observed represents..."
+  }
+]
+```
+
+Old insights are replaced (not accumulated) each time new ones are generated — always reflects the current data, not a history log.
+
+---
+
+### 5. District Origin Map — BLOCKED
+
+**Same blocker as section 2.** Needs participant-level district/country data that doesn't currently exist anywhere in the system. Confirm with Janet whether this raw data exists before this gets designed — could be a real aggregation query, or a new manually-entered dataset, depending on the answer.
+
+---
+
+### 6. Export Report
+
+**Format: formatted PDF**, using `fpdf2` (pure Python, no system-level dependencies — avoids the Windows install pain we hit with other tools today).
+
+**Endpoint:** `GET /donor/dashboard/export` (planned — exact content/layout not yet designed, depends on sections 2 and 5 being unblocked first, since a report excluding baseline/district data would be incomplete)
+
+---
+
+### Build status
+
+- [ ] `landing_stats` — 3 new columns added
+- [ ] `GET /donor/dashboard/summary`
+- [ ] `cohorts` table + `GET /donor/dashboard/cohorts`
+- [ ] `dashboard_insights` table + background generation + `GET /donor/dashboard/insights`
+- [ ] Baseline panel — **blocked, needs data source confirmation**
+- [ ] District map — **blocked, needs data source confirmation**
+- [ ] PDF export — blocked behind the above two
+
+## Participant Data Import & Donor Dashboard: Baseline / Origins
+
+### Status: Planning / Not Yet Built
+
+### Auth
+
+All `/admin/participants/*` import routes require admin auth — same `get_current_admin_user` pattern as every other `/admin/*` route (401 vs 403 rules identical). The two donor-facing GET endpoints (`/donor/dashboard/baseline`, `/donor/dashboard/origins`) only require a logged-in user, same as the rest of the Donor Dashboard section.
+
+### Data model
+
+```sql
+create table participants (
+  id uuid primary key default gen_random_uuid(),
+  cohort_id uuid references cohorts(id),
+  household_size integer,
+  pre_program_income numeric,
+  main_breadwinner text,
+  age integer,
+  highest_education text,
+  employed_before boolean,
+  employed_before_type text,
+  district text,
+  country text default 'Uganda',
+  source_import_id uuid,
+  created_at timestamptz not null default now()
+);
+
+create table participant_imports (
+  id uuid primary key default gen_random_uuid(),
+  filename text not null,
+  file_type text not null,
+  status text not null default 'processing',
+  row_count integer,
+  preview_data jsonb,
+  uploaded_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  confirmed_at timestamptz
+);
+
+create table district_coordinates (
+  district text primary key,
+  latitude numeric not null,
+  longitude numeric not null
+);
+```
+
+`source_import_id` on `participants` traces every row back to the import batch it came from — useful for auditing or rolling back a bad import later.
+
+**`district_coordinates` is populated lazily**, not preloaded with all ~146 Ugandan districts upfront. Coordinates get added only for districts that actually show up in real imported participant data, sourced and verified individually (e.g. from Wikipedia district pages, which carry citable coordinates) rather than bulk-guessed. If a district appears in `participants` but has no matching row here yet, the origins endpoint returns `null` for its lat/long rather than a wrong guess — visible and honest, not silently incorrect on a donor-facing map.
+
+### Import flow — human-reviewed, not blind ingestion
+
+Same review pattern as document curation: **nothing lands in the real `participants` table until an admin explicitly confirms it.**
+
+1. Admin uploads a file (Excel, CSV, PDF, or DOCX).
+2. Backend parses it:
+   - **Excel/CSV**: direct, exact row/column extraction (reuses `document_parser.py`'s existing spreadsheet parsing) — no AI involved, fully reliable.
+   - **PDF/DOCX**: text extracted, then an AI step attempts to structure it into rows. **This carries real accuracy risk** — unlike Excel/CSV, this is AI inference, not exact extraction. Treat PDF/DOCX-sourced data as needing closer admin review than spreadsheet-sourced data.
+3. A preview is generated and stored (`preview_data`) — row count, detected columns, a sample of rows — without touching the real `participants` table yet.
+4. Admin reviews the preview via the admin UI, can reject or confirm.
+5. Only on confirm does the data get inserted into `participants`.
+
+### Endpoints
+
+**`POST /admin/participants/import`**
+
+`multipart/form-data`, one file (Excel/CSV/PDF/DOCX). Admin-protected. Returns immediately with `202 Accepted` — parsing happens in the background.
+
+```json
+{ "id": "uuid", "filename": "...", "status": "processing" }
+```
+
+**`GET /admin/participants/imports/{id}`**
+
+Admin-protected. Poll for status/preview once processing finishes.
+
+```json
+{
+  "id": "uuid",
+  "status": "pending_review",
+  "row_count": 153,
+  "preview_data": { "columns": [...], "sample_rows": [...] }
+}
+```
+
+**`POST /admin/participants/imports/{id}/confirm`**
+
+Admin-protected. Commits the parsed rows into `participants`.
+
+**`POST /admin/participants/imports/{id}/reject`**
+
+Admin-protected. Discards the parsed preview, nothing gets inserted.
+
+---
+
+### Donor Dashboard: Baseline
+
+**Endpoint:** `GET /donor/dashboard/baseline` — logged-in user, not admin-restricted.
+
+Real SQL aggregation over `participants` — not AI-generated, not paraphrased.
+
+```json
+{
+  "avg_household_size": 5.4,
+  "avg_pre_program_income": 10.0,
+  "main_breadwinner_breakdown": { "Mother": 52, "Father": 31, "Other": 17 },
+  "avg_age": 21.0,
+  "highest_education_common": "Senior 6",
+  "employed_before_pct": 42.0,
+  "employed_before_type_common": "Subsistence / Street"
+}
+```
+
+### Donor Dashboard: Origins
+
+**Endpoint:** `GET /donor/dashboard/origins` — logged-in user, not admin-restricted.
+
+```json
+{
+  "uganda_districts": [
+    { "district": "Kampala", "participant_count": 24, "latitude": 0.3476, "longitude": 32.5825 },
+    { "district": "SomeNewDistrict", "participant_count": 2, "latitude": null, "longitude": null }
+  ],
+  "international": [
+    { "country": "South Sudan", "participant_count": 5 },
+    { "country": "DRC", "participant_count": 3 },
+    { "country": "Rwanda", "participant_count": 2 }
+  ]
+}
+```
+
+`latitude`/`longitude` are `null` for any district not yet added to `district_coordinates` — frontend should handle this gracefully (e.g. omit that pin, or show a "location pending" state) rather than assume they're always present.
+
+---
+
+### Build status
+
+- [ ] `participants`, `participant_imports`, `district_coordinates` tables
+- [ ] Excel/CSV import (exact parsing)
+- [ ] PDF/DOCX import (AI-assisted extraction, higher review priority)
+- [ ] Preview/confirm/reject admin flow
+- [ ] `GET /donor/dashboard/baseline`
+- [ ] `GET /donor/dashboard/origins`
+- [ ] District coordinates populated as real district names become known
