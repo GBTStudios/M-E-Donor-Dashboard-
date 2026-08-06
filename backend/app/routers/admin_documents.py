@@ -1,3 +1,4 @@
+from app.services.document_chunker import embed_and_store_document
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -190,6 +191,9 @@ async def publish_document(document_id: str, admin: dict = Depends(get_current_a
         .eq("id", document_id)
         .execute()
     )
+
+    embed_and_store_document(document_id, result.data[0]["final_content"])
+
     return result.data[0]
 
 
