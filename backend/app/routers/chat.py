@@ -1,4 +1,4 @@
-import uuid
+import asyncio
 from datetime import datetime, timezone
 
 from fastapi import APIRouter
@@ -35,14 +35,21 @@ async def send_chat_message(payload: ChatMessageRequest):
 
     response_text = run_chat_agent(history, payload.message)
 
-    supabase.table("chat_messages").insert({
-        "session_id": session_id,
-        "role": "assistant",
-        "content": response_text,
-    }).execute()
+    def _insert_assistant_message():
+        supabase.table("chat_messages").insert({
+            "session_id": session_id,
+            "role": "assistant",
+            "content": response_text,
+        }).execute()
 
-    supabase.table("chat_sessions").update({
-        "last_active_at": datetime.now(timezone.utc).isoformat(),
-    }).eq("id", session_id).execute()
+    def _update_session_timestamp():
+        supabase.table("chat_sessions").update({
+            "last_active_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", session_id).execute()
+
+    await asyncio.gather(
+        asyncio.to_thread(_insert_assistant_message),
+        asyncio.to_thread(_update_session_timestamp),
+    )
 
     return ChatMessageResponse(session_id=session_id, response=response_text)
