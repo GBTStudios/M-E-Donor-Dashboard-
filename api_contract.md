@@ -802,4 +802,91 @@ Same `search` and `status` query params as the list endpoint above — the expor
 
 - **Search only matches `filename`**, not `uploaded_by_name`. Searching by uploader requires filtering across the joined `users` table, which isn't implemented yet. Flag if this is a launch blocker.
 - **`file_size_bytes` is `null` for documents uploaded before this feature shipped** — no retroactive backfill has been done.
-_Last updated: by [Janet], [03/08/2026]_
+
+
+## Chatbot (RAG-powered Knowledge Assistant)
+
+### Status: Built and tested end-to-end
+
+**Correction from earlier drafts:** an earlier version of this doc stated this reused an existing "analytics dashboard chatbot" system. That was traced back to an unconfirmed assumption (a comment in frontend code, not an actual working system) — there was no pre-existing chatbot backend anywhere in this project. This was built from scratch.
+
+Sits on the public landing page (`ChatbotButton.tsx`), designed for **anonymous, non-logged-in visitors** — not just logged-in dashboard users.
+
+### What this is (current real state)
+
+A conversational assistant that searches **published** Knowledge Base documents (via RAG — retrieval-augmented generation) and answers questions grounded in that content when relevant, falling back to a general response when nothing relevant is found. Confirmed working end-to-end with real test data — not theoretical. No source citations, by design.
+
+### Endpoints
+
+**`POST /chat/message`**
+
+### Request
+
+```json
+{
+  "session_id": "uuid-string or null to start a new session",
+  "message": "How is the current cohort's employment rate trending?"
+}
+```
+
+Send only the latest message plus `session_id` — not full history. Server holds multi-turn memory itself via `chat_sessions`/`chat_messages`.
+
+### Response — single JSON, not streaming
+
+```json
+{
+  "session_id": "uuid-string",
+  "response": "Full reply text, returned all at once."
+}
+```
+
+No token-by-token streaming. Any typing-effect animation in the UI is a pure frontend affordance, not a reflection of how data arrives.
+
+### Auth
+
+**None required.** Public endpoint for anonymous visitors. `session_id` tracks conversation continuity, not a user account.
+
+### Error handling
+
+Same convention as every other endpoint — standard HTTP status codes, `{"detail": "..."}` body.
+
+| Status | Meaning |
+|---|---|
+| `422` | Malformed request |
+| `429` | Rate limited (not yet implemented) |
+| `503` / `504` | AI call failed or timed out |
+
+---
+
+**`GET /admin/chat-sessions`** (planned, not yet built)
+
+Admin-protected. Powers "Q&A Logs" / "Chat Audit Logs" admin screens. Exact response shape not yet designed.
+
+---
+
+### Required before public launch (not yet done)
+
+Public + unauthenticated means real abuse/cost exposure — anyone can call it repeatedly at no cost to themselves.
+
+- [ ] Rate limiting (per-IP or similar)
+- [ ] Message length caps
+- [ ] Monitoring/alerting for unusual volume
+
+### Backend build status
+
+- [x] `document_chunks`, `chat_sessions`, `chat_messages` tables created, RLS + grants set
+- [x] Local embedding generation (`sentence-transformers`, 384-dim) — `embeddings.py`
+- [x] Chunking + storage service — `document_chunker.py`
+- [x] Wired into document-publish flow
+- [x] Retrieval function (`search_knowledge_base`) + `match_document_chunks` Postgres function, filters to `published` documents only
+- [x] `POST /chat/message` endpoint — built and tested end-to-end, confirmed grounded answers
+- [x] Agent/reasoning layer (LangGraph + Claude) — built and tested, tool-calling confirmed working
+- [ ] `GET /admin/chat-sessions` — not yet built
+- [ ] Rate limiting / abuse protection — not yet built
+- [ ] Widget copy updated to reflect real grounded capability now that RAG is actually live
+
+### Known gotcha: no vector index on `document_chunks` (intentional, for now)
+
+An `ivfflat` index was initially added to `document_chunks` but caused **silent retrieval failures** — queries returning empty results with no error — when the table had very few rows. This is a known `pgvector` limitation: `ivfflat` clusters vectors into "lists" for approximate search, and with too few rows the clustering is degenerate, causing valid queries to land in empty clusters and return nothing even though matching data exists.
+
+The index was dropped. **Do not re-add an `ivfflat` index until the table has a meaningful number of chunks (hundreds+)**, and when you do, tune the `lists` parameter properly or consider `hnsw` instead, which handles small-to-medium data more gracefully. Without an index, `document_chunks` currently relies on a full sequential scan for similarity search — fine at current scale, but worth revisiting as the table grows.
