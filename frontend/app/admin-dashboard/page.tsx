@@ -141,7 +141,7 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminLayout>
-      <div className="max-w-5xl">
+      <div className="max-w-5xl mx-auto">
         <h1 className="text-2xl font-semibold text-[#1A534A] dark:text-[#7dd3c0] mb-1">
           Admin Dashboard
         </h1>
