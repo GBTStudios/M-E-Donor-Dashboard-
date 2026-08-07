@@ -1,8 +1,31 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Enable class-based dark mode for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5efe4;
+  --foreground: #1A534A;
+  --text-primary: #1A534A;
+  --text-secondary: #5B7571;
+  --text-muted: #7C9791;
+  --card-bg: #eaf5f0;
+  --card-border: rgba(0, 0, 0, 0.1);
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+}
+
+.dark {
+  --background: #0f1a18;
+  --foreground: #e2f4f0;
+  --text-primary: #7dd3c0;
+  --text-secondary: #8fada9;
+  --text-muted: #5a9e94;
+  --card-bg: #1a2e2b;
+  --card-border: rgba(255, 255, 255, 0.1);
+  --input-bg: #1e3532;
+  --input-border: rgba(255, 255, 255, 0.15);
 }
 
 @theme inline {
@@ -12,15 +35,72 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+/* ── Global dark-mode overrides ─────────────────────────────────────────────
+   These catch every hardcoded Tailwind color class used across the admin
+   components so you don't have to add dark: variants to every file.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Primary text: #1A534A */
+.dark .text-\[\#1A534A\] { color: var(--text-primary) !important; }
+
+/* Secondary text: #5B7571 */
+.dark .text-\[\#5B7571\] { color: var(--text-secondary) !important; }
+
+/* Muted text: #7C9791 */
+.dark .text-\[\#7C9791\] { color: var(--text-muted) !important; }
+
+/* Card backgrounds */
+.dark .bg-\[\#eaf5f0\] { background-color: var(--card-bg) !important; }
+.dark .bg-\[\#f5efe4\] { background-color: #0f1a18 !important; }
+
+/* Borders */
+.dark .border-black\/10 { border-color: var(--card-border) !important; }
+
+/* Input backgrounds */
+.dark .bg-white { background-color: var(--input-bg) !important; }
+.dark .bg-white\/40 { background-color: rgba(255,255,255,0.05) !important; }
+.dark .bg-white\/70 { background-color: rgba(255,255,255,0.08) !important; }
+
+/* Gray text shades */
+.dark .text-gray-900 { color: #e2f4f0 !important; }
+.dark .text-gray-800 { color: #c8e6e2 !important; }
+.dark .text-gray-700 { color: #a8d4cf !important; }
+.dark .text-gray-600 { color: #8fada9 !important; }
+.dark .text-gray-500 { color: #7a9a96 !important; }
+.dark .text-gray-400 { color: #5a8a85 !important; }
+
+/* Gray backgrounds */
+.dark .bg-gray-50  { background-color: #1a2e2b !important; }
+.dark .bg-gray-100 { background-color: #1e3532 !important; }
+.dark .bg-gray-200 { background-color: #243f3b !important; }
+
+/* Gray borders */
+.dark .border-gray-200 { border-color: rgba(255,255,255,0.1) !important; }
+.dark .border-gray-300 { border-color: rgba(255,255,255,0.15) !important; }
+
+/* Input fields */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: var(--input-bg) !important;
+  color: var(--foreground) !important;
+  border-color: var(--input-border) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Table rows */
+.dark tr { border-color: rgba(255,255,255,0.08) !important; }
+.dark th { color: var(--text-secondary) !important; background-color: #1a2e2b !important; }
+.dark td { color: var(--foreground) !important; }
+.dark tbody tr:hover { background-color: rgba(255,255,255,0.04) !important; }

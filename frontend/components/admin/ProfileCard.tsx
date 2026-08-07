@@ -132,7 +132,7 @@ export function ProfileCard() {
 
   if (!profile) {
     return (
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-2xl mx-auto">
         <p role="alert" className="text-sm text-red-600">
           {error ?? "Could not load your profile."}
         </p>
@@ -141,7 +141,7 @@ export function ProfileCard() {
   }
 
   return (
-    <div className="max-w-lg mx-auto flex flex-col gap-5">
+    <div className="max-w-2xl mx-auto flex flex-col gap-5">
       {error && (
         <div
           role="alert"
@@ -153,9 +153,9 @@ export function ProfileCard() {
       )}
 
       {/* Identity card */}
-      <div className="bg-[#eaf5f0] rounded-2xl border border-black/10 p-6 shadow-sm flex items-center gap-4">
+      <div className="bg-[#eaf5f0] rounded-2xl border border-black/10 p-8 shadow-sm flex items-center gap-5">
         <div className="relative flex-shrink-0">
-          <div className="w-16 h-16 rounded-full bg-[#CCEAE8] overflow-hidden flex items-center justify-center">
+          <div className="w-20 h-20 rounded-full bg-[#CCEAE8] overflow-hidden flex items-center justify-center">
             {profile.profilePhotoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -164,7 +164,7 @@ export function ProfileCard() {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-xl font-semibold text-[#1A534A]">
+              <span className="text-2xl font-semibold text-[#1A534A]">
                 {profile.fullName.charAt(0).toUpperCase()}
               </span>
             )}
