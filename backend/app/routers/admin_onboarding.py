@@ -15,10 +15,26 @@ from app.core.deps import get_current_user, get_current_superadmin_user
 
 router = APIRouter(tags=["admin-onboarding"])
 
+SYMBOLS = "!@#$%^&*"
 
-def generate_temp_password() -> str:
-    alphabet = string.ascii_letters + string.digits
-    return "".join(secrets.choice(alphabet) for _ in range(10)) + "#7"
+
+def generate_temp_password(length: int = 12) -> str:
+    """Generates a random password guaranteed to include at least one
+    uppercase letter, one lowercase letter, one digit, and one symbol,
+    with all characters shuffled - not in a fixed/predictable position."""
+    required = [
+        secrets.choice(string.ascii_uppercase),
+        secrets.choice(string.ascii_lowercase),
+        secrets.choice(string.digits),
+        secrets.choice(SYMBOLS),
+    ]
+    remaining_alphabet = string.ascii_letters + string.digits + SYMBOLS
+    remaining = [secrets.choice(remaining_alphabet) for _ in range(length - len(required))]
+    password_chars = required + remaining
+    for i in range(len(password_chars) - 1, 0, -1):
+        j = secrets.randbelow(i + 1)
+        password_chars[i], password_chars[j] = password_chars[j], password_chars[i]
+    return "".join(password_chars)
 
 
 @router.post("/auth/set-first-password", response_model=SetFirstPasswordResponse)

@@ -11,6 +11,7 @@ from app.models.document_schemas import (
     DocumentListItem, DocumentDetail, UploadResponse,
     UpdateContentRequest, UpdateMetadataRequest, DocumentActionResponse,
 )
+from app.models.document_status import DocumentStatus
 from app.services.document_parser import extract_text
 from app.services.summarizer import summarize_document
 
@@ -29,13 +30,13 @@ def _process_document(document_id: str, filename: str, file_bytes: bytes):
             "raw_text": raw_text,
             "ai_summary": ai_summary,
             "final_content": ai_summary,
-            "status": "pending",
+            "status": DocumentStatus.PENDING.value,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", document_id).execute()
 
     except Exception as e:
         supabase.table("documents").update({
-            "status": "pending",
+            "status": DocumentStatus.PENDING.value,
             "ai_summary": f"[Processing failed: {e}]",
             "final_content": f"[Processing failed: {e}]",
             "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -76,7 +77,7 @@ async def upload_document(
             "file_url": file_url,
             "file_type": ext,
             "file_size": file_size,
-            "status": "processing",
+            "status": DocumentStatus.PROCESSING.value,
             "uploaded_by": admin["id"],
             "file_size": len(file_bytes),
         })
@@ -175,7 +176,7 @@ async def publish_document(document_id: str, admin: dict = Depends(get_current_a
     if not existing.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
 
-    if existing.data[0]["status"] != "pending":
+    if existing.data[0]["status"] != DocumentStatus.PENDING.value:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Only documents in 'pending' status can be published.",
@@ -184,7 +185,7 @@ async def publish_document(document_id: str, admin: dict = Depends(get_current_a
     result = (
         supabase.table("documents")
         .update({
-            "status": "published",
+            "status": DocumentStatus.PUBLISHED.value,
             "published_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         })
@@ -205,7 +206,7 @@ async def exclude_document(document_id: str, admin: dict = Depends(get_current_a
 
     result = (
         supabase.table("documents")
-        .update({"status": "excluded", "updated_at": datetime.now(timezone.utc).isoformat()})
+        .update({"status": DocumentStatus.EXCLUDED.value, "updated_at": datetime.now(timezone.utc).isoformat()})
         .eq("id", document_id)
         .execute()
     )

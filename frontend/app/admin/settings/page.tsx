@@ -15,7 +15,7 @@ import { ActiveSessionsList } from "@/components/admin/ActiveSessionsList";
 export default function SettingsPage() {
   return (
     <AdminLayout>
-      <div className="max-w-3xl">
+      <div className="max-w-3xl mx-auto">
         <h1 className="text-2xl font-semibold text-[#1A534A] mb-1">Settings</h1>
         <p className="text-sm text-[#5B7571] mb-8">Manage your preferences, security, and access.</p>
 
