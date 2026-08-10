@@ -4,31 +4,20 @@
  * API contract (Douglas, backend) for the full endpoint spec.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
 import { handleSessionExpiredIfNeeded } from "@/lib/sessionTimeout";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const FIRST_LOGIN_KEY = "first_login";
 
-/**
- * Stores the first_login flag from a login response. Called right after a
- * successful /auth/login, alongside storing the access_token.
- */
 export function setFirstLoginFlag(value: boolean): void {
   localStorage.setItem(FIRST_LOGIN_KEY, String(value));
 }
 
-/**
- * Reads the stored first_login flag. Used by route guards on every
- * protected-page mount — not just once at login — so direct URL entry and
- * back-button navigation are both covered, per the API contract's frontend
- * rule.
- */
 export function getFirstLoginFlag(): boolean {
   return localStorage.getItem(FIRST_LOGIN_KEY) === "true";
 }
 
-/** Called after successfully setting the first password. */
 export function clearFirstLoginFlag(): void {
   localStorage.removeItem(FIRST_LOGIN_KEY);
 }
@@ -37,15 +26,10 @@ const ROLE_KEY = "role";
 
 export type UserRole = "superadmin" | "admin" | "donor";
 
-/** Stores the account's role from a login response. */
 export function setRole(role: UserRole): void {
   localStorage.setItem(ROLE_KEY, role);
 }
 
-/**
- * Reads the stored role. Used to decide whether to show superadmin-only UI
- * (e.g. the "Add Admin" section) — regular admins and donors never see it.
- */
 export function getRole(): UserRole | null {
   const value = localStorage.getItem(ROLE_KEY);
   if (value === "superadmin" || value === "admin" || value === "donor") return value;
@@ -56,17 +40,14 @@ export function isSuperadmin(): boolean {
   return getRole() === "superadmin";
 }
 
+// ── Create Admin ──────────────────────────────────────────────────────────────
+
 export interface CreateAdminResult {
   success: boolean;
   message: string;
-  /** Present on success — the superadmin must share this with the new admin out-of-band. */
   temporaryPassword?: string;
 }
 
-/**
- * Calls POST /admin/create-user (superadmin only). Creates a new account
- * with role: admin and first_login: true on the backend.
- */
 export async function createAdminUser(
   accessToken: string,
   email: string,
@@ -110,6 +91,8 @@ export async function createAdminUser(
   }
 }
 
+// ── List Admins ───────────────────────────────────────────────────────────────
+
 export interface AdminUser {
   id: string;
   email: string;
@@ -122,14 +105,6 @@ export type AdminUsersListResult =
   | { success: true; users: AdminUser[] }
   | { success: false; message: string };
 
-/**
- * Calls GET /admin/users (superadmin only) — the real list of every
- * admin/superadmin account. Field-name fallbacks (is_active/active,
- * full_name/name) are handled defensively since the exact response shape
- * hasn't been independently confirmed against Swagger's schema yet; if the
- * real field names differ from what's checked here, this will need a
- * follow-up adjustment once actually tested against the live response.
- */
 export async function getAdminUsersList(accessToken: string): Promise<AdminUsersListResult> {
   try {
     const response = await fetch(`${API_URL}/admin/users`, {
@@ -168,12 +143,13 @@ export async function getAdminUsersList(accessToken: string): Promise<AdminUsers
   }
 }
 
+// ── Activate / Deactivate ─────────────────────────────────────────────────────
+
 export interface AccountStatusChangeResult {
   success: boolean;
   message: string;
 }
 
-/** Calls POST /admin/deactivate-user (superadmin only). */
 export async function deactivateUser(
   accessToken: string,
   userId: string
@@ -181,7 +157,6 @@ export async function deactivateUser(
   return changeAccountStatus(accessToken, userId, "deactivate-user");
 }
 
-/** Calls POST /admin/reactivate-user (superadmin only). */
 export async function reactivateUser(
   accessToken: string,
   userId: string
@@ -228,18 +203,63 @@ async function changeAccountStatus(
   }
 }
 
+// ── Delete Admin ──────────────────────────────────────────────────────────────
+
+export interface DeleteUserResult {
+  success: boolean;
+  message: string;
+}
+
+/** Calls POST /admin/delete-user (superadmin only). Permanently deletes an admin account. */
+export async function deleteAdminUser(
+  accessToken: string,
+  userId: string
+): Promise<DeleteUserResult> {
+  try {
+    const response = await fetch(`${API_URL}/admin/delete-user`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ user_id: userId }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (handleSessionExpiredIfNeeded(response.status, data.detail)) {
+      return { success: false, message: "Session expired due to inactivity. Please log in again." };
+    }
+
+    if (response.status === 200) {
+      return { success: true, message: data.message ?? "Account permanently deleted." };
+    }
+
+    if (response.status === 400) {
+      return { success: false, message: data.detail ?? "Cannot delete this account." };
+    }
+
+    if (response.status === 403) {
+      return { success: false, message: data.detail ?? "Superadmin access required." };
+    }
+
+    if (response.status === 404) {
+      return { success: false, message: data.detail ?? "User not found." };
+    }
+
+    return { success: false, message: data.detail ?? "Something went wrong. Please try again." };
+  } catch {
+    return { success: false, message: "Network error. Please try again." };
+  }
+}
+
+// ── Set First Password ────────────────────────────────────────────────────────
+
 export interface SetFirstPasswordResult {
   success: boolean;
   message: string;
 }
 
-/**
- * Calls POST /auth/set-first-password with the given new password, using
- * the Bearer token from the account's first (temporary-password) login.
- *
- * Never throws for documented failure cases (400 weak password, 401
- * invalid/expired token) — those come back as { success: false, message }.
- */
 export async function setFirstPassword(
   accessToken: string,
   newPassword: string
