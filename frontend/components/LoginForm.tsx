@@ -52,7 +52,7 @@ export default function LoginForm() {
     // - everyone else (donors) go to the donor dashboard.
     if (result.first_login) {
       router.push("/admin/set-password");
-    } else if (result.role === "admin" || result.role === "superadmin") {
+    } else if (result.user.role === "admin" || result.user.role === "superadmin") {
       router.push("/admin-dashboard");
     } else {
       router.push("/donor-dashboard");

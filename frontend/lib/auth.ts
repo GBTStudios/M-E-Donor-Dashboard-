@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabaseClient";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type LoginResult =
-  | { success: true; user: { id: string; email: string; full_name: string; role: string } }
+  | { success: true; user: { id: string; email: string; full_name: string; role: string }; first_login: boolean }
   | { success: false; error: string };
 
 export async function loginUser(
@@ -21,7 +21,7 @@ export async function loginUser(
     if (response.status === 200) {
       const data = await response.json();
       localStorage.setItem("access_token", data.access_token);
-      return { success: true, user: data.user };
+      return { success: true, user: data.user, first_login: data.first_login ?? false };
     }
 
     const data = await response.json().catch(() => ({}));
