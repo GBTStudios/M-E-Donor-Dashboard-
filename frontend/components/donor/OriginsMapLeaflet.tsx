@@ -2,24 +2,40 @@
 
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import type { DistrictOrigin } from "@/lib/donorDashboard";
+import type { DistrictOrigin, CountryOrigin } from "@/lib/donorDashboard";
 
 const UGANDA_CENTER: [number, number] = [1.3733, 32.2903];
 const DEFAULT_ZOOM = 7;
 
-export default function OriginsMapLeaflet({ districts }: { districts: DistrictOrigin[] }) {
-  const plottable = districts.filter(
+interface OriginsMapLeafletProps {
+  districts: DistrictOrigin[];
+  international?: CountryOrigin[];
+}
+
+export default function OriginsMapLeaflet({ districts, international = [] }: OriginsMapLeafletProps) {
+  const plottableDistricts = districts.filter(
     (d): d is DistrictOrigin & { latitude: number; longitude: number } =>
       d.latitude !== null && d.longitude !== null
   );
 
-  const maxCount = Math.max(...plottable.map((d) => d.participant_count), 1);
+  const plottableCountries = international.filter(
+    (c): c is CountryOrigin & { latitude: number; longitude: number } =>
+      c.latitude !== null && c.longitude !== null
+  );
+
+  const allPlottable = [
+    ...plottableDistricts.map((d) => ({ lat: d.latitude, lng: d.longitude })),
+    ...plottableCountries.map((c) => ({ lat: c.latitude, lng: c.longitude })),
+  ];
+
+  const maxDistrictCount = Math.max(...plottableDistricts.map((d) => d.participant_count), 1);
+  const maxCountryCount = Math.max(...plottableCountries.map((c) => c.participant_count), 1);
 
   const center: [number, number] =
-    plottable.length > 0
+    allPlottable.length > 0
       ? [
-          plottable.reduce((sum, d) => sum + d.latitude, 0) / plottable.length,
-          plottable.reduce((sum, d) => sum + d.longitude, 0) / plottable.length,
+          allPlottable.reduce((sum, p) => sum + p.lat, 0) / allPlottable.length,
+          allPlottable.reduce((sum, p) => sum + p.lng, 0) / allPlottable.length,
         ]
       : UGANDA_CENTER;
 
@@ -34,11 +50,12 @@ export default function OriginsMapLeaflet({ districts }: { districts: DistrictOr
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {plottable.map((d) => {
-        const radius = 6 + (d.participant_count / maxCount) * 14;
+
+      {plottableDistricts.map((d) => {
+        const radius = 6 + (d.participant_count / maxDistrictCount) * 14;
         return (
           <CircleMarker
-            key={d.district}
+            key={`district-${d.district}`}
             center={[d.latitude, d.longitude]}
             radius={radius}
             pathOptions={{
@@ -52,6 +69,30 @@ export default function OriginsMapLeaflet({ districts }: { districts: DistrictOr
               <span className="font-semibold">{d.district}</span>
               <br />
               {d.participant_count} participant{d.participant_count === 1 ? "" : "s"}
+            </Tooltip>
+          </CircleMarker>
+        );
+      })}
+
+      {plottableCountries.map((c) => {
+        const radius = 8 + (c.participant_count / maxCountryCount) * 14;
+        return (
+          <CircleMarker
+            key={`country-${c.country}`}
+            center={[c.latitude, c.longitude]}
+            radius={radius}
+            pathOptions={{
+              color: "#ffffff",
+              weight: 2,
+              fillColor: "#B5762A",
+              fillOpacity: 0.85,
+              dashArray: "3, 2",
+            }}
+          >
+            <Tooltip direction="top" offset={[0, -radius]}>
+              <span className="font-semibold">{c.country}</span>
+              <br />
+              {c.participant_count} participant{c.participant_count === 1 ? "" : "s"}
             </Tooltip>
           </CircleMarker>
         );

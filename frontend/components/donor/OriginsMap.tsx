@@ -30,8 +30,21 @@ export default function OriginsMap({ origins }: { origins: OriginsData }) {
       </p>
 
       <div className="rounded-xl overflow-hidden border border-black/5">
-        <OriginsMapLeaflet districts={origins.uganda_districts} />
+        <OriginsMapLeaflet districts={origins.uganda_districts} international={origins.international} />
       </div>
+
+      {origins.international.length > 0 && (
+        <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-400">
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#1A534A] inline-block" />
+            District
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#B5762A] inline-block" />
+            Country
+          </span>
+        </div>
+      )}
 
       {pending.length > 0 && (
         <p className="text-[11px] text-gray-400 mt-2">
