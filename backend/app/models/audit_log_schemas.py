@@ -8,6 +8,7 @@ class AuditLogItem(BaseModel):
     log_number: int
     conversation_id: str
     originating_identity: str
+    user_name: Optional[str] = None
     inquiry: str
     response: str
     status: str
@@ -33,6 +34,7 @@ class ConversationMessage(BaseModel):
 class ConversationContextResponse(BaseModel):
     conversation_id: str
     originating_identity: str
+    user_name: Optional[str] = None
     messages: List[ConversationMessage]
 
 

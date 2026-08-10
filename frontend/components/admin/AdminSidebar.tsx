@@ -24,7 +24,7 @@ const PRIMARY_NAV_ITEMS = [
   { label: "Knowledge Base", icon: BookOpen, href: "/admin/knowledge-base" },
   { label: "Uploaded Documents", icon: FileText, href: "/admin/documents" },
   { label: "Q&A Logs", icon: HelpCircle, href: "/admin/qa-logs" },
-  { label: "Chat Audit Logs", icon: ClipboardList, href: "#" },
+  { label: "Chat Audit Logs", icon: ClipboardList, href: "/admin/audit-logs" },
 ] as const;
 
 const CONTENT_NAV_ITEMS = [
