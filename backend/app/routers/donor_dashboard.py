@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from app.core.deps import get_current_user
 from app.db.supabase_client import supabase
 from app.models.cohort_schemas import CohortOut
+from app.services.geocoding import geocode_district
 
 router = APIRouter(prefix="/donor/dashboard", tags=["donor-dashboard"])
 
@@ -93,13 +94,14 @@ async def get_origins(user: dict = Depends(get_current_user)):
     coords_result = supabase.table("district_coordinates").select("*").execute()
     coords_by_district = {c["district"]: c for c in coords_result.data}
 
+    country_coords_result = supabase.table("country_coordinates").select("*").execute()
+    coords_by_country = {c["country"]: c for c in country_coords_result.data}
+
     district_counts: dict = {}
     country_counts: dict = {}
-
     for r in rows:
         country = r.get("country") or "Uganda"
         district = r.get("district")
-
         if country == "Uganda" and district:
             district_counts[district] = district_counts.get(district, 0) + 1
         elif country != "Uganda":
@@ -115,8 +117,26 @@ async def get_origins(user: dict = Depends(get_current_user)):
         for d, count in district_counts.items()
     ]
 
+    # Auto-geocode any international country we haven't seen before, same
+    # pattern as district auto-geocoding on participant import.
+    for country in country_counts:
+        if country not in coords_by_country:
+            coords = geocode_district(country, country="")
+            if coords:
+                lat, lon = coords
+                supabase.table("country_coordinates").insert({
+                    "country": country, "latitude": lat, "longitude": lon,
+                }).execute()
+                coords_by_country[country] = {"latitude": lat, "longitude": lon}
+
     international = [
-        {"country": c, "participant_count": count} for c, count in country_counts.items()
+        {
+            "country": c,
+            "participant_count": count,
+            "latitude": coords_by_country.get(c, {}).get("latitude"),
+            "longitude": coords_by_country.get(c, {}).get("longitude"),
+        }
+        for c, count in country_counts.items()
     ]
 
     return {"uganda_districts": uganda_districts, "international": international}

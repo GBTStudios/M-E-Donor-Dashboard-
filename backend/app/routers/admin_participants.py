@@ -12,6 +12,7 @@ from app.db.supabase_client import supabase
 from app.models.participant_schemas import ImportUploadResponse, ImportDetail, ImportActionResponse
 from app.services.document_parser import extract_text
 from app.services.summarizer import client as anthropic_client  # reuses the existing Anthropic client setup
+from app.services.geocoding import geocode_district
 
 router = APIRouter(prefix="/admin/participants", tags=["admin-participants"])
 
@@ -35,6 +36,14 @@ HEADER_ALIASES = {
     "employed_before": "employed_before",
     "employed_before_type": "employed_before_type",
     "country": "country",
+}
+
+DISTRICT_ALIASES = {
+    "Namugongo- Kyaliwajjala": "Kyaliwajjala",
+    "Ndejje, Namasuba": "Namasuba",
+    "Rubanda, Kabale": "Rubanda",
+    "Fortportal": "Fort Portal",
+    "Kiryandogo": "Kiryandongo",
 }
 
 EXPECTED_COLUMNS = [
@@ -151,7 +160,7 @@ TEXT:
         raw_output = raw_output.strip("`").lstrip("json").strip()
 
     parsed = json.loads(raw_output)
-    return [_map_row({k: v for k, v in row.items()}) if False else {k: _coerce_value(k, row.get(k)) for k in EXPECTED_COLUMNS} for row in parsed]
+    return [{k: _coerce_value(k, row.get(k)) for k in EXPECTED_COLUMNS} for row in parsed]
 
 
 def _process_import(import_id: str, filename: str, file_bytes: bytes):
@@ -250,8 +259,28 @@ async def confirm_import(import_id: str, admin: dict = Depends(get_current_admin
     rows = record.get("preview_data", {}).get("all_rows") or record.get("preview_data", {}).get("sample_rows", [])
     for row in rows:
         clean_row = {k: _coerce_value(k, v) for k, v in row.items()}
+        if clean_row.get("district") in DISTRICT_ALIASES:
+            clean_row["district"] = DISTRICT_ALIASES[clean_row["district"]]
         clean_row["source_import_id"] = import_id
         supabase.table("participants").insert(clean_row).execute()
+
+    # Auto-geocode any Uganda district we haven't seen before, so future
+    # imports with brand-new districts get map coordinates automatically,
+    # with no manual lookup required.
+    unique_districts = set(
+        row.get("district") for row in rows
+        if row.get("country") == "Uganda" and row.get("district")
+    )
+    for district in unique_districts:
+        district = DISTRICT_ALIASES.get(district, district)
+        existing_coords = supabase.table("district_coordinates").select("district").eq("district", district).execute()
+        if not existing_coords.data:
+            coords = geocode_district(district)
+            if coords:
+                lat, lon = coords
+                supabase.table("district_coordinates").insert({
+                    "district": district, "latitude": lat, "longitude": lon,
+                }).execute()
 
     supabase.table("participant_imports").update({
         "status": "confirmed",
