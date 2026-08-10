@@ -15,6 +15,7 @@ import {
   LogOut,
   BarChart3,
   Images,
+  Upload,
 } from "lucide-react";
 import { getRole, type UserRole } from "@/lib/adminAuth";
 import { logoutUser } from "@/lib/auth";
@@ -30,6 +31,7 @@ const PRIMARY_NAV_ITEMS = [
 const CONTENT_NAV_ITEMS = [
   { label: "Landing Stats", icon: BarChart3, href: "/admin/stats" },
   { label: "Impact Stories", icon: Images, href: "/admin/stories" },
+  { label: "Participant Data", icon: Upload, href: "/admin/participants" },
 ] as const;
 
 function NavLink({
