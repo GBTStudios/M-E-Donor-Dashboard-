@@ -1,31 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import dynamic from "next/dynamic";
 import { MapPin } from "lucide-react";
 import type { OriginsData } from "@/lib/donorDashboard";
 
-// Approximate Uganda bounding box, used to position district markers
-// proportionally within the map card. No topojson boundary data is
-// available in this project yet, so this is a scatter-plot style map
-// (geographically positioned dots), not a filled district-shape map.
-const BOUNDS = { minLat: -1.5, maxLat: 4.2, minLng: 29.5, maxLng: 35.0 };
-
-function project(lat: number, lng: number) {
-  const x = ((lng - BOUNDS.minLng) / (BOUNDS.maxLng - BOUNDS.minLng)) * 100;
-  const y = 100 - ((lat - BOUNDS.minLat) / (BOUNDS.maxLat - BOUNDS.minLat)) * 100;
-  return { x, y };
-}
+// Leaflet reads `window` as soon as it's imported, which breaks Next.js's
+// server-side rendering. Loading it via next/dynamic with ssr:false keeps
+// it strictly client-side, which is required for any Leaflet map in Next.
+const OriginsMapLeaflet = dynamic(() => import("./OriginsMapLeaflet"), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-[#f5efe4] rounded-xl border border-black/5 flex items-center justify-center" style={{ height: 360 }}>
+      <p className="text-sm text-gray-400">Loading map...</p>
+    </div>
+  ),
+});
 
 export default function OriginsMap({ origins }: { origins: OriginsData }) {
-  const [hovered, setHovered] = useState<string | null>(null);
-
-  const plottable = origins.uganda_districts.filter(
-    (d) => d.latitude !== null && d.longitude !== null
-  );
   const pending = origins.uganda_districts.filter(
     (d) => d.latitude === null || d.longitude === null
   );
-  const maxCount = Math.max(...origins.uganda_districts.map((d) => d.participant_count), 1);
 
   return (
     <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-6">
@@ -35,31 +29,8 @@ export default function OriginsMap({ origins }: { origins: OriginsData }) {
         {origins.international.length > 0 && ", plus international participants"}
       </p>
 
-      <div className="relative bg-[#f5efe4] rounded-xl border border-black/5 aspect-[4/3] overflow-hidden">
-        {plottable.map((d) => {
-          const { x, y } = project(d.latitude!, d.longitude!);
-          const size = 8 + (d.participant_count / maxCount) * 14;
-          return (
-            <div
-              key={d.district}
-              className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer"
-              style={{ left: `${x}%`, top: `${y}%` }}
-              onMouseEnter={() => setHovered(d.district)}
-              onMouseLeave={() => setHovered(null)}
-            >
-              <div
-                className="rounded-full bg-[#1A534A] border-2 border-white shadow-md transition-transform hover:scale-110"
-                style={{ width: size, height: size }}
-              />
-              {hovered === d.district && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg z-10">
-                  <p className="font-semibold">{d.district}</p>
-                  <p className="text-white/70">{d.participant_count} participants</p>
-                </div>
-              )}
-            </div>
-          );
-        })}
+      <div className="rounded-xl overflow-hidden border border-black/5">
+        <OriginsMapLeaflet districts={origins.uganda_districts} />
       </div>
 
       {pending.length > 0 && (
