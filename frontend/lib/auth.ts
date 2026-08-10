@@ -1,15 +1,9 @@
 import { supabase } from "@/lib/supabaseClient";
-import { setFirstLoginFlag, setRole } from "@/lib/adminAuth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type LoginResult =
-  | {
-      success: true;
-      user: { id: string; email: string; full_name: string };
-      first_login: boolean;
-      role: string;
-    }
+  | { success: true; user: { id: string; email: string; full_name: string; role: string }; first_login: boolean }
   | { success: false; error: string };
 
 export async function loginUser(
@@ -27,17 +21,7 @@ export async function loginUser(
     if (response.status === 200) {
       const data = await response.json();
       localStorage.setItem("access_token", data.access_token);
-      // Admin/superadmin onboarding: track first-login status and role, so
-      // route guards and role-based UI (e.g. "Add Admin") can check them.
-      // Harmless no-op fields for donor accounts, which won't have them.
-      setFirstLoginFlag(Boolean(data.first_login));
-      if (data.user?.role) setRole(data.user.role);
-      return {
-        success: true,
-        user: data.user,
-        first_login: Boolean(data.first_login),
-        role: data.user?.role,
-      };
+      return { success: true, user: data.user, first_login: data.first_login ?? false };
     }
 
     const data = await response.json().catch(() => ({}));
@@ -161,7 +145,7 @@ export async function signInWithGoogle() {
 }
 
 type GoogleLoginResult =
-  | { success: true; user: { id: string; email: string; full_name: string } }
+  | { success: true; user: { id: string; email: string; full_name: string; role: string } }
   | { success: false; error: string };
 
 export async function completeGoogleLogin(): Promise<GoogleLoginResult> {
@@ -184,7 +168,7 @@ export async function completeGoogleLogin(): Promise<GoogleLoginResult> {
       localStorage.setItem("access_token", data.access_token);
       return {
         success: true,
-        user: { id: data.id, email: data.email, full_name: data.full_name },
+        user: { id: data.id, email: data.email, full_name: data.full_name, role: data.role },
       };
     }
 

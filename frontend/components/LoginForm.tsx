@@ -52,7 +52,7 @@ export default function LoginForm() {
     // - everyone else (donors) go to the donor dashboard.
     if (result.first_login) {
       router.push("/admin/set-password");
-    } else if (result.role === "admin" || result.role === "superadmin") {
+    } else if (result.user.role === "admin" || result.user.role === "superadmin") {
       router.push("/admin-dashboard");
     } else {
       router.push("/donor-dashboard");
@@ -150,7 +150,7 @@ export default function LoginForm() {
         <button
           type="submit"
           disabled={!bothFieldsFilled || loading}
-          className="w-full flex items-center justify-center gap-2 bg-teal-800 hover:bg-teal-900 text-white rounded-lg py-2.5 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 bg-teal-800 hover:bg-teal-900 text-white rounded-lg py-2.5 text-sm font-medium transition disabled:cursor-not-allowed"
         >
           {loading ? "Signing in..." : "Sign in to Platform"}
           {!loading && <ArrowRight className="w-4 h-4" />}

@@ -16,7 +16,7 @@ export default function GoogleCallbackPage() {
         setError(errorResult.error);
         return;
       }
-      router.push("/dashboard");
+      router.push(result.user.role === "admin" ? "/admin-dashboard" : "/donor-dashboard");
     }
     finishLogin();
   }, [router]);
