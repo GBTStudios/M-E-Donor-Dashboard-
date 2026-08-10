@@ -15,12 +15,14 @@ interface OriginsMapLeafletProps {
 export default function OriginsMapLeaflet({ districts, international = [] }: OriginsMapLeafletProps) {
   const plottableDistricts = districts.filter(
     (d): d is DistrictOrigin & { latitude: number; longitude: number } =>
-      d.latitude !== null && d.longitude !== null
+      typeof d.latitude === "number" && typeof d.longitude === "number" &&
+      !isNaN(d.latitude) && !isNaN(d.longitude)
   );
 
   const plottableCountries = international.filter(
     (c): c is CountryOrigin & { latitude: number; longitude: number } =>
-      c.latitude !== null && c.longitude !== null
+      typeof c.latitude === "number" && typeof c.longitude === "number" &&
+      !isNaN(c.latitude) && !isNaN(c.longitude)
   );
 
   const allPlottable = [
