@@ -10,6 +10,7 @@ from app.db.supabase_client import supabase
 from app.models.chat_schemas import ChatMessageRequest, ChatMessageResponse
 from app.services.chat_agent import run_chat_agent
 from app.services.qa_classifier import classify_qa_exchange
+from app.services.notification_service import create_notification
 
 router = APIRouter(tags=["chat"])
 
@@ -38,7 +39,7 @@ def _log_qa_exchange(question: str, response_text: str, session_id: str, donor_n
     """Runs in the background after the donor already has their answer."""
     classification = classify_qa_exchange(question, response_text)
 
-    supabase.table("qa_logs").insert({
+    log_result = supabase.table("qa_logs").insert({
         "session_id": session_id,
         "question": question,
         "response": response_text,
@@ -49,6 +50,14 @@ def _log_qa_exchange(question: str, response_text: str, session_id: str, donor_n
         "response_time_ms": response_time_ms,
         "moderation_status": "pending" if classification["status"] == "flagged" else None,
     }).execute()
+
+    if classification["status"] == "flagged":
+        log_id = log_result.data[0]["id"] if log_result.data else None
+        create_notification(
+            "conversation_flagged",
+            f"Conversation flagged: {donor_name} — {classification['reason'] or 'sensitive topic'}",
+            related_id=log_id,
+        )
 
 
 @router.post("/chat/message", response_model=ChatMessageResponse)

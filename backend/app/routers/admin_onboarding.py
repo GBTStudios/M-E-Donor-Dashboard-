@@ -12,6 +12,7 @@ from app.models.onboarding_schemas import (
 from app.db.supabase_client import supabase
 from app.core.security import hash_password
 from app.core.deps import get_current_user, get_current_superadmin_user
+from app.services.notification_service import create_notification
 
 router = APIRouter(tags=["admin-onboarding"])
 
@@ -86,6 +87,12 @@ async def create_admin(
 
     new_user = result.data[0]
 
+    create_notification(
+        "admin_created",
+        f"New admin account created: {new_user['full_name']}",
+        related_id=new_user["id"],
+    )
+
     return CreateAdminResponse(
         id=new_user["id"],
         email=new_user["email"],
@@ -100,12 +107,19 @@ async def deactivate_user(
     payload: DeactivateUserRequest,
     _: dict = Depends(get_current_superadmin_user),
 ):
-    existing = supabase.table("users").select("id").eq("id", payload.user_id).execute()
+    existing = supabase.table("users").select("id, email, full_name").eq("id", payload.user_id).execute()
 
     if not existing.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
 
     supabase.table("users").update({"is_active": False}).eq("id", payload.user_id).execute()
+
+    target = existing.data[0]
+    create_notification(
+        "admin_deactivated",
+        f"Account deactivated: {target.get('full_name') or target.get('email')}",
+        related_id=payload.user_id,
+    )
 
     return DeactivateUserResponse(message="Account deactivated.")
 
@@ -115,14 +129,63 @@ async def reactivate_user(
     payload: DeactivateUserRequest,
     _: dict = Depends(get_current_superadmin_user),
 ):
-    existing = supabase.table("users").select("id").eq("id", payload.user_id).execute()
+    existing = supabase.table("users").select("id, email, full_name").eq("id", payload.user_id).execute()
 
     if not existing.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
 
     supabase.table("users").update({"is_active": True}).eq("id", payload.user_id).execute()
 
+    target = existing.data[0]
+    create_notification(
+        "admin_reactivated",
+        f"Account reactivated: {target.get('full_name') or target.get('email')}",
+        related_id=payload.user_id,
+    )
+
     return DeactivateUserResponse(message="Account reactivated.")
+
+
+@router.post("/admin/delete-user", response_model=DeactivateUserResponse)
+async def delete_user(
+    payload: DeactivateUserRequest,
+    admin: dict = Depends(get_current_superadmin_user),
+):
+    if payload.user_id == admin["id"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own account.",
+        )
+
+    existing = supabase.table("users").select("id, email, full_name, role").eq("id", payload.user_id).execute()
+
+    if not existing.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+
+    target = existing.data[0]
+
+    if target["role"] == "superadmin":
+        superadmin_count = (
+            supabase.table("users")
+            .select("id", count="exact")
+            .eq("role", "superadmin")
+            .execute()
+        )
+        if (superadmin_count.count or 0) <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete the last remaining superadmin account.",
+            )
+
+    supabase.table("users").delete().eq("id", payload.user_id).execute()
+
+    create_notification(
+        "admin_deleted",
+        f"Account permanently deleted: {target.get('full_name') or target.get('email')}",
+        related_id=payload.user_id,
+    )
+
+    return DeactivateUserResponse(message="Account permanently deleted.")
 
 
 @router.get("/admin/users", response_model=list[AdminUserOut])

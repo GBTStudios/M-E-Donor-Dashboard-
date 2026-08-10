@@ -44,9 +44,9 @@ def _to_profile_response(user: dict) -> StaffProfileResponse:
         phone=user.get("phone"),
         role=user["role"],
         department=user.get("department"),
+        title=user.get("title"),
         location=user.get("location"),
         profile_photo_url=user.get("profile_photo_url"),
-        bio=user.get("bio"),
         created_at=user.get("created_at"),
         updated_at=user.get("updated_at"),
     )

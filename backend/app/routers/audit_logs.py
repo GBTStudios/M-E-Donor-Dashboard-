@@ -24,12 +24,41 @@ def _log_access(admin_id: str):
         pass
 
 
-def _row_to_item(row: dict, identity_map: dict) -> AuditLogItem:
+def _fetch_conversation_map(conversation_ids: list) -> dict:
+    """Returns {conversation_id: {originating_identity, user_name}}."""
+    if not conversation_ids:
+        return {}
+
+    convos = (
+        supabase.table("chat_conversations")
+        .select("id, originating_identity, user_id")
+        .in_("id", conversation_ids)
+        .execute()
+    )
+
+    user_ids = [c["user_id"] for c in convos.data if c.get("user_id")]
+    name_map = {}
+    if user_ids:
+        users_result = supabase.table("users").select("id, full_name").in_("id", user_ids).execute()
+        name_map = {u["id"]: u["full_name"] for u in users_result.data}
+
+    return {
+        c["id"]: {
+            "originating_identity": c["originating_identity"],
+            "user_name": name_map.get(c.get("user_id")),
+        }
+        for c in convos.data
+    }
+
+
+def _row_to_item(row: dict, convo_map: dict) -> AuditLogItem:
+    convo_info = convo_map.get(row["conversation_id"], {})
     return AuditLogItem(
         id=row["id"],
         log_number=row["log_number"],
         conversation_id=row["conversation_id"],
-        originating_identity=identity_map.get(row["conversation_id"], "Unknown"),
+        originating_identity=convo_info.get("originating_identity", "Unknown"),
+        user_name=convo_info.get("user_name"),
         inquiry=row["inquiry"],
         response=row["response"],
         status=row["status"],
@@ -37,18 +66,6 @@ def _row_to_item(row: dict, identity_map: dict) -> AuditLogItem:
         created_at=row["created_at"],
         reference_id=f"LOG-{row['log_number']:03d}",
     )
-
-
-def _fetch_identity_map(conversation_ids: list) -> dict:
-    if not conversation_ids:
-        return {}
-    result = (
-        supabase.table("chat_conversations")
-        .select("id, originating_identity")
-        .in_("id", conversation_ids)
-        .execute()
-    )
-    return {c["id"]: c["originating_identity"] for c in result.data}
 
 
 @router.get("", response_model=AuditLogListResponse)
@@ -87,9 +104,9 @@ async def list_audit_logs(
     result = query.execute()
 
     conversation_ids = [row["conversation_id"] for row in result.data]
-    identity_map = _fetch_identity_map(conversation_ids)
+    convo_map = _fetch_conversation_map(conversation_ids)
 
-    items = [_row_to_item(row, identity_map) for row in result.data]
+    items = [_row_to_item(row, convo_map) for row in result.data]
 
     return AuditLogListResponse(
         total=result.count or 0,
@@ -107,6 +124,13 @@ async def get_conversation_context(conversation_id: str, admin: dict = Depends(g
     if not convo.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found.")
 
+    convo_row = convo.data[0]
+    user_name = None
+    if convo_row.get("user_id"):
+        user_result = supabase.table("users").select("full_name").eq("id", convo_row["user_id"]).execute()
+        if user_result.data:
+            user_name = user_result.data[0]["full_name"]
+
     messages_result = (
         supabase.table("chat_audit_logs")
         .select("inquiry, response, status, created_at")
@@ -117,7 +141,8 @@ async def get_conversation_context(conversation_id: str, admin: dict = Depends(g
 
     return ConversationContextResponse(
         conversation_id=conversation_id,
-        originating_identity=convo.data[0]["originating_identity"],
+        originating_identity=convo_row["originating_identity"],
+        user_name=user_name,
         messages=[ConversationMessage(**m) for m in messages_result.data],
     )
 
@@ -165,7 +190,7 @@ async def export_audit_logs_pdf(
     result = query.execute()
 
     conversation_ids = [row["conversation_id"] for row in result.data]
-    identity_map = _fetch_identity_map(conversation_ids)
+    convo_map = _fetch_conversation_map(conversation_ids)
 
     pdf = FPDF()
     pdf.add_page()
@@ -178,24 +203,25 @@ async def export_audit_logs_pdf(
 
     pdf.set_font("Helvetica", "B", 9)
     pdf.cell(25, 8, "Ref ID", border=1)
-    pdf.cell(30, 8, "Identity", border=1)
+    pdf.cell(35, 8, "Identity/Name", border=1)
     pdf.cell(30, 8, "Timestamp", border=1)
     pdf.cell(20, 8, "Status", border=1)
-    pdf.cell(85, 8, "Inquiry", border=1)
+    pdf.cell(75, 8, "Inquiry", border=1)
     pdf.ln()
 
     pdf.set_font("Helvetica", "", 8)
     for row in result.data:
         ref_id = f"LOG-{row['log_number']:03d}"
-        identity = identity_map.get(row["conversation_id"], "Unknown")
+        convo_info = convo_map.get(row["conversation_id"], {})
+        display_identity = convo_info.get("user_name") or convo_info.get("originating_identity", "Unknown")
         timestamp = row["created_at"][:16].replace("T", " ")
-        inquiry_short = row["inquiry"][:60] + ("..." if len(row["inquiry"]) > 60 else "")
+        inquiry_short = row["inquiry"][:50] + ("..." if len(row["inquiry"]) > 50 else "")
 
         pdf.cell(25, 7, ref_id, border=1)
-        pdf.cell(30, 7, identity[:18], border=1)
+        pdf.cell(35, 7, display_identity[:22], border=1)
         pdf.cell(30, 7, timestamp, border=1)
         pdf.cell(20, 7, row["status"], border=1)
-        pdf.cell(85, 7, inquiry_short, border=1)
+        pdf.cell(75, 7, inquiry_short, border=1)
         pdf.ln()
 
     pdf_bytes = bytes(pdf.output())
