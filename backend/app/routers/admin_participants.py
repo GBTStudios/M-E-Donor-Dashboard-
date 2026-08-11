@@ -1,9 +1,9 @@
 import io
 import csv
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, Form, status
 from openpyxl import load_workbook
 
 from app.core.deps import get_current_admin_user
@@ -19,6 +19,7 @@ EXPECTED_COLUMNS = [
     "household_size", "pre_program_income", "main_breadwinner",
     "age", "highest_education", "employed_before",
     "employed_before_type", "district", "country",
+    "graduation_status",
 ]
 
 
@@ -41,12 +42,16 @@ def _parse_spreadsheet_rows(filename: str, file_bytes: bytes) -> List[dict]:
             normalized = {k.strip().lower().replace(" ", "_"): v for k, v in row.items()}
             rows.append({k: normalized.get(k) for k in EXPECTED_COLUMNS})
 
+    for row in rows:
+        if not row.get("graduation_status"):
+            row["graduation_status"] = "enrolled"
+
     return rows
 
 
 def _parse_via_ai(filename: str, file_bytes: bytes) -> List[dict]:
     raise NotImplementedError(
-        "PDF/DOCX participant import needs an AI structuring step — not yet built. "
+        "PDF/DOCX participant import needs an AI structuring step - not yet built. "
         "Use Excel or CSV for now."
     )
 
@@ -81,15 +86,17 @@ def _process_import(import_id: str, filename: str, file_bytes: bytes):
 @router.post("/import", response_model=ImportUploadResponse, status_code=status.HTTP_202_ACCEPTED)
 async def import_participants(
     background_tasks: BackgroundTasks,
+    cohort_id: str = Form(...),
     file: UploadFile = File(...),
     admin: dict = Depends(get_current_admin_user),
 ):
+    cohort_check = supabase.table("cohorts").select("id").eq("id", cohort_id).execute()
+    if not cohort_check.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cohort not found.")
+
     ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
     if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="File must be Excel, CSV, PDF, or DOCX.",
-        )
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="File must be Excel, CSV, PDF, or DOCX.")
 
     file_bytes = await file.read()
     if len(file_bytes) > MAX_FILE_SIZE:
@@ -102,6 +109,7 @@ async def import_participants(
             "file_type": ext,
             "status": "processing",
             "uploaded_by": admin["id"],
+            "cohort_id": cohort_id,
         })
         .execute()
     )
@@ -128,14 +136,12 @@ async def confirm_import(import_id: str, admin: dict = Depends(get_current_admin
 
     record = existing.data[0]
     if record["status"] != "pending_review":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Only imports in 'pending_review' status can be confirmed.",
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Only imports in 'pending_review' status can be confirmed.")
 
     rows = record.get("preview_data", {}).get("sample_rows", [])
     for row in rows:
         row["source_import_id"] = import_id
+        row["cohort_id"] = record.get("cohort_id")
         supabase.table("participants").insert(row).execute()
 
     supabase.table("participant_imports").update({
