@@ -1,3 +1,4 @@
+import re
 from datetime import date
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -91,10 +92,19 @@ def _compute_baseline(rows: list) -> dict:
     }
 
 
+def _cohort_sort_key(cohort: dict):
+    """Sorts by the number in the cohort name (Cohort 1, Cohort 2, ...) so
+    display order matches cohort numbering, not creation order. Falls back
+    to the name itself if no number is found, so non-numbered cohorts still
+    sort predictably instead of erroring."""
+    match = re.search(r"\d+", cohort.get("name", ""))
+    return (int(match.group()) if match else float("inf"), cohort.get("name", ""))
+
+
 @router.get("/cohorts", response_model=List[CohortOut])
 async def get_cohorts(user: dict = Depends(get_current_user)):
-    cohorts_result = supabase.table("cohorts").select("*").order("created_at").execute()
-    cohorts = cohorts_result.data
+    cohorts_result = supabase.table("cohorts").select("*").execute()
+    cohorts = sorted(cohorts_result.data, key=_cohort_sort_key)
     grad_map = _graduation_pct_map()
     emp_map = _employment_rate_map()
 
