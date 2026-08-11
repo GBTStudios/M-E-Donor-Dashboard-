@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Q
 
 from app.core.deps import get_current_admin_user
 from app.db.supabase_client import supabase
-from app.models.report_schemas import ReportListItem, UploadReportResponse, ReportActionResponse
+from app.models.report_schemas import ReportListItem, ReportDetail, UploadReportResponse, ReportActionResponse
 
 router = APIRouter(prefix="/admin/reports", tags=["admin-reports"])
 
@@ -33,16 +33,13 @@ async def upload_report(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Report file must be PDF, DOCX, or XLSX.",
         )
-
     file_bytes = await file.read()
     if len(file_bytes) > MAX_FILE_SIZE:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="File must be under 45MB.")
-
     if cohort_id:
         cohort_check = supabase.table("cohorts").select("id").eq("id", cohort_id).execute()
         if not cohort_check.data:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cohort not found.")
-
     storage_path = f"{uuid.uuid4()}.{ext}"
     try:
         supabase.storage.from_("reports-documents").upload(
@@ -53,9 +50,7 @@ async def upload_report(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Upload to storage failed - the file may exceed the storage provider's size limit. ({e})",
         )
-
     file_url = supabase.storage.from_("reports-documents").get_public_url(storage_path)
-
     result = supabase.table("reports").insert({
         "title": title,
         "cohort_id": cohort_id,
@@ -86,9 +81,16 @@ async def list_reports(
         query = query.lte("report_date", end_date.isoformat())
     if cohort_id:
         query = query.eq("cohort_id", cohort_id)
-
     result = query.execute()
     return result.data
+
+
+@router.get("/{report_id}", response_model=ReportDetail)
+async def get_report(report_id: str, admin: dict = Depends(get_current_admin_user)):
+    result = supabase.table("reports").select("*").eq("id", report_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
+    return result.data[0]
 
 
 @router.delete("/{report_id}", response_model=ReportActionResponse)
@@ -96,7 +98,6 @@ async def delete_report(report_id: str, admin: dict = Depends(get_current_admin_
     existing = supabase.table("reports").select("file_url").eq("id", report_id).execute()
     if not existing.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
-
     file_url = existing.data[0].get("file_url")
     if file_url:
         try:
@@ -104,6 +105,5 @@ async def delete_report(report_id: str, admin: dict = Depends(get_current_admin_
             supabase.storage.from_("reports-documents").remove([path])
         except Exception:
             pass
-
     supabase.table("reports").delete().eq("id", report_id).execute()
     return ReportActionResponse(message="Report deleted.", id=report_id)
