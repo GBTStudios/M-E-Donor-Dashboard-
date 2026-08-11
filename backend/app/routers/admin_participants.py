@@ -263,7 +263,7 @@ async def confirm_import(import_id: str, admin: dict = Depends(get_current_admin
     # Use every parsed row, not just the 10-row preview sample.
     rows = record.get("preview_data", {}).get("all_rows") or record.get("preview_data", {}).get("sample_rows", [])
     for row in rows:
-        clean_row = {k: _coerce_value(k, v) for k, v in row.items()}
+        clean_row = dict(row)
         if clean_row.get("district") in DISTRICT_ALIASES:
             clean_row["district"] = DISTRICT_ALIASES[clean_row["district"]]
         clean_row["source_import_id"] = import_id
