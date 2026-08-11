@@ -320,3 +320,11 @@ async def export_impact_summary(user: dict = Depends(get_current_user)):
         media_type="application/pdf",
         headers={"Content-Disposition": "attachment; filename=impact_summary.pdf"},
     )
+
+
+@router.get("/reports/{report_id}", response_model=ReportDetail)
+async def get_report_detail(report_id: str, user: dict = Depends(get_current_user)):
+    result = supabase.table("reports").select("*").eq("id", report_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
+    return result.data[0]
