@@ -20,6 +20,7 @@ class AdminStoryOut(BaseModel):
     body: str
     image_url: Optional[str] = None
     featured: bool
+    cohort_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

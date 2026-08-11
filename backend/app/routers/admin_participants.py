@@ -2,9 +2,9 @@ import io
 import csv
 import json
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, Form, status
 from openpyxl import load_workbook
 
 from app.core.deps import get_current_admin_user
@@ -50,6 +50,7 @@ EXPECTED_COLUMNS = [
     "household_size", "pre_program_income", "main_breadwinner",
     "age", "highest_education", "employed_before",
     "employed_before_type", "district", "country",
+    "graduation_status",
 ]
 
 INTEGER_FIELDS = {"household_size", "age"}
@@ -121,6 +122,10 @@ def _parse_spreadsheet_rows(filename: str, file_bytes: bytes) -> List[dict]:
         for row in reader:
             raw_row = {k.strip().lower().replace(" ", "_"): v for k, v in row.items()}
             rows.append(_map_row(raw_row))
+
+    for row in rows:
+        if not row.get("graduation_status"):
+            row["graduation_status"] = "enrolled"
 
     return rows
 
@@ -195,15 +200,17 @@ def _process_import(import_id: str, filename: str, file_bytes: bytes):
 @router.post("/import", response_model=ImportUploadResponse, status_code=status.HTTP_202_ACCEPTED)
 async def import_participants(
     background_tasks: BackgroundTasks,
+    cohort_id: str = Form(...),
     file: UploadFile = File(...),
     admin: dict = Depends(get_current_admin_user),
 ):
+    cohort_check = supabase.table("cohorts").select("id").eq("id", cohort_id).execute()
+    if not cohort_check.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cohort not found.")
+
     ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
     if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="File must be Excel, CSV, PDF, or DOCX.",
-        )
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="File must be Excel, CSV, PDF, or DOCX.")
 
     file_bytes = await file.read()
     if len(file_bytes) > MAX_FILE_SIZE:
@@ -216,6 +223,7 @@ async def import_participants(
             "file_type": ext,
             "status": "processing",
             "uploaded_by": admin["id"],
+            "cohort_id": cohort_id,
         })
         .execute()
     )
@@ -250,10 +258,7 @@ async def confirm_import(import_id: str, admin: dict = Depends(get_current_admin
 
     record = existing.data[0]
     if record["status"] != "pending_review":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Only imports in 'pending_review' status can be confirmed.",
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Only imports in 'pending_review' status can be confirmed.")
 
     # Use every parsed row, not just the 10-row preview sample.
     rows = record.get("preview_data", {}).get("all_rows") or record.get("preview_data", {}).get("sample_rows", [])
@@ -262,6 +267,7 @@ async def confirm_import(import_id: str, admin: dict = Depends(get_current_admin
         if clean_row.get("district") in DISTRICT_ALIASES:
             clean_row["district"] = DISTRICT_ALIASES[clean_row["district"]]
         clean_row["source_import_id"] = import_id
+        clean_row["cohort_id"] = record.get("cohort_id")
         supabase.table("participants").insert(clean_row).execute()
 
     # Auto-geocode any Uganda district we haven't seen before, so future

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, signup, google_signup, verification, password_reset, stories, admin_stories, stats, admin_onboarding, admin_documents_audit, admin_documents, admin_participants, profile, security, dashboard, settings, audit_logs, chat, qa_analytics, donor_dashboard, notifications
+from app.routers import auth, signup, google_signup, verification, password_reset, stories, admin_stories, stats, admin_onboarding, admin_documents_audit, admin_documents, admin_participants, profile, security, dashboard, settings, audit_logs, chat, qa_analytics, donor_dashboard, notifications, admin_reports, admin_insights, admin_cohorts
 
 app = FastAPI(title="Groundbreaker Donor Dashboard API")
 
@@ -34,6 +34,9 @@ app.include_router(chat.router)
 app.include_router(qa_analytics.router)
 app.include_router(donor_dashboard.router)
 app.include_router(notifications.router)
+app.include_router(admin_reports.router)
+app.include_router(admin_insights.router)
+app.include_router(admin_cohorts.router)
 
 
 @app.get("/health")
