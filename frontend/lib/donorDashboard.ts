@@ -50,6 +50,8 @@ export interface DistrictOrigin {
 export interface CountryOrigin {
   country: string;
   participant_count: number;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface OriginsData {
