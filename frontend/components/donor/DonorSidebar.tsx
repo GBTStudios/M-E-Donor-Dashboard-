@@ -17,7 +17,7 @@ const NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/donor-dashboard" },
   { label: "Cohorts", icon: Users, href: "#" },
   { label: "Success Stories", icon: Sparkles, href: "#" },
-  { label: "Reports", icon: FileText, href: "#" },
+  { label: "Reports", icon: FileText, href: "/donor-dashboard/reports" },
 ] as const;
 
 function NavLink({
