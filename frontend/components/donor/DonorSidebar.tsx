@@ -15,9 +15,9 @@ import { logoutUser } from "@/lib/auth";
 
 const NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/donor-dashboard" },
-  { label: "Cohorts", icon: Users, href: "#" },
+  { label: "Cohorts", icon: Users, href: "/donor/cohorts" },
   { label: "Success Stories", icon: Sparkles, href: "#" },
-  { label: "Reports", icon: FileText, href: "#" },
+  { label: "Reports", icon: FileText, href: "/donor-dashboard/reports" },
 ] as const;
 
 function NavLink({
@@ -49,7 +49,7 @@ function NavLink({
 
 export default function DonorSidebar() {
   return (
-    <aside className="w-64 h-full bg-[#1A534A] flex flex-col py-7 px-5 flex-shrink-0">
+    <aside className="w-64 h-screen sticky top-0 bg-[#1A534A] flex flex-col py-7 px-5 flex-shrink-0 overflow-y-auto">
       <div className="flex items-center gap-2.5 px-1 mb-1">
         <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
           G

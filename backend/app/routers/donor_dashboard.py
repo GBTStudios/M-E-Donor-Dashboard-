@@ -316,3 +316,17 @@ async def get_origins(user: dict = Depends(get_current_user)):
     ]
 
     return {"uganda_districts": uganda_districts, "international": international}
+
+@router.get("/reports/impact-summary/export")
+async def export_impact_summary(user: dict = Depends(get_current_user)):
+    from fastapi.responses import StreamingResponse
+    import io
+    from app.services.impact_report import generate_impact_summary_pdf
+
+    pdf_bytes = generate_impact_summary_pdf()
+
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=impact_summary.pdf"},
+    )
