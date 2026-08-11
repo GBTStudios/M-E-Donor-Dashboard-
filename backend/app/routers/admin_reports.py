@@ -69,9 +69,6 @@ async def upload_report(
     return UploadReportResponse(id=report["id"], title=report["title"])
 
 
-    return UploadReportResponse(id=report["id"], title=report["title"])
-
-
 @router.get("", response_model=List[ReportListItem])
 async def list_reports(
     admin: dict = Depends(get_current_admin_user),
