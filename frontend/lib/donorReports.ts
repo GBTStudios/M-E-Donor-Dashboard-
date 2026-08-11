@@ -2,25 +2,23 @@ import { getAuthHeaders } from "@/lib/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export interface UploadedReport {
+export interface ReportListItem {
   id: string;
   title: string;
-  description?: string;
-  category?: string;
-  uploaded_at: string;
-  file_url: string;
+  cohort_id: string | null;
+  report_date: string;
+  file_type: string;
+  file_size: number | null;
+  created_at: string;
 }
 
 export interface FetchReportsResult {
   success: boolean;
-  reports?: UploadedReport[];
+  reports?: ReportListItem[];
   status?: 401 | 403 | "error";
   error?: string;
 }
 
-// Backend endpoint GET /donor/dashboard/reports is still in progress on the
-// admin-uploaded-reports feature. Shape here follows the current contract;
-// confirm field names once that branch is pushed and adjust if needed.
 export async function fetchReports(): Promise<FetchReportsResult> {
   try {
     const response = await fetch(`${API_URL}/donor/dashboard/reports`, {
@@ -38,6 +36,38 @@ export async function fetchReports(): Promise<FetchReportsResult> {
       return { success: false, status: 403, error: "You do not have access to this page." };
     }
     return { success: false, status: "error", error: "Something went wrong loading reports." };
+  } catch {
+    return { success: false, status: "error", error: "Network error. Please try again." };
+  }
+}
+
+export interface FetchCohortReportResult {
+  success: boolean;
+  file_url?: string;
+  status?: 401 | 404 | "error";
+  error?: string;
+}
+
+// Donors can only reach a report's file_url via its cohort's latest report,
+// not by report id directly — that's the current backend contract. Only
+// call this for reports that have a cohort_id.
+export async function fetchCohortReportUrl(cohortId: string): Promise<FetchCohortReportResult> {
+  try {
+    const response = await fetch(`${API_URL}/donor/dashboard/cohorts/${cohortId}/report`, {
+      headers: { ...getAuthHeaders() },
+    });
+
+    if (response.status === 200) {
+      const data = await response.json();
+      return { success: true, file_url: data.file_url };
+    }
+    if (response.status === 401) {
+      return { success: false, status: 401, error: "Your session has expired. Please log in again." };
+    }
+    if (response.status === 404) {
+      return { success: false, status: 404, error: "No report found for this cohort." };
+    }
+    return { success: false, status: "error", error: "Something went wrong opening this report." };
   } catch {
     return { success: false, status: "error", error: "Network error. Please try again." };
   }

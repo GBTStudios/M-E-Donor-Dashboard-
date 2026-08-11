@@ -1,14 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Download, FileText, Loader2 } from "lucide-react";
+import { Download, FileText, Loader2, ExternalLink } from "lucide-react";
 import DonorLayout from "@/components/donor/DonorLayout";
-import { fetchReports, downloadImpactSummary, UploadedReport } from "@/lib/donorReports";
+import {
+  fetchReports,
+  fetchCohortReportUrl,
+  downloadImpactSummary,
+  ReportListItem,
+} from "@/lib/donorReports";
+
+function formatFileSize(bytes: number | null): string {
+  if (!bytes) return "";
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(0)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
 
 export default function DonorReportsPage() {
-  const [reports, setReports] = useState<UploadedReport[]>([]);
+  const [reports, setReports] = useState<ReportListItem[]>([]);
   const [loadingReports, setLoadingReports] = useState(true);
   const [reportsError, setReportsError] = useState("");
+  const [openingId, setOpeningId] = useState<string | null>(null);
 
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
@@ -26,7 +39,19 @@ export default function DonorReportsPage() {
     load();
   }, []);
 
-  async function handleDownload() {
+  async function handleOpenReport(report: ReportListItem) {
+    if (!report.cohort_id) return;
+    setOpeningId(report.id);
+    const result = await fetchCohortReportUrl(report.cohort_id);
+    setOpeningId(null);
+    if (result.success && result.file_url) {
+      window.open(result.file_url, "_blank", "noopener,noreferrer");
+    } else if (result.error) {
+      setReportsError(result.error);
+    }
+  }
+
+  async function handleDownloadSummary() {
     setDownloading(true);
     setDownloadError("");
     const result = await downloadImpactSummary();
@@ -70,24 +95,34 @@ export default function DonorReportsPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate">{r.title}</p>
-                      {r.description && (
-                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-                          {r.description}
-                        </p>
-                      )}
                       <p className="text-xs text-gray-400 mt-1">
-                        {new Date(r.uploaded_at).toLocaleDateString()}
+                        {new Date(r.report_date).toLocaleDateString()}
+                        {r.file_size ? ` · ${formatFileSize(r.file_size)}` : ""}
+                        {r.file_type ? ` · ${r.file_type.toUpperCase()}` : ""}
                       </p>
                     </div>
-                      <a
-                      href={r.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-teal-700 hover:text-teal-900 flex-shrink-0"
-                      aria-label={`Open ${r.title}`}
-                    >
-                      <Download className="w-4 h-4" />
-                    </a>
+                    {r.cohort_id ? (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenReport(r)}
+                        disabled={openingId === r.id}
+                        aria-label={`Open ${r.title}`}
+                        className="text-teal-700 hover:text-teal-900 flex-shrink-0 disabled:opacity-50"
+                      >
+                        {openingId === r.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <ExternalLink className="w-4 h-4" />
+                        )}
+                      </button>
+                    ) : (
+                      <span
+                        className="text-xs text-gray-300 flex-shrink-0"
+                        title="This report isn't linked to a cohort, so it can't be opened from here yet."
+                      >
+                        —
+                      </span>
+                    )}
                   </div>
                 </li>
               ))}
@@ -113,7 +148,7 @@ export default function DonorReportsPage() {
 
           <button
             type="button"
-            onClick={handleDownload}
+            onClick={handleDownloadSummary}
             disabled={downloading}
             className="flex items-center justify-center gap-2 bg-white text-[#1A534A] rounded-lg py-2.5 px-4 text-sm font-medium hover:bg-white/90 transition disabled:opacity-70 disabled:cursor-not-allowed"
           >

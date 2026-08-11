@@ -10,7 +10,13 @@ from app.models.report_schemas import ReportListItem, UploadReportResponse, Repo
 
 router = APIRouter(prefix="/admin/reports", tags=["admin-reports"])
 
-MAX_FILE_SIZE = 25 * 1024 * 1024
+MAX_FILE_SIZE = 45 * 1024 * 1024  # 45MB - stays under Supabase Free plan's 50MB hard cap
+ALLOWED_EXTENSIONS = {"pdf", "docx", "xlsx"}
+CONTENT_TYPES = {
+    "pdf": "application/pdf",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+}
 
 
 @router.post("", response_model=UploadReportResponse, status_code=status.HTTP_201_CREATED)
@@ -21,20 +27,33 @@ async def upload_report(
     file: UploadFile = File(...),
     admin: dict = Depends(get_current_admin_user),
 ):
-    if not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Report file must be a PDF.")
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Report file must be PDF, DOCX, or XLSX.",
+        )
 
     file_bytes = await file.read()
     if len(file_bytes) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="File must be under 25MB.")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="File must be under 45MB.")
 
     if cohort_id:
         cohort_check = supabase.table("cohorts").select("id").eq("id", cohort_id).execute()
         if not cohort_check.data:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cohort not found.")
 
-    storage_path = f"{uuid.uuid4()}.pdf"
-    supabase.storage.from_("reports-documents").upload(storage_path, file_bytes, {"content-type": "application/pdf"})
+    storage_path = f"{uuid.uuid4()}.{ext}"
+    try:
+        supabase.storage.from_("reports-documents").upload(
+            storage_path, file_bytes, {"content-type": CONTENT_TYPES[ext]}
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Upload to storage failed - the file may exceed the storage provider's size limit. ({e})",
+        )
+
     file_url = supabase.storage.from_("reports-documents").get_public_url(storage_path)
 
     result = supabase.table("reports").insert({
@@ -42,12 +61,14 @@ async def upload_report(
         "cohort_id": cohort_id,
         "report_date": report_date.isoformat(),
         "file_url": file_url,
-        "file_type": "pdf",
+        "file_type": ext,
         "file_size": len(file_bytes),
         "uploaded_by": admin["id"],
     }).execute()
-
     report = result.data[0]
+    return UploadReportResponse(id=report["id"], title=report["title"])
+
+
     return UploadReportResponse(id=report["id"], title=report["title"])
 
 
