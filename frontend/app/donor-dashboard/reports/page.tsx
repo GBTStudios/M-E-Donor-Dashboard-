@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Download, FileText, Loader2, Eye } from "lucide-react";
 import DonorLayout from "@/components/donor/DonorLayout";
 import ReportViewerModal from "@/components/ui/ReportViewerModal";
@@ -20,6 +21,7 @@ function formatFileSize(bytes: number | null): string {
 }
 
 export default function DonorReportsPage() {
+  const router = useRouter();
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [loadingReports, setLoadingReports] = useState(true);
   const [reportsError, setReportsError] = useState("");
@@ -35,6 +37,10 @@ export default function DonorReportsPage() {
   useEffect(() => {
     async function load() {
       const result = await fetchReports();
+      if (result.status === 401) {
+        router.replace("/session-expired");
+        return;
+      }
       if (result.success && result.reports) {
         setReports(result.reports);
       } else if (result.error) {
@@ -43,7 +49,7 @@ export default function DonorReportsPage() {
       setLoadingReports(false);
     }
     load();
-  }, []);
+  }, [router]);
 
   async function handleView(report: ReportListItem) {
     setViewTarget(report);
@@ -52,6 +58,10 @@ export default function DonorReportsPage() {
     setViewLoading(true);
 
     const direct = await fetchReportUrl(report.id);
+    if (direct.status === 401) {
+      router.replace("/session-expired");
+      return;
+    }
     if (direct.success && direct.file_url) {
       setViewLoading(false);
       setViewUrl(direct.file_url);
@@ -60,6 +70,10 @@ export default function DonorReportsPage() {
 
     if (report.cohort_id) {
       const viaCohort = await fetchCohortReportUrl(report.cohort_id);
+      if (viaCohort.status === 401) {
+        router.replace("/session-expired");
+        return;
+      }
       setViewLoading(false);
       if (viaCohort.success && viaCohort.file_url) {
         setViewUrl(viaCohort.file_url);
@@ -70,11 +84,7 @@ export default function DonorReportsPage() {
     }
 
     setViewLoading(false);
-    setViewError(
-      direct.status === 401
-        ? direct.error ?? "Your session has expired. Please log in again."
-        : "This report isn't linked to a cohort, so it can't be previewed here yet."
-    );
+    setViewError("This report isn't linked to a cohort, so it can't be previewed here yet.");
   }
 
   async function handleDownloadSummary() {
@@ -82,6 +92,10 @@ export default function DonorReportsPage() {
     setDownloadError("");
     const result = await downloadImpactSummary();
     setDownloading(false);
+    if (result.status === 401) {
+      router.replace("/session-expired");
+      return;
+    }
     if (!result.success && result.error) {
       setDownloadError(result.error);
     }
