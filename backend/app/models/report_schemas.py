@@ -28,3 +28,9 @@ class UploadReportResponse(BaseModel):
 class ReportActionResponse(BaseModel):
     message: str
     id: Optional[str] = None
+
+
+class UpdateReportRequest(BaseModel):
+    title: Optional[str] = None
+    cohort_id: Optional[str] = None
+    report_date: Optional[date] = None

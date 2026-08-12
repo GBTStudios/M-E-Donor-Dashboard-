@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Q
 
 from app.core.deps import get_current_admin_user
 from app.db.supabase_client import supabase
-from app.models.report_schemas import ReportListItem, ReportDetail, UploadReportResponse, ReportActionResponse
+from app.models.report_schemas import ReportListItem, ReportDetail, UploadReportResponse, ReportActionResponse, UpdateReportRequest
 
 router = APIRouter(prefix="/admin/reports", tags=["admin-reports"])
 
@@ -90,6 +90,28 @@ async def get_report(report_id: str, admin: dict = Depends(get_current_admin_use
     result = supabase.table("reports").select("*").eq("id", report_id).execute()
     if not result.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
+    return result.data[0]
+
+
+@router.put("/{report_id}", response_model=ReportDetail)
+async def update_report(report_id: str, payload: UpdateReportRequest, admin: dict = Depends(get_current_admin_user)):
+    existing = supabase.table("reports").select("*").eq("id", report_id).execute()
+    if not existing.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="No fields provided to update.")
+
+    if update_data.get("cohort_id"):
+        cohort_check = supabase.table("cohorts").select("id").eq("id", update_data["cohort_id"]).execute()
+        if not cohort_check.data:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cohort not found.")
+
+    if "report_date" in update_data:
+        update_data["report_date"] = update_data["report_date"].isoformat()
+
+    result = supabase.table("reports").update(update_data).eq("id", report_id).execute()
     return result.data[0]
 
 
