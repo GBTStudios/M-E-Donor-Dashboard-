@@ -133,3 +133,65 @@ export async function deleteReport(reportId: string): Promise<DeleteReportResult
     return { success: false, error: "Network error. Please try again." };
   }
 }
+
+export interface FetchReportUrlResult {
+  success: boolean;
+  file_url?: string;
+  status?: 401 | 404 | "error";
+  error?: string;
+}
+
+// Direct-by-id lookup. Backend endpoint (GET /admin/reports/{report_id})
+// is not built yet as of this writing — this will 404 until it exists.
+// Callers should fall back to fetchCohortReportUrl for cohort-linked
+// reports in the meantime.
+export async function fetchReportUrl(reportId: string): Promise<FetchReportUrlResult> {
+  try {
+    const response = await fetch(`${API_URL}/admin/reports/${reportId}`, {
+      headers: { ...getAuthHeaders() },
+    });
+
+    if (response.status === 200) {
+      const data = await response.json();
+      return { success: true, file_url: data.file_url };
+    }
+    if (response.status === 401) {
+      return { success: false, status: 401, error: "Your session has expired. Please log in again." };
+    }
+    if (response.status === 404) {
+      return { success: false, status: 404, error: "Report not found." };
+    }
+    return { success: false, status: "error", error: "Something went wrong opening this report." };
+  } catch {
+    return { success: false, status: "error", error: "Network error. Please try again." };
+  }
+}
+
+export interface FetchCohortReportResult {
+  success: boolean;
+  file_url?: string;
+  status?: 401 | 404 | "error";
+  error?: string;
+}
+
+export async function fetchCohortReportUrl(cohortId: string): Promise<FetchCohortReportResult> {
+  try {
+    const response = await fetch(`${API_URL}/donor/dashboard/cohorts/${cohortId}/report`, {
+      headers: { ...getAuthHeaders() },
+    });
+
+    if (response.status === 200) {
+      const data = await response.json();
+      return { success: true, file_url: data.file_url };
+    }
+    if (response.status === 401) {
+      return { success: false, status: 401, error: "Your session has expired. Please log in again." };
+    }
+    if (response.status === 404) {
+      return { success: false, status: 404, error: "No report found for this cohort." };
+    }
+    return { success: false, status: "error", error: "Something went wrong opening this report." };
+  } catch {
+    return { success: false, status: "error", error: "Network error. Please try again." };
+  }
+}

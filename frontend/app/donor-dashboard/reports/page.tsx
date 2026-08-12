@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Download, FileText, Loader2, ExternalLink } from "lucide-react";
+import { Download, FileText, Loader2, Eye } from "lucide-react";
 import DonorLayout from "@/components/donor/DonorLayout";
+import ReportViewerModal from "@/components/ui/ReportViewerModal";
 import {
   fetchReports,
+  fetchReportUrl,
   fetchCohortReportUrl,
   downloadImpactSummary,
   ReportListItem,
@@ -21,7 +23,11 @@ export default function DonorReportsPage() {
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [loadingReports, setLoadingReports] = useState(true);
   const [reportsError, setReportsError] = useState("");
-  const [openingId, setOpeningId] = useState<string | null>(null);
+
+  const [viewTarget, setViewTarget] = useState<ReportListItem | null>(null);
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [viewError, setViewError] = useState("");
 
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
@@ -39,16 +45,36 @@ export default function DonorReportsPage() {
     load();
   }, []);
 
-  async function handleOpenReport(report: ReportListItem) {
-    if (!report.cohort_id) return;
-    setOpeningId(report.id);
-    const result = await fetchCohortReportUrl(report.cohort_id);
-    setOpeningId(null);
-    if (result.success && result.file_url) {
-      window.open(result.file_url, "_blank", "noopener,noreferrer");
-    } else if (result.error) {
-      setReportsError(result.error);
+  async function handleView(report: ReportListItem) {
+    setViewTarget(report);
+    setViewUrl(null);
+    setViewError("");
+    setViewLoading(true);
+
+    const direct = await fetchReportUrl(report.id);
+    if (direct.success && direct.file_url) {
+      setViewLoading(false);
+      setViewUrl(direct.file_url);
+      return;
     }
+
+    if (report.cohort_id) {
+      const viaCohort = await fetchCohortReportUrl(report.cohort_id);
+      setViewLoading(false);
+      if (viaCohort.success && viaCohort.file_url) {
+        setViewUrl(viaCohort.file_url);
+      } else {
+        setViewError(viaCohort.error ?? "Something went wrong opening this report.");
+      }
+      return;
+    }
+
+    setViewLoading(false);
+    setViewError(
+      direct.status === 401
+        ? direct.error ?? "Your session has expired. Please log in again."
+        : "This report isn't linked to a cohort, so it can't be previewed here yet."
+    );
   }
 
   async function handleDownloadSummary() {
@@ -101,28 +127,14 @@ export default function DonorReportsPage() {
                         {r.file_type ? ` · ${r.file_type.toUpperCase()}` : ""}
                       </p>
                     </div>
-                    {r.cohort_id ? (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenReport(r)}
-                        disabled={openingId === r.id}
-                        aria-label={`Open ${r.title}`}
-                        className="text-teal-700 hover:text-teal-900 flex-shrink-0 disabled:opacity-50"
-                      >
-                        {openingId === r.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <ExternalLink className="w-4 h-4" />
-                        )}
-                      </button>
-                    ) : (
-                      <span
-                        className="text-xs text-gray-300 flex-shrink-0"
-                        title="This report isn't linked to a cohort, so it can't be opened from here yet."
-                      >
-                        —
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleView(r)}
+                      aria-label={`View ${r.title}`}
+                      className="text-teal-700 hover:text-teal-900 flex-shrink-0"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
                   </div>
                 </li>
               ))}
@@ -166,6 +178,16 @@ export default function DonorReportsPage() {
           </button>
         </div>
       </div>
+
+      <ReportViewerModal
+        open={viewTarget !== null}
+        title={viewTarget?.title ?? ""}
+        fileUrl={viewUrl}
+        fileType={viewTarget?.file_type}
+        loading={viewLoading}
+        error={viewError}
+        onClose={() => setViewTarget(null)}
+      />
     </DonorLayout>
   );
 }

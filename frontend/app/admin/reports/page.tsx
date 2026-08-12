@@ -1,11 +1,15 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
-import { Loader2, Trash2, CheckCircle2, UploadCloud } from "lucide-react";
+import { Loader2, Trash2, CheckCircle2, UploadCloud, Eye } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import ReportViewerModal from "@/components/ui/ReportViewerModal";
 import {
   fetchAdminReports,
   fetchCohortOptions,
+  fetchReportUrl,
+  fetchCohortReportUrl,
   uploadReport,
   deleteReport,
   ReportListItem,
@@ -33,7 +37,13 @@ export default function AdminReportsPage() {
   const [uploadError, setUploadError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ReportListItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const [viewTarget, setViewTarget] = useState<ReportListItem | null>(null);
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [viewError, setViewError] = useState("");
 
   async function loadReports() {
     const result = await fetchAdminReports();
@@ -81,15 +91,52 @@ export default function AdminReportsPage() {
     }
   }
 
-  async function handleDelete(reportId: string) {
-    setDeletingId(reportId);
-    const result = await deleteReport(reportId);
-    setDeletingId(null);
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const result = await deleteReport(deleteTarget.id);
+    setDeleting(false);
     if (result.success) {
-      setReports((prev) => prev.filter((r) => r.id !== reportId));
+      setReports((prev) => prev.filter((r) => r.id !== deleteTarget.id));
+      setDeleteTarget(null);
     } else if (result.error) {
       setListError(result.error);
+      setDeleteTarget(null);
     }
+  }
+
+  async function handleView(report: ReportListItem) {
+    setViewTarget(report);
+    setViewUrl(null);
+    setViewError("");
+    setViewLoading(true);
+
+    // Try direct-by-id first; fall back to cohort lookup if it's not
+    // available yet (backend endpoint pending) and the report has one.
+    const direct = await fetchReportUrl(report.id);
+    if (direct.success && direct.file_url) {
+      setViewLoading(false);
+      setViewUrl(direct.file_url);
+      return;
+    }
+
+    if (report.cohort_id) {
+      const viaCohort = await fetchCohortReportUrl(report.cohort_id);
+      setViewLoading(false);
+      if (viaCohort.success && viaCohort.file_url) {
+        setViewUrl(viaCohort.file_url);
+      } else {
+        setViewError(viaCohort.error ?? "Something went wrong opening this report.");
+      }
+      return;
+    }
+
+    setViewLoading(false);
+    setViewError(
+      direct.status === 401
+        ? direct.error ?? "Your session has expired. Please log in again."
+        : "This report isn't linked to a cohort, so it can't be previewed here yet."
+    );
   }
 
   return (
@@ -165,22 +212,22 @@ export default function AdminReportsPage() {
 
             <div>
               <label htmlFor="report-file" className="text-sm font-medium text-gray-700">
-                PDF File
+                File
               </label>
               <input
                 id="report-file"
                 type="file"
-                accept="application/pdf"
+                accept=".pdf,.docx,.xlsx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 onChange={(e) => {
                   const selected = e.target.files?.[0] ?? null;
                   setFile(selected);
                   if (selected && !title.trim()) {
-                    setTitle(selected.name.replace(/\.pdf$/i, ""));
+                    setTitle(selected.name.replace(/\.(pdf|docx|xlsx)$/i, ""));
                   }
                 }}
                 className="w-full mt-1 text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-teal-50 file:text-teal-700 file:text-sm file:font-medium hover:file:bg-teal-100"
               />
-              <p className="text-xs text-gray-400 mt-1">PDF only, up to 25MB.</p>
+              <p className="text-xs text-gray-400 mt-1">PDF, Word, or Excel — up to 45MB.</p>
             </div>
 
             <button
@@ -228,28 +275,55 @@ export default function AdminReportsPage() {
                     <p className="text-xs text-gray-400 mt-0.5">
                       {new Date(r.report_date).toLocaleDateString()}
                       {r.file_size ? ` · ${formatFileSize(r.file_size)}` : ""}
+                      {r.file_type ? ` · ${r.file_type.toUpperCase()}` : ""}
                       {r.cohort_id ? " · Linked to cohort" : ""}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(r.id)}
-                    disabled={deletingId === r.id}
-                    aria-label={`Delete ${r.title}`}
-                    className="text-gray-400 hover:text-red-600 flex-shrink-0 disabled:opacity-50"
-                  >
-                    {deletingId === r.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleView(r)}
+                      aria-label={`View ${r.title}`}
+                      className="text-gray-400 hover:text-teal-700 p-1.5 rounded-lg hover:bg-gray-50 transition"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(r)}
+                      aria-label={`Delete ${r.title}`}
+                      className="text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-gray-50 transition"
+                    >
                       <Trash2 className="w-4 h-4" />
-                    )}
-                  </button>
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Delete this report?"
+        message={deleteTarget ? `"${deleteTarget.title}" will be permanently removed. This can't be undone.` : ""}
+        confirmLabel="Delete"
+        danger
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ReportViewerModal
+        open={viewTarget !== null}
+        title={viewTarget?.title ?? ""}
+        fileUrl={viewUrl}
+        fileType={viewTarget?.file_type}
+        loading={viewLoading}
+        error={viewError}
+        onClose={() => setViewTarget(null)}
+      />
     </AdminLayout>
   );
 }

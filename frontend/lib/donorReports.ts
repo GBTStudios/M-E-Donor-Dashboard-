@@ -41,6 +41,39 @@ export async function fetchReports(): Promise<FetchReportsResult> {
   }
 }
 
+export interface FetchReportUrlResult {
+  success: boolean;
+  file_url?: string;
+  status?: 401 | 404 | "error";
+  error?: string;
+}
+
+// Direct-by-id lookup. Backend endpoint (GET /donor/dashboard/reports/{report_id})
+// is not built yet as of this writing — this will 404 until it exists.
+// Callers should fall back to fetchCohortReportUrl for cohort-linked
+// reports in the meantime.
+export async function fetchReportUrl(reportId: string): Promise<FetchReportUrlResult> {
+  try {
+    const response = await fetch(`${API_URL}/donor/dashboard/reports/${reportId}`, {
+      headers: { ...getAuthHeaders() },
+    });
+
+    if (response.status === 200) {
+      const data = await response.json();
+      return { success: true, file_url: data.file_url };
+    }
+    if (response.status === 401) {
+      return { success: false, status: 401, error: "Your session has expired. Please log in again." };
+    }
+    if (response.status === 404) {
+      return { success: false, status: 404, error: "Report not found." };
+    }
+    return { success: false, status: "error", error: "Something went wrong opening this report." };
+  } catch {
+    return { success: false, status: "error", error: "Network error. Please try again." };
+  }
+}
+
 export interface FetchCohortReportResult {
   success: boolean;
   file_url?: string;
@@ -48,9 +81,6 @@ export interface FetchCohortReportResult {
   error?: string;
 }
 
-// Donors can only reach a report's file_url via its cohort's latest report,
-// not by report id directly — that's the current backend contract. Only
-// call this for reports that have a cohort_id.
 export async function fetchCohortReportUrl(cohortId: string): Promise<FetchCohortReportResult> {
   try {
     const response = await fetch(`${API_URL}/donor/dashboard/cohorts/${cohortId}/report`, {
@@ -79,10 +109,6 @@ export interface DownloadImpactSummaryResult {
   error?: string;
 }
 
-// Response is a raw PDF (application/pdf), not JSON, so this can't be a
-// plain <a href>: the Authorization header has to be attached manually,
-// which means fetching as a blob and triggering the download via a
-// temporary object URL.
 export async function downloadImpactSummary(): Promise<DownloadImpactSummaryResult> {
   try {
     const response = await fetch(`${API_URL}/donor/dashboard/reports/impact-summary/export`, {
