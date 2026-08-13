@@ -31,12 +31,29 @@ async def get_dashboard_stats(_: dict = Depends(get_current_admin_user)):
     )
     active_users = active_users_result.count or 0
 
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    qa_today_result = supabase.table("qa_logs").select("status, response_time_ms").gte("created_at", today_start).execute()
+    qa_today = qa_today_result.data
+
+    questions_today = len(qa_today)
+    answered = sum(1 for q in qa_today if q["status"] == "answered")
+    declined = sum(1 for q in qa_today if q["status"] == "declined")
+    flagged = sum(1 for q in qa_today if q["status"] == "flagged")
+
+    response_times = [q["response_time_ms"] for q in qa_today if q.get("response_time_ms") is not None]
+    query_latency_ms = round(sum(response_times) / len(response_times), 1) if response_times else None
+
     return DashboardStatsResponse(
         documents_uploaded=documents_uploaded,
         pending_review=pending_review,
         published=published,
         active_users=active_users,
-        conversations_ready=False,
+        questions_today=questions_today,
+        answered=answered,
+        declined=declined,
+        flagged=flagged,
+        query_latency_ms=query_latency_ms,
+        conversations_ready=published > 0,
     )
 
 

@@ -10,6 +10,7 @@ class ReportListItem(BaseModel):
     report_date: date
     file_type: str
     file_size: Optional[int] = None
+    extraction_status: Optional[str] = None
     created_at: datetime
 
 
