@@ -8,6 +8,7 @@ from app.models.profile_schemas import (
 )
 from app.db.supabase_client import supabase
 from app.core.deps import get_current_user
+from app.services.image_processor import crop_profile_photo
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -27,10 +28,21 @@ async def _upload_profile_photo(image: UploadFile) -> str:
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Image must be under 5MB.",
         )
-    ext = image.filename.split(".")[-1] if "." in image.filename else "jpg"
+
+    output_format = "PNG" if image.content_type == "image/png" else "JPEG"
+    try:
+        contents = crop_profile_photo(contents, output_format=output_format)
+    except Exception:
+        # If cropping fails for any reason (corrupt image, unexpected format
+        # edge case), fall back to storing the original upload rather than
+        # blocking the profile update entirely.
+        pass
+
+    ext = "png" if output_format == "PNG" else "jpg"
+    content_type = "image/png" if output_format == "PNG" else "image/jpeg"
     path = f"{uuid.uuid4()}.{ext}"
     supabase.storage.from_("profile-photos").upload(
-        path, contents, {"content-type": image.content_type}
+        path, contents, {"content-type": content_type}
     )
     public_url = supabase.storage.from_("profile-photos").get_public_url(path)
     return public_url
