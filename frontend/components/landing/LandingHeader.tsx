@@ -32,12 +32,14 @@ export default function LandingHeader() {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
-          <Link
-            href="/donate"
+            <a
+            href="https://groundbreaker.org/donate/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="bg-white text-[#1A534A] text-sm font-medium px-4 py-2 rounded-full hover:bg-white/90 transition"
           >
             Donate
-          </Link>
+          </a>
           <Link
             href="/signup"
             className="bg-white/15 text-white text-sm font-medium px-4 py-2 rounded-full border border-white/20 hover:bg-white/25 transition"
@@ -72,13 +74,15 @@ export default function LandingHeader() {
           </nav>
 
           <div className="flex items-center gap-3 mt-5">
-            <Link
-              href="/donate"
+              <a
+              href="https://groundbreaker.org/donate/"
               onClick={() => setMobileOpen(false)}
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex-1 text-center bg-white text-[#1A534A] text-sm font-medium px-4 py-2.5 rounded-full hover:bg-white/90 transition"
             >
               Donate
-            </Link>
+            </a>
             <Link
               href="/signup"
               onClick={() => setMobileOpen(false)}
