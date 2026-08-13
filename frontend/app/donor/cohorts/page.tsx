@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Loader2, Users, GraduationCap, CheckCircle2, Clock, AlertTriangle,
   Search, SlidersHorizontal, Download, TrendingUp, Briefcase, Info,
-  ArrowRight, ChevronRight,
+  ArrowRight, ChevronRight, ChevronLeft, X, ArrowUpDown,
 } from "lucide-react";
 import DonorLayout from "@/components/donor/DonorLayout";
 import {
@@ -27,6 +27,12 @@ function formatDate(iso: string | null | undefined): string {
 function cohortTabLabel(name: string): string {
   const match = name.match(/(\d+)$/);
   return match ? `Cohort ${match[1]}` : name;
+}
+
+function avg(values: (number | null | undefined)[]): number {
+  const valid = values.filter((v) => v != null) as number[];
+  if (valid.length === 0) return 0;
+  return Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
 }
 
 // ── Status badge ──────────────────────────────────────────────────────────────
@@ -83,15 +89,25 @@ function LifecycleBar({ pct, status }: { pct: number; status: string }) {
   );
 }
 
-// ── Summary cohort card (All Cohorts view) ────────────────────────────────────
+// ── Summary stat card ─────────────────────────────────────────────────────────
 
-function CohortSummaryCard({
-  cohort,
-  onTabClick,
-}: {
-  cohort: Cohort;
-  onTabClick: (id: string) => void;
-}) {
+function SummaryStatCard({ label, value, icon: Icon }: { label: string; value: string; icon: React.ComponentType<{ className?: string }> }) {
+  return (
+    <div className="bg-white rounded-2xl border border-black/10 p-4 shadow-sm flex items-center gap-4">
+      <div className="w-10 h-10 rounded-full bg-[#eaf5f0] flex items-center justify-center flex-shrink-0">
+        <Icon className="w-5 h-5 text-[#1A534A]" />
+      </div>
+      <div>
+        <p className="text-xl font-bold text-[#1A534A]">{value}</p>
+        <p className="text-xs text-[#5B7571]">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Cohort summary card ───────────────────────────────────────────────────────
+
+function CohortSummaryCard({ cohort, onTabClick }: { cohort: Cohort; onTabClick: (id: string) => void }) {
   const [downloading, setDownloading] = useState(false);
 
   async function handleDownload() {
@@ -105,15 +121,14 @@ function CohortSummaryCard({
       <div>
         <StatusBadge status={cohort.status} />
         <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mt-3 mb-0.5">Track</p>
-        <p className="text-lg font-bold text-[#1A534A]">{cohort.program}</p>
-        <p className="text-base font-semibold text-[#1A534A]">{cohort.name}</p>
+        <p className="text-lg font-bold text-[#1A534A]">{cohort.program ?? cohort.name}</p>
+        {cohort.program && <p className="text-base font-semibold text-[#1A534A]">{cohort.name}</p>}
         <div className="flex items-center gap-1.5 mt-1 text-xs text-[#5B7571]">
           <Users className="w-3.5 h-3.5" />
           <span>{cohort.active_participants} Participants</span>
         </div>
       </div>
 
-      {/* Dates */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-[#eaf5f0] rounded-xl p-3">
           <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-1">Intake Date</p>
@@ -129,7 +144,6 @@ function CohortSummaryCard({
         </div>
       </div>
 
-      {/* Graduation + Employment — completed only */}
       {cohort.status === "completed" && (
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-[#eaf5f0] rounded-xl p-3">
@@ -153,7 +167,6 @@ function CohortSummaryCard({
 
       <LifecycleBar pct={cohort.completion_pct} status={cohort.status} />
 
-      {/* Actions */}
       <div className="flex items-center justify-between pt-1 border-t border-black/5">
         <button
           type="button"
@@ -190,9 +203,65 @@ function KpiCard({ label, value, icon: Icon }: { label: string; value: string; i
   );
 }
 
+// ── Image carousel ────────────────────────────────────────────────────────────
+
+function ProjectCarousel({ projects }: { projects: CohortProject[] }) {
+  const [index, setIndex] = useState(0);
+
+  if (projects.length === 0) {
+    return (
+      <div className="bg-[#eaf5f0] rounded-2xl border border-black/10 h-48 flex items-center justify-center">
+        <div className="text-center">
+          <Users className="w-8 h-8 text-[#7C9791] mx-auto mb-2" />
+          <p className="text-xs text-[#5B7571]">No project images yet</p>
+        </div>
+      </div>
+    );
+  }
+
+  const project = projects[index];
+
+  return (
+    <div className="relative bg-[#eaf5f0] rounded-2xl border border-black/10 overflow-hidden">
+      {project.image_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={project.image_url} alt={project.title} className="w-full h-56 object-cover" />
+      ) : (
+        <div className="w-full h-56 flex items-center justify-center bg-[#eaf5f0]">
+          <Users className="w-8 h-8 text-[#7C9791]" />
+        </div>
+      )}
+      {projects.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={() => setIndex((i) => (i - 1 + projects.length) % projects.length)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 flex items-center justify-center shadow hover:bg-white transition"
+          >
+            <ChevronLeft className="w-4 h-4 text-[#1A534A]" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIndex((i) => (i + 1) % projects.length)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 flex items-center justify-center shadow hover:bg-white transition"
+          >
+            <ChevronRight className="w-4 h-4 text-[#1A534A]" />
+          </button>
+        </>
+      )}
+      {project.title && (
+        <div className="px-4 py-3">
+          <p className="text-sm font-semibold text-[#1A534A]">{project.title}</p>
+          {project.description && <p className="text-xs text-[#5B7571] mt-0.5 line-clamp-2">{project.description}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Cohort detail view ────────────────────────────────────────────────────────
 
-function CohortDetailView({ cohortId }: { cohortId: string }) {
+function CohortDetailView({ cohortId, cohortName }: { cohortId: string; cohortName: string }) {
   const [detail, setDetail] = useState<CohortDetail | null>(null);
   const [tracks, setTracks] = useState<CohortTrack[]>([]);
   const [baseline, setBaseline] = useState<BaselineData | null>(null);
@@ -214,7 +283,6 @@ function CohortDetailView({ cohortId }: { cohortId: string }) {
           fetchCohortNarrative(cohortId),
           fetchCohortProjects(cohortId),
         ]);
-
       if (detailRes.success) setDetail(detailRes.data);
       if (tracksRes.success) setTracks(tracksRes.tracks);
       if (baselineRes.success) setBaseline(baselineRes.baseline);
@@ -240,48 +308,37 @@ function CohortDetailView({ cohortId }: { cohortId: string }) {
     );
   }
 
-  if (!detail) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <AlertTriangle className="w-8 h-8 text-[#7C9791] mb-3" />
-        <p className="text-sm text-[#5B7571]">Could not load cohort details.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-6">
       {/* Header bar */}
       <div className="flex items-center justify-between flex-wrap gap-3 bg-white rounded-2xl border border-black/10 px-5 py-3 shadow-sm">
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs font-semibold bg-[#eaf5f0] text-[#1A534A] px-3 py-1 rounded-full">
-            {detail.program}
-          </span>
-          <StatusBadge status={detail.status} />
+          {detail?.program && (
+            <span className="text-xs font-semibold bg-[#eaf5f0] text-[#1A534A] px-3 py-1 rounded-full">
+              {detail.program}
+            </span>
+          )}
+          {detail && <StatusBadge status={detail.status} />}
         </div>
-        <div className="text-right">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791]">Program Duration</p>
-          <p className="text-sm font-semibold text-[#1A534A]">
-            {formatDate(detail.start_date)} — {formatDate(detail.end_date)}
-          </p>
-        </div>
+        {(detail?.start_date || detail?.end_date) && (
+          <div className="text-right">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791]">Program Duration</p>
+            <p className="text-sm font-semibold text-[#1A534A]">
+              {formatDate(detail.start_date)} — {formatDate(detail.end_date)}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <KpiCard label="Total Participants" value={String(detail.active_participants)} icon={Users} />
-        <KpiCard label="Completion Rate" value={`${detail.completion_pct}%`} icon={CheckCircle2} />
-        <KpiCard
-          label="Employment Rate"
-          value={detail.employment_rate != null ? `${detail.employment_rate}%` : "—"}
-          icon={Briefcase}
-        />
-        <KpiCard
-          label="Avg Income Growth"
-          value={detail.avg_income_growth_multiplier != null ? `${detail.avg_income_growth_multiplier}x` : "—"}
-          icon={TrendingUp}
-        />
-      </div>
+      {detail && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <KpiCard label="Total Participants" value={String(detail.active_participants)} icon={Users} />
+          <KpiCard label="Completion Rate" value={`${detail.completion_pct}%`} icon={CheckCircle2} />
+          <KpiCard label="Employment Rate" value={detail.employment_rate != null ? `${detail.employment_rate}%` : "—"} icon={Briefcase} />
+          <KpiCard label="Avg Income Growth" value={detail.avg_income_growth_multiplier != null ? `${detail.avg_income_growth_multiplier}x` : "—"} icon={TrendingUp} />
+        </div>
+      )}
 
       {/* Tracks */}
       {tracks.length > 0 && (
@@ -315,7 +372,7 @@ function CohortDetailView({ cohortId }: { cohortId: string }) {
 
       {/* Before / After */}
       {(baseline || outcomes) && (
-        <div className="grid sm:grid-cols-2 gap-5">
+        <div className="grid sm:grid-cols-2 gap-5 items-start">
           {/* Before */}
           {baseline && (
             <div className="bg-white rounded-2xl border border-black/10 p-6 shadow-sm">
@@ -323,19 +380,33 @@ function CohortDetailView({ cohortId }: { cohortId: string }) {
               <p className="text-xs text-[#5B7571] mb-4">Self-reported pre-program values (USD)</p>
               <div className="flex flex-col gap-3">
                 {[
-                  { label: "Avg. Monthly Income", value: `$${baseline.avg_pre_program_income}` },
-                  { label: "Avg. Household Size", value: String(baseline.avg_household_size) },
-                  { label: "Prior Employment", value: `${baseline.employed_before_pct}%` },
-                  { label: "Highest Education", value: baseline.highest_education_common },
+                  { label: "Avg. Monthly Income", sublabel: "Pre-program average", value: `$${baseline.avg_pre_program_income}` },
+                  { label: "Avg. Household Size", sublabel: "Individuals per home", value: String(baseline.avg_household_size) },
+                  { label: "Prior Employment", sublabel: "Informal/Unstable", value: `${baseline.employed_before_pct}%` },
+                  { label: "Highest Education", sublabel: "Secondary school", value: baseline.highest_education_common },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between border-b border-black/5 pb-2">
-                    <p className="text-xs text-[#5B7571]">{row.label}</p>
+                    <div>
+                      <p className="text-xs font-semibold text-[#1A534A]">{row.label}</p>
+                      <p className="text-[10px] text-[#7C9791]">{row.sublabel}</p>
+                    </div>
                     <p className="text-sm font-bold text-[#1A534A]">{row.value}</p>
                   </div>
                 ))}
               </div>
+              <div className="mt-4 flex items-start gap-2 text-xs text-[#7C9791]">
+                <Info className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                <p>Baseline data represents the socio-economic status of participants upon entry. Average individual income is calculated based on informal labor or secondary support structures.</p>
+              </div>
             </div>
           )}
+
+          {/* Arrow connector */}
+          <div className="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+            <div className="w-8 h-8 rounded-full bg-white border border-black/10 shadow flex items-center justify-center">
+              <ArrowRight className="w-4 h-4 text-[#1A534A]" />
+            </div>
+          </div>
 
           {/* After */}
           {outcomes && (
@@ -344,25 +415,28 @@ function CohortDetailView({ cohortId }: { cohortId: string }) {
               <p className="text-xs text-[#5B7571] mb-4">Post-program verified professional metrics</p>
               <div className="flex flex-col gap-3">
                 {[
-                  { label: "Avg. Monthly Income", value: outcomes.post_avg_monthly_income != null ? `$${outcomes.post_avg_monthly_income}` : "—" },
-                  { label: "Employment Rate", value: outcomes.employment_rate != null ? `${outcomes.employment_rate}%` : "—" },
-                  { label: "African Companies", value: outcomes.african_companies_pct != null ? `${outcomes.african_companies_pct}%` : "—" },
-                  { label: "Global/Intl Companies", value: outcomes.global_companies_pct != null ? `${outcomes.global_companies_pct}%` : "—" },
-                  { label: "Notable Projects", value: outcomes.notable_projects_count != null ? `${outcomes.notable_projects_count}+` : "—" },
+                  { label: "Avg. Monthly Income", sublabel: "25x increase avg.", value: outcomes.post_avg_monthly_income != null ? `$${outcomes.post_avg_monthly_income}` : "—" },
+                  { label: "Employment Rate", sublabel: "High-growth tech roles", value: outcomes.employment_rate != null ? `${outcomes.employment_rate}%` : "—" },
+                  { label: "African Companies", sublabel: "Local tech ecosystem", value: outcomes.african_companies_pct != null ? `${outcomes.african_companies_pct}%` : "—" },
+                  { label: "Global/Intl Companies", sublabel: "Remote/Global export", value: outcomes.global_companies_pct != null ? `${outcomes.global_companies_pct}%` : "—" },
+                  { label: "Notable Projects", sublabel: "Production-ready apps", value: outcomes.notable_projects_count != null ? `${outcomes.notable_projects_count}+` : "—" },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between border-b border-black/5 pb-2">
-                    <p className="text-xs text-[#5B7571]">{row.label}</p>
+                    <div>
+                      <p className="text-xs font-semibold text-[#1A534A]">{row.label}</p>
+                      <p className="text-[10px] text-[#7C9791]">{row.sublabel}</p>
+                    </div>
                     <p className="text-sm font-bold text-[#1A534A]">{row.value}</p>
                   </div>
                 ))}
               </div>
 
               {/* Strategic insight */}
-              {detail.avg_income_growth_multiplier != null && (
+              {detail?.avg_income_growth_multiplier != null && (
                 <div className="mt-4 bg-[#1A534A] rounded-xl p-4">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-white/60 mb-1">Strategic Insight</p>
                   <p className="text-xs text-white leading-relaxed">
-                    The {detail.avg_income_growth_multiplier}x income growth observed in {detail.name} represents our highest mobility rate to date.
+                    The {detail.avg_income_growth_multiplier}x income growth observed in {cohortName} represents our highest mobility rate to date.
                   </p>
                 </div>
               )}
@@ -371,40 +445,26 @@ function CohortDetailView({ cohortId }: { cohortId: string }) {
         </div>
       )}
 
-      {/* Notable Projects */}
-      {projects.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-[#1A534A]">Notable Projects</h3>
-            <button type="button" className="flex items-center gap-1 text-xs font-semibold text-[#1A534A] hover:underline">
-              View participant stories <ArrowRight className="w-3 h-3" />
-            </button>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {projects.map((project) => (
-              <div key={project.id} className="bg-white rounded-2xl border border-black/10 overflow-hidden shadow-sm">
-                {project.image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={project.image_url} alt={project.title} className="w-full h-40 object-cover" />
-                ) : (
-                  <div className="w-full h-40 bg-[#eaf5f0] flex items-center justify-center">
-                    <Users className="w-8 h-8 text-[#7C9791]" />
-                  </div>
-                )}
-                <div className="p-4">
-                  <p className="text-sm font-semibold text-[#1A534A]">{project.title}</p>
-                  {project.description && (
-                    <p className="text-xs text-[#5B7571] mt-1 line-clamp-2">{project.description}</p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Exchange rate footnote */}
+      {(baseline || outcomes) && (
+        <p className="text-[10px] text-amber-600 italic">
+          Results data conversion calculated using a historical average exchange rate of 1 USD = 3,750 UGX for the duration of the program.
+        </p>
       )}
 
+      {/* Notable Projects */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-bold text-[#1A534A]">Notable Projects</h3>
+          <button type="button" className="flex items-center gap-1 text-xs font-semibold text-[#1A534A] hover:underline">
+            View participant stories <ChevronRight className="w-3 h-3" />
+          </button>
+        </div>
+        <ProjectCarousel projects={projects} />
+      </div>
+
       {/* Impact Narrative */}
-      {narrative && (narrative.professional_development || narrative.key_success_factors.length > 0) && (
+      {narrative && (narrative.professional_development || (narrative.key_success_factors ?? []).length > 0) && (
         <div className="bg-white rounded-2xl border border-black/10 p-6 shadow-sm">
           <h3 className="text-base font-bold text-[#1A534A] mb-1">Impact Narrative</h3>
           <p className="text-xs text-[#5B7571] mb-4">Qualitative growth observations</p>
@@ -418,7 +478,7 @@ function CohortDetailView({ cohortId }: { cohortId: string }) {
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-2">Key Success Factors</p>
               <ul className="flex flex-col gap-1.5">
-                {narrative.key_success_factors.map((factor, i) => (
+                {(narrative.key_success_factors ?? []).map((factor, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-[#5B7571]">
                     <span className="text-[#1A534A] mt-0.5">•</span>
                     {factor}
@@ -444,20 +504,46 @@ function CohortDetailView({ cohortId }: { cohortId: string }) {
 
 // ── All cohorts view ──────────────────────────────────────────────────────────
 
-function AllCohortsView({ cohorts, onTabClick, search, setSearch }: {
-  cohorts: Cohort[];
-  onTabClick: (id: string) => void;
-  search: string;
-  setSearch: (v: string) => void;
-}) {
-  const filtered = cohorts.filter(
-    (c) =>
+type SortKey = "default" | "graduation" | "completion";
+type FilterStatus = "all" | "completed" | "in_progress";
+
+function AllCohortsView({ cohorts, onTabClick }: { cohorts: Cohort[]; onTabClick: (id: string) => void }) {
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [sortKey, setSortKey] = useState<SortKey>("default");
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Summary totals
+  const totalParticipants = cohorts.reduce((s, c) => s + c.active_participants, 0);
+  const avgGraduation = avg(cohorts.map((c) => c.graduation_pct));
+  const avgCompletion = avg(cohorts.map((c) => c.completion_pct));
+  const completed = cohorts.filter((c) => c.status === "completed").length;
+
+  // Filter + sort
+  let filtered = cohorts.filter((c) => {
+    const matchSearch =
       c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.program.toLowerCase().includes(search.toLowerCase())
-  );
+      (c.program ?? "").toLowerCase().includes(search.toLowerCase());
+    const matchStatus = filterStatus === "all" || c.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
+
+  if (sortKey === "graduation") {
+    filtered = [...filtered].sort((a, b) => (b.graduation_pct ?? 0) - (a.graduation_pct ?? 0));
+  } else if (sortKey === "completion") {
+    filtered = [...filtered].sort((a, b) => b.completion_pct - a.completion_pct);
+  }
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Summary header */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <SummaryStatCard label="Total Cohorts" value={String(cohorts.length)} icon={Users} />
+        <SummaryStatCard label="Total Participants" value={String(totalParticipants)} icon={Users} />
+        <SummaryStatCard label="Avg Graduation Rate" value={avgGraduation ? `${avgGraduation}%` : "—"} icon={GraduationCap} />
+        <SummaryStatCard label="Avg Completion" value={`${avgCompletion}%`} icon={CheckCircle2} />
+      </div>
+
       {/* Search + filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex-1 min-w-[200px] relative">
@@ -472,11 +558,65 @@ function AllCohortsView({ cohorts, onTabClick, search, setSearch }: {
         </div>
         <button
           type="button"
-          className="flex items-center gap-2 text-sm font-semibold text-[#1A534A] bg-white border border-black/10 px-4 py-2.5 rounded-xl hover:bg-[#eaf5f0] transition-colors"
+          onClick={() => setShowFilters((v) => !v)}
+          className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border transition-colors ${
+            showFilters
+              ? "bg-[#1A534A] text-white border-transparent"
+              : "bg-white text-[#1A534A] border-black/10 hover:bg-[#eaf5f0]"
+          }`}
         >
           <SlidersHorizontal className="w-4 h-4" /> Advanced Filters
         </button>
       </div>
+
+      {/* Filter panel */}
+      {showFilters && (
+        <div className="bg-white rounded-2xl border border-black/10 p-4 flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-[#5B7571]">Status:</span>
+            {(["all", "in_progress", "completed"] as FilterStatus[]).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setFilterStatus(s)}
+                className={`capitalize text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
+                  filterStatus === s
+                    ? "bg-[#1A534A] text-white"
+                    : "bg-[#eaf5f0] text-[#1A534A] hover:bg-[#d4ede7]"
+                }`}
+              >
+                {s === "in_progress" ? "In Progress" : s === "all" ? "All" : "Completed"}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-[#5B7571]">Sort by:</span>
+            {([["default", "Default"], ["graduation", "Graduation Rate"], ["completion", "Completion"]] as [SortKey, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSortKey(key)}
+                className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
+                  sortKey === key
+                    ? "bg-[#1A534A] text-white"
+                    : "bg-[#eaf5f0] text-[#1A534A] hover:bg-[#d4ede7]"
+                }`}
+              >
+                <ArrowUpDown className="w-3 h-3" /> {label}
+              </button>
+            ))}
+          </div>
+          {(filterStatus !== "all" || sortKey !== "default" || search) && (
+            <button
+              type="button"
+              onClick={() => { setFilterStatus("all"); setSortKey("default"); setSearch(""); }}
+              className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline ml-auto"
+            >
+              <X className="w-3 h-3" /> Clear
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Methodology banner */}
       <div className="flex items-start gap-3 bg-[#1A534A] text-white rounded-2xl px-5 py-4">
@@ -489,12 +629,20 @@ function AllCohortsView({ cohorts, onTabClick, search, setSearch }: {
         </div>
       </div>
 
+      {/* Results count */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-[#5B7571]">
+          Showing {filtered.length} of {cohorts.length} cohorts
+          {completed > 0 && ` · ${completed} completed`}
+        </p>
+      </div>
+
       {/* Cards grid */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Users className="w-8 h-8 text-[#7C9791] mb-3" />
           <p className="text-sm font-semibold text-[#1A534A]">No cohorts found</p>
-          <p className="text-xs text-[#5B7571] mt-1">Try adjusting your search.</p>
+          <p className="text-xs text-[#5B7571] mt-1">Try adjusting your search or filters.</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 gap-5">
@@ -516,7 +664,6 @@ export default function CohortsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<string>("all");
-  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -540,21 +687,21 @@ export default function CohortsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const activeCohort = cohorts.find((c) => c.id === activeTab);
+
   return (
     <DonorLayout>
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-[#7C9791] mb-1 flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" /> Regional Impact Groups
-            </p>
-            <h1 className="text-3xl font-bold text-[#1A534A]">Program Cohorts</h1>
-            <p className="text-sm text-[#5B7571] mt-2 max-w-xl">
-              Review detailed progress and performance metrics across historical and active program cycles.
-              Data transparency is maintained through standardised outcome assessments at intake, graduation, and endline.
-            </p>
-          </div>
+        <div className="mb-6">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#7C9791] mb-1 flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5" /> Regional Impact Groups
+          </p>
+          <h1 className="text-3xl font-bold text-[#1A534A]">Program Cohorts</h1>
+          <p className="text-sm text-[#5B7571] mt-2 max-w-xl">
+            Review detailed progress and performance metrics across historical and active program cycles.
+            Data transparency is maintained through standardised outcome assessments at intake, graduation, and endline.
+          </p>
         </div>
 
         {error && (
@@ -601,15 +748,10 @@ export default function CohortsPage() {
 
             {/* Content */}
             {activeTab === "all" ? (
-              <AllCohortsView
-                cohorts={cohorts}
-                onTabClick={setActiveTab}
-                search={search}
-                setSearch={setSearch}
-              />
-            ) : (
-              <CohortDetailView cohortId={activeTab} />
-            )}
+              <AllCohortsView cohorts={cohorts} onTabClick={setActiveTab} />
+            ) : activeCohort ? (
+              <CohortDetailView cohortId={activeTab} cohortName={activeCohort.name} />
+            ) : null}
           </>
         )}
       </div>

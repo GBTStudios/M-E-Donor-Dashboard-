@@ -66,7 +66,7 @@ export default function AdminSidebar() {
   const [role] = useState<UserRole | null>(() => getRole());
 
   return (
-    <aside className="w-64 h-screen sticky top-0 bg-[#1A534A] flex flex-col py-7 px-5 flex-shrink-0 overflow-y-auto">
+    <aside className="w-64 h-full bg-[#1A534A] flex flex-col py-7 px-5 flex-shrink-0 overflow-y-auto">
       <div className="flex items-center gap-2.5 px-1 mb-1">
         <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
           G

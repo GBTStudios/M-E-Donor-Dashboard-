@@ -120,7 +120,7 @@ export interface CohortOutcomes {
 
 export interface CohortNarrative {
   professional_development: string | null;
-  key_success_factors: string[];
+  key_success_factors: string[] | null;
 }
 
 export interface CohortProject {
