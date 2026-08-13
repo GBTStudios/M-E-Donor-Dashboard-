@@ -1,8 +1,8 @@
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, Form, Query, status
 
 from app.core.deps import get_current_admin_user
 from app.db.supabase_client import supabase
@@ -19,8 +19,65 @@ CONTENT_TYPES = {
 }
 
 
+def _apply_extracted_report_data(cohort_id: str, report_id: str, filename: str, file_bytes: bytes):
+    """
+    Background task: reads the uploaded report and auto-populates the
+    linked cohort's outcomes, tracks, and narrative. Runs after the
+    upload response has already been returned, so it never slows down
+    the admin's upload. Baseline/before-program data is never touched
+    here - that stays computed live from real participant records.
+    """
+    from app.services.report_extractor import extract_report_data
+    from app.services.notification_service import create_notification
+
+    extracted = extract_report_data(filename, file_bytes)
+    if not extracted:
+        supabase.table("reports").update({"extraction_status": "failed"}).eq("id", report_id).execute()
+        cohort_result = supabase.table("cohorts").select("name").eq("id", cohort_id).execute()
+        cohort_name = cohort_result.data[0]["name"] if cohort_result.data else "a cohort"
+        create_notification(
+            "report_extraction_failed",
+            f"Couldn't extract data from the report uploaded for {cohort_name} - please review and enter the numbers manually.",
+            related_id=report_id,
+        )
+        return
+
+    outcomes = extracted.get("outcomes") or {}
+    outcomes_clean = {k: v for k, v in outcomes.items() if v is not None}
+    if outcomes_clean:
+        outcomes_clean["cohort_id"] = cohort_id
+        outcomes_clean["updated_at"] = datetime.now(timezone.utc).isoformat()
+        supabase.table("cohort_outcomes").upsert(outcomes_clean, on_conflict="cohort_id").execute()
+
+    tracks = extracted.get("tracks") or []
+    if tracks:
+        supabase.table("cohort_tracks").delete().eq("cohort_id", cohort_id).execute()
+        for t in tracks:
+            if not t.get("name"):
+                continue
+            supabase.table("cohort_tracks").insert({
+                "cohort_id": cohort_id,
+                "name": t.get("name"),
+                "participant_count": t.get("participant_count") or 0,
+                "completion_pct": t.get("completion_pct") or 0,
+                "status": t.get("status") or "in_progress",
+            }).execute()
+
+    narrative = extracted.get("narrative") or {}
+    if narrative.get("title") and narrative.get("body"):
+        supabase.table("dashboard_insights").insert({
+            "title": narrative["title"],
+            "body": narrative["body"],
+            "cohort_id": cohort_id,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }).execute()
+
+    supabase.table("reports").update({"extraction_status": "completed"}).eq("id", report_id).execute()
+
+
 @router.post("", response_model=UploadReportResponse, status_code=status.HTTP_201_CREATED)
 async def upload_report(
+    background_tasks: BackgroundTasks,
     title: str = Form(...),
     report_date: date = Form(...),
     cohort_id: Optional[str] = Form(default=None),
@@ -59,8 +116,13 @@ async def upload_report(
         "file_type": ext,
         "file_size": len(file_bytes),
         "uploaded_by": admin["id"],
+        "extraction_status": "pending" if cohort_id else None,
     }).execute()
     report = result.data[0]
+
+    if cohort_id:
+        background_tasks.add_task(_apply_extracted_report_data, cohort_id, report["id"], file.filename, file_bytes)
+
     return UploadReportResponse(id=report["id"], title=report["title"])
 
 
@@ -72,7 +134,7 @@ async def list_reports(
     cohort_id: Optional[str] = Query(default=None),
 ):
     query = supabase.table("reports").select(
-        "id, title, cohort_id, report_date, file_type, file_size, created_at"
+        "id, title, cohort_id, report_date, file_type, file_size, extraction_status, created_at"
     ).order("report_date", desc=True)
 
     if start_date:

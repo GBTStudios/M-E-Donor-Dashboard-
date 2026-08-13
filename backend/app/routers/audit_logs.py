@@ -24,45 +24,17 @@ def _log_access(admin_id: str):
         pass
 
 
-def _fetch_conversation_map(conversation_ids: list) -> dict:
-    """Returns {conversation_id: {originating_identity, user_name}}."""
-    if not conversation_ids:
-        return {}
-
-    convos = (
-        supabase.table("chat_conversations")
-        .select("id, originating_identity, user_id")
-        .in_("id", conversation_ids)
-        .execute()
-    )
-
-    user_ids = [c["user_id"] for c in convos.data if c.get("user_id")]
-    name_map = {}
-    if user_ids:
-        users_result = supabase.table("users").select("id, full_name").in_("id", user_ids).execute()
-        name_map = {u["id"]: u["full_name"] for u in users_result.data}
-
-    return {
-        c["id"]: {
-            "originating_identity": c["originating_identity"],
-            "user_name": name_map.get(c.get("user_id")),
-        }
-        for c in convos.data
-    }
-
-
-def _row_to_item(row: dict, convo_map: dict) -> AuditLogItem:
-    convo_info = convo_map.get(row["conversation_id"], {})
+def _row_to_item(row: dict) -> AuditLogItem:
     return AuditLogItem(
         id=row["id"],
         log_number=row["log_number"],
-        conversation_id=row["conversation_id"],
-        originating_identity=convo_info.get("originating_identity", "Unknown"),
-        user_name=convo_info.get("user_name"),
-        inquiry=row["inquiry"],
+        conversation_id=row["session_id"],
+        originating_identity="Registered User" if row.get("user_id") else "Donor",
+        user_name=row.get("donor_name"),
+        inquiry=row["question"],
         response=row["response"],
         status=row["status"],
-        resolved=row["resolved"],
+        resolved=row.get("moderation_status") == "reviewed",
         created_at=row["created_at"],
         reference_id=f"LOG-{row['log_number']:03d}",
     )
@@ -81,13 +53,13 @@ async def list_audit_logs(
 ):
     _log_access(admin["id"])
 
-    query = supabase.table("chat_audit_logs").select("*", count="exact").order("created_at", desc=True)
+    query = supabase.table("qa_logs").select("*", count="exact").order("created_at", desc=True)
 
     if status_filter and status_filter.lower() != "all":
         query = query.eq("status", status_filter.lower())
 
     if search:
-        query = query.or_(f"inquiry.ilike.%{search}%,response.ilike.%{search}%")
+        query = query.or_(f"question.ilike.%{search}%,response.ilike.%{search}%")
 
     if date_filter:
         start = datetime.combine(date_filter, datetime.min.time()).isoformat()
@@ -103,10 +75,7 @@ async def list_audit_logs(
 
     result = query.execute()
 
-    conversation_ids = [row["conversation_id"] for row in result.data]
-    convo_map = _fetch_conversation_map(conversation_ids)
-
-    items = [_row_to_item(row, convo_map) for row in result.data]
+    items = [_row_to_item(row) for row in result.data]
 
     return AuditLogListResponse(
         total=result.count or 0,
@@ -116,40 +85,43 @@ async def list_audit_logs(
     )
 
 
-@router.get("/{conversation_id}/context", response_model=ConversationContextResponse)
-async def get_conversation_context(conversation_id: str, admin: dict = Depends(get_current_admin_user)):
+@router.get("/{session_id}/context", response_model=ConversationContextResponse)
+async def get_conversation_context(session_id: str, admin: dict = Depends(get_current_admin_user)):
     _log_access(admin["id"])
 
-    convo = supabase.table("chat_conversations").select("*").eq("id", conversation_id).execute()
-    if not convo.data:
+    qa_result = supabase.table("qa_logs").select("donor_name, user_id").eq("session_id", session_id).limit(1).execute()
+    if not qa_result.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found.")
 
-    convo_row = convo.data[0]
-    user_name = None
-    if convo_row.get("user_id"):
-        user_result = supabase.table("users").select("full_name").eq("id", convo_row["user_id"]).execute()
-        if user_result.data:
-            user_name = user_result.data[0]["full_name"]
+    identity_row = qa_result.data[0]
 
     messages_result = (
-        supabase.table("chat_audit_logs")
-        .select("inquiry, response, status, created_at")
-        .eq("conversation_id", conversation_id)
+        supabase.table("chat_messages")
+        .select("role, content, created_at")
+        .eq("session_id", session_id)
         .order("created_at", desc=False)
         .execute()
     )
 
     return ConversationContextResponse(
-        conversation_id=conversation_id,
-        originating_identity=convo_row["originating_identity"],
-        user_name=user_name,
-        messages=[ConversationMessage(**m) for m in messages_result.data],
+        conversation_id=session_id,
+        originating_identity="Registered User" if identity_row.get("user_id") else "Donor",
+        user_name=identity_row.get("donor_name"),
+        messages=[
+            ConversationMessage(
+                inquiry=m["content"] if m["role"] == "user" else None,
+                response=m["content"] if m["role"] == "assistant" else None,
+                status="answered",
+                created_at=m["created_at"],
+            )
+            for m in messages_result.data
+        ],
     )
 
 
 @router.post("/{log_id}/resolve", response_model=ResolveFlaggedResponse)
 async def resolve_flagged_log(log_id: str, admin: dict = Depends(get_current_admin_user)):
-    existing = supabase.table("chat_audit_logs").select("id, status").eq("id", log_id).execute()
+    existing = supabase.table("qa_logs").select("id, status").eq("id", log_id).execute()
     if not existing.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Log entry not found.")
 
@@ -159,7 +131,7 @@ async def resolve_flagged_log(log_id: str, admin: dict = Depends(get_current_adm
             detail="Only flagged entries can be marked as resolved.",
         )
 
-    supabase.table("chat_audit_logs").update({"resolved": True}).eq("id", log_id).execute()
+    supabase.table("qa_logs").update({"moderation_status": "reviewed"}).eq("id", log_id).execute()
 
     return ResolveFlaggedResponse()
 
@@ -174,13 +146,13 @@ async def export_audit_logs_pdf(
 ):
     _log_access(admin["id"])
 
-    query = supabase.table("chat_audit_logs").select("*").order("created_at", desc=True)
+    query = supabase.table("qa_logs").select("*").order("created_at", desc=True)
 
     if status_filter and status_filter.lower() != "all":
         query = query.eq("status", status_filter.lower())
 
     if search:
-        query = query.or_(f"inquiry.ilike.%{search}%,response.ilike.%{search}%")
+        query = query.or_(f"question.ilike.%{search}%,response.ilike.%{search}%")
 
     if start_date and end_date:
         start = datetime.combine(start_date, datetime.min.time()).isoformat()
@@ -188,9 +160,6 @@ async def export_audit_logs_pdf(
         query = query.gte("created_at", start).lte("created_at", end)
 
     result = query.execute()
-
-    conversation_ids = [row["conversation_id"] for row in result.data]
-    convo_map = _fetch_conversation_map(conversation_ids)
 
     pdf = FPDF()
     pdf.add_page()
@@ -212,10 +181,9 @@ async def export_audit_logs_pdf(
     pdf.set_font("Helvetica", "", 8)
     for row in result.data:
         ref_id = f"LOG-{row['log_number']:03d}"
-        convo_info = convo_map.get(row["conversation_id"], {})
-        display_identity = convo_info.get("user_name") or convo_info.get("originating_identity", "Unknown")
+        display_identity = row.get("donor_name") or "Unknown"
         timestamp = row["created_at"][:16].replace("T", " ")
-        inquiry_short = row["inquiry"][:50] + ("..." if len(row["inquiry"]) > 50 else "")
+        inquiry_short = row["question"][:50] + ("..." if len(row["question"]) > 50 else "")
 
         pdf.cell(25, 7, ref_id, border=1)
         pdf.cell(35, 7, display_identity[:22], border=1)
