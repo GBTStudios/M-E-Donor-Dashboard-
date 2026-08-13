@@ -14,7 +14,7 @@ import {
 import { logoutUser } from "@/lib/auth";
 
 const NAV_ITEMS = [
-  { label: "Dashboard", icon: LayoutDashboard, href: "/donor-dashboard" },
+  { label: "Dashboard", icon: LayoutDashboard, href: "/donor-dashboard", exact: true },
   { label: "Cohorts", icon: Users, href: "/donor/cohorts" },
   { label: "Success Stories", icon: Sparkles, href: "#" },
   { label: "Reports", icon: FileText, href: "/donor-dashboard/reports" },
@@ -24,13 +24,17 @@ function NavLink({
   label,
   icon: Icon,
   href,
+  exact,
 }: {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   href: string;
+  exact?: boolean;
 }) {
   const pathname = usePathname();
-  const active = href !== "#" && (pathname === href || pathname?.startsWith(href + "/"));
+  const active =
+    href !== "#" &&
+    (pathname === href || (!exact && pathname?.startsWith(href + "/")));
 
   return (
     <Link
