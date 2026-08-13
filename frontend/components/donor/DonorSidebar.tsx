@@ -16,7 +16,7 @@ import { logoutUser } from "@/lib/auth";
 const NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/donor-dashboard", exact: true },
   { label: "Cohorts", icon: Users, href: "/donor/cohorts" },
-  { label: "Success Stories", icon: Sparkles, href: "#" },
+  { label: "Success Stories", icon: Sparkles, href: "/donor-dashboard/stories" },
   { label: "Reports", icon: FileText, href: "/donor-dashboard/reports" },
 ] as const;
 
