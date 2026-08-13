@@ -45,19 +45,21 @@ def _to_profile_response(user: dict) -> StaffProfileResponse:
         role=user["role"],
         department=user.get("department"),
         title=user.get("title"),
+        company=user.get("company"),
         location=user.get("location"),
         profile_photo_url=user.get("profile_photo_url"),
+        is_active=user.get("is_active", True),
         created_at=user.get("created_at"),
         updated_at=user.get("updated_at"),
     )
 
 
-@router.get("/me", response_model=StaffProfileResponse)
+@router.get("/me", response_model=StaffProfileResponse, response_model_exclude_none=True)
 async def get_my_profile(user: dict = Depends(get_current_user)):
     return _to_profile_response(user)
 
 
-@router.put("/me", response_model=StaffProfileUpdateResponse)
+@router.put("/me", response_model=StaffProfileUpdateResponse, response_model_exclude_none=True)
 async def update_my_profile(
     payload: StaffProfileUpdateRequest,
     user: dict = Depends(get_current_user),
@@ -86,7 +88,7 @@ async def update_my_profile(
     return StaffProfileUpdateResponse(profile=_to_profile_response(result.data[0]))
 
 
-@router.put("/me/photo", response_model=StaffProfileUpdateResponse)
+@router.put("/me/photo", response_model=StaffProfileUpdateResponse, response_model_exclude_none=True)
 async def update_my_profile_photo(
     image: UploadFile = File(...),
     user: dict = Depends(get_current_user),
