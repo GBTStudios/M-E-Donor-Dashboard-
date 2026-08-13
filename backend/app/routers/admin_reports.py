@@ -42,12 +42,31 @@ def _apply_extracted_report_data(cohort_id: str, report_id: str, filename: str, 
         )
         return
 
+    cohort_summary = extracted.get("cohort_summary") or {}
+    if cohort_summary.get("active_participants") is not None:
+        supabase.table("cohorts").update({
+            "active_participants": cohort_summary["active_participants"],
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", cohort_id).execute()
+
     outcomes = extracted.get("outcomes") or {}
     outcomes_clean = {k: v for k, v in outcomes.items() if v is not None}
     if outcomes_clean:
         outcomes_clean["cohort_id"] = cohort_id
         outcomes_clean["updated_at"] = datetime.now(timezone.utc).isoformat()
         supabase.table("cohort_outcomes").upsert(outcomes_clean, on_conflict="cohort_id").execute()
+
+    notable_projects = extracted.get("notable_projects") or []
+    for p in notable_projects:
+        if not p.get("name") or not p.get("title") or not p.get("body"):
+            continue
+        supabase.table("stories").insert({
+            "name": p["name"][:200],
+            "title": p["title"][:200],
+            "body": p["body"][:1000],
+            "cohort_id": cohort_id,
+            "featured": False,
+        }).execute()
 
     tracks = extracted.get("tracks") or []
     if tracks:

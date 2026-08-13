@@ -10,8 +10,10 @@ class StaffProfileResponse(BaseModel):
     role: str
     department: Optional[str] = None
     title: Optional[str] = None
+    company: Optional[str] = None
     location: Optional[str] = None
     profile_photo_url: Optional[str] = None
+    is_active: bool = True
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 
@@ -21,6 +23,7 @@ class StaffProfileUpdateRequest(BaseModel):
     phone: Optional[str] = None
     department: Optional[str] = None
     title: Optional[str] = None
+    company: Optional[str] = None
     location: Optional[str] = None
     profile_photo_url: Optional[str] = None
 
