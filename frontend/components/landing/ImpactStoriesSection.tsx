@@ -112,10 +112,9 @@ export default function ImpactStoriesSection({ stories }: { stories: Story[] }) 
             href="/login"
             className="inline-flex items-center gap-2 bg-[#1A534A] hover:bg-[#134038] text-white text-sm font-semibold px-6 py-3 rounded-full transition-colors"
           >
-            View more stories
+            Log in to view more graduate stories
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <p className="text-xs text-gray-400 mt-2.5">Log in as a donor to see every graduate's story.</p>
         </div>
       </div>
     </section>
