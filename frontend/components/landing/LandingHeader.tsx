@@ -1,7 +1,7 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Menu, X } from "lucide-react";
 
 const NAV_LINKS = [
@@ -11,14 +11,13 @@ const NAV_LINKS = [
 
 export default function LandingHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
-
   return (
     <header className="sticky top-0 z-40 bg-[#1A534A]">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="text-white font-semibold text-lg">
-          Groundbreaker Impact
+        <Link href="/" className="flex items-center gap-3">
+          <Image src="/logo.png" alt="Groundbreaker" width={36} height={36} className="object-contain rounded-lg" />
+          <span className="text-white font-semibold text-lg">Groundbreaker Impact</span>
         </Link>
-
         <nav className="hidden md:flex items-center gap-8">
           {NAV_LINKS.map((link) => (
             <Link
@@ -30,9 +29,8 @@ export default function LandingHeader() {
             </Link>
           ))}
         </nav>
-
         <div className="hidden md:flex items-center gap-3">
-            <a
+          <a
             href="https://groundbreaker.org/donate/"
             target="_blank"
             rel="noopener noreferrer"
@@ -47,7 +45,6 @@ export default function LandingHeader() {
             Sign Up
           </Link>
         </div>
-
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
@@ -57,7 +54,6 @@ export default function LandingHeader() {
           {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
-
       {mobileOpen && (
         <div className="md:hidden bg-[#1A534A] border-t border-white/10 px-6 py-4">
           <nav className="flex flex-col gap-4">
@@ -72,9 +68,8 @@ export default function LandingHeader() {
               </Link>
             ))}
           </nav>
-
           <div className="flex items-center gap-3 mt-5">
-              <a
+            <a
               href="https://groundbreaker.org/donate/"
               onClick={() => setMobileOpen(false)}
               target="_blank"
