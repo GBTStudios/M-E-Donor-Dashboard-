@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import type { Story } from "@/lib/landing-data";
+import StoryViewModal from "@/components/ui/StoryViewModal";
 
-function StoryCard({ story }: { story: Story }) {
-  const [expanded, setExpanded] = useState(false);
+function StoryCard({ story, onReadMore }: { story: Story; onReadMore: (story: Story) => void }) {
   const isLong = story.body.length > 140;
 
   return (
@@ -26,16 +26,16 @@ function StoryCard({ story }: { story: Story }) {
           {story.title}
         </p>
         <p className="font-semibold text-gray-900 text-base mt-1">{story.name}</p>
-        <p className={`text-sm text-gray-600 mt-2.5 leading-relaxed flex-1 ${!expanded ? "line-clamp-3" : ""}`}>
+        <p className="text-sm text-gray-600 mt-2.5 leading-relaxed flex-1 line-clamp-3">
           {story.body}
         </p>
         {isLong && (
           <button
-            onClick={() => setExpanded(!expanded)}
+            onClick={() => onReadMore(story)}
             className="inline-flex items-center gap-1 text-sm text-[#1A534A] font-semibold mt-3 self-start hover:underline"
           >
-            {expanded ? "Show less" : "Read more"}
-            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
+            Read more
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
@@ -44,6 +44,8 @@ function StoryCard({ story }: { story: Story }) {
 }
 
 export default function StoriesGrid({ stories }: { stories: Story[] }) {
+  const [activeStory, setActiveStory] = useState<Story | null>(null);
+
   if (stories.length === 0) {
     return (
       <p className="text-center text-gray-500 py-16">
@@ -53,10 +55,21 @@ export default function StoriesGrid({ stories }: { stories: Story[] }) {
   }
 
   return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {stories.map((story) => (
-        <StoryCard key={story.id} story={story} />
-      ))}
-    </div>
+    <>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {stories.map((story) => (
+          <StoryCard key={story.id} story={story} onReadMore={setActiveStory} />
+        ))}
+      </div>
+
+      <StoryViewModal
+        open={activeStory !== null}
+        name={activeStory?.name ?? ""}
+        title={activeStory?.title ?? ""}
+        body={activeStory?.body ?? ""}
+        imageUrl={activeStory?.image_url ?? null}
+        onClose={() => setActiveStory(null)}
+      />
+    </>
   );
 }
