@@ -109,7 +109,11 @@ async def get_cohorts(user: dict = Depends(get_current_user)):
     emp_map = _employment_rate_map()
 
     return [
-        {**c, "graduation_pct": grad_map.get(c["id"], 0), "employment_rate": emp_map.get(c["id"])}
+        {
+            **c,
+            "graduation_pct": c["graduation_pct"] if c.get("graduation_pct") is not None else grad_map.get(c["id"], 0),
+            "employment_rate": emp_map.get(c["id"]),
+        }
         for c in cohorts
     ]
 
@@ -128,7 +132,7 @@ async def get_cohort_detail(cohort_id: str, user: dict = Depends(get_current_use
 
     return {
         **cohort,
-        "graduation_pct": grad_map.get(cohort_id, 0),
+        "graduation_pct": cohort["graduation_pct"] if cohort.get("graduation_pct") is not None else grad_map.get(cohort_id, 0),
         "employment_rate": outcomes.get("employment_rate"),
         "avg_income_growth_multiplier": outcomes.get("avg_income_growth_multiplier"),
     }

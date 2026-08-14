@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -67,14 +68,19 @@ export default function AdminSidebar() {
 
   return (
     <aside className="w-64 h-full bg-[#1A534A] flex flex-col py-7 px-5 flex-shrink-0 overflow-y-auto">
-      <div className="flex items-center gap-2.5 px-1 mb-1">
-        <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-          G
-        </div>
-        <span className="text-white font-semibold text-sm leading-snug">
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-1 mb-1">
+        <Image
+          src="/logo.png"
+          alt="Groundbreaker"
+          width={36}
+          height={36}
+          className="object-contain"
+        />
+        <span className="text-white font-bold text-sm leading-snug">
           Groundbreaker
           <br />
-          Impact
+          <span className="font-normal text-white/75">Impact</span>
         </span>
       </div>
 
