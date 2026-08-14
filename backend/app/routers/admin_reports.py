@@ -43,11 +43,10 @@ def _apply_extracted_report_data(cohort_id: str, report_id: str, filename: str, 
         return
 
     cohort_summary = extracted.get("cohort_summary") or {}
-    if cohort_summary.get("active_participants") is not None:
-        supabase.table("cohorts").update({
-            "active_participants": cohort_summary["active_participants"],
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("id", cohort_id).execute()
+    cohort_update = {k: v for k, v in cohort_summary.items() if v is not None}
+    if cohort_update:
+        cohort_update["updated_at"] = datetime.now(timezone.utc).isoformat()
+        supabase.table("cohorts").update(cohort_update).eq("id", cohort_id).execute()
 
     outcomes = extracted.get("outcomes") or {}
     outcomes_clean = {k: v for k, v in outcomes.items() if v is not None}
@@ -143,6 +142,31 @@ async def upload_report(
         background_tasks.add_task(_apply_extracted_report_data, cohort_id, report["id"], file.filename, file_bytes)
 
     return UploadReportResponse(id=report["id"], title=report["title"])
+
+
+@router.post("/{report_id}/reprocess", response_model=ReportActionResponse)
+async def reprocess_report(report_id: str, background_tasks: BackgroundTasks, admin: dict = Depends(get_current_admin_user)):
+    """
+    Re-runs extraction for a report that's stuck (e.g. status still
+    'pending' long after upload - usually means the background task got
+    interrupted by a server restart before it could finish or record a
+    failure). Re-downloads the file from storage and reprocesses it.
+    """
+    existing = supabase.table("reports").select("*").eq("id", report_id).execute()
+    if not existing.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
+
+    report = existing.data[0]
+    if not report.get("cohort_id"):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="This report isn't linked to a cohort - nothing to extract into.")
+
+    file_path = report["file_url"].split("/reports-documents/")[-1]
+    file_bytes = supabase.storage.from_("reports-documents").download(file_path)
+
+    supabase.table("reports").update({"extraction_status": "pending"}).eq("id", report_id).execute()
+    background_tasks.add_task(_apply_extracted_report_data, report["cohort_id"], report_id, f"report.{report['file_type']}", file_bytes)
+
+    return ReportActionResponse(message="Reprocessing started.", id=report_id)
 
 
 @router.get("", response_model=List[ReportListItem])
