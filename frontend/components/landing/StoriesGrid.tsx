@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ChevronDown } from "lucide-react";
 import type { Story } from "@/lib/landing-data";
 import StoryViewModal from "@/components/ui/StoryViewModal";
+
+const INITIAL_VISIBLE = 10;
 
 function StoryCard({ story, onReadMore }: { story: Story; onReadMore: (story: Story) => void }) {
   const isLong = story.body.length > 140;
@@ -45,6 +47,7 @@ function StoryCard({ story, onReadMore }: { story: Story; onReadMore: (story: St
 
 export default function StoriesGrid({ stories }: { stories: Story[] }) {
   const [activeStory, setActiveStory] = useState<Story | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   if (stories.length === 0) {
     return (
@@ -54,13 +57,28 @@ export default function StoriesGrid({ stories }: { stories: Story[] }) {
     );
   }
 
+  const visibleStories = showAll ? stories : stories.slice(0, INITIAL_VISIBLE);
+
   return (
     <>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {stories.map((story) => (
+        {visibleStories.map((story) => (
           <StoryCard key={story.id} story={story} onReadMore={setActiveStory} />
         ))}
       </div>
+
+      {!showAll && stories.length > INITIAL_VISIBLE && (
+        <div className="flex justify-center mt-8">
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="inline-flex items-center gap-2 border border-black/10 text-sm font-medium text-gray-700 px-5 py-2.5 rounded-full hover:bg-gray-50 transition"
+          >
+            View all stories ({stories.length})
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <StoryViewModal
         open={activeStory !== null}
