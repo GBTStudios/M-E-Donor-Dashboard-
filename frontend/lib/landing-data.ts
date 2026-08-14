@@ -82,3 +82,10 @@ export async function fetchStories(limit = 6): Promise<Story[]> {
     return FALLBACK_STORIES;
   }
 }
+
+// Full list for the public Success Stories page — requests the backend's
+// max (50, enforced server-side in stories.py). If the program ever has
+// more graduates than that, the limit itself needs raising on the backend.
+export async function fetchAllStories(): Promise<Story[]> {
+  return fetchStories(50);
+}

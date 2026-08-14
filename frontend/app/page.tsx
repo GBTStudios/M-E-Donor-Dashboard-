@@ -8,7 +8,7 @@ import ChatbotButton from "@/components/landing/ChatbotButton";
 import { fetchStories, fetchLandingStats } from "@/lib/landing-data";
 
 export default async function LandingPage() {
-  const [stories, stats] = await Promise.all([fetchStories(6), fetchLandingStats()]);
+  const [stories, stats] = await Promise.all([fetchStories(5), fetchLandingStats()]);
 
   return (
     <main>
