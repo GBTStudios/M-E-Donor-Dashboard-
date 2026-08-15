@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -35,7 +34,6 @@ function NavLink({
   const active =
     href !== "#" &&
     (pathname === href || (!exact && pathname?.startsWith(href + "/")));
-
   return (
     <Link
       href={href}
@@ -54,10 +52,16 @@ function NavLink({
 export default function DonorSidebar() {
   return (
     <aside className="w-64 h-screen sticky top-0 bg-[#1A534A] flex flex-col py-7 px-5 flex-shrink-0 overflow-y-auto">
+      {/* Logo */}
       <div className="flex items-center gap-2.5 px-1 mb-1">
-        <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-          G
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.png"
+          alt="Groundbreaker"
+          width={36}
+          height={36}
+          className="object-contain rounded-lg flex-shrink-0"
+        />
         <span className="text-white font-semibold text-sm leading-snug">
           Groundbreaker
           <br />

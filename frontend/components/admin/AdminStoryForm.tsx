@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import { Loader2, ImagePlus } from "lucide-react";
 import { createAdminStory, updateAdminStory, Story } from "@/lib/adminStories";
 
+const MAX_BODY_WORDS = 300;
+
+function countWords(text: string): number {
+  const trimmed = text.trim();
+  return trimmed === "" ? 0 : trimmed.split(/\s+/).length;
+}
+
 interface AdminStoryFormProps {
   mode: "create" | "edit";
   storyId?: string;
@@ -49,12 +56,24 @@ export default function AdminStoryForm({ mode, storyId, initialStory }: AdminSto
     setImagePreview(URL.createObjectURL(file));
   }
 
+  function handleBodyChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const value = e.target.value;
+    if (countWords(value) <= MAX_BODY_WORDS) {
+      setBody(value);
+    }
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
 
     if (!fieldsFilled) {
       setError("Please fill in the name, title, and body.");
+      return;
+    }
+
+    if (countWords(body) > MAX_BODY_WORDS) {
+      setError(`Story body must be ${MAX_BODY_WORDS} words or fewer.`);
       return;
     }
 
@@ -143,10 +162,21 @@ export default function AdminStoryForm({ mode, storyId, initialStory }: AdminSto
           id="body"
           rows={4}
           value={body}
-          onChange={(e) => setBody(e.target.value)}
+          onChange={handleBodyChange}
           placeholder="Joan learned to build and maintain apps and now works as a software engineer."
           className="w-full mt-1 px-3 py-2.5 rounded-lg border border-black/10 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-700"
         />
+        <p
+          className={`text-xs mt-1 text-right ${
+            countWords(body) >= MAX_BODY_WORDS
+              ? "text-red-600"
+              : countWords(body) >= 250
+              ? "text-amber-600"
+              : "text-gray-400"
+          }`}
+        >
+          {countWords(body)} / {MAX_BODY_WORDS} words
+        </p>
       </div>
 
       <div>

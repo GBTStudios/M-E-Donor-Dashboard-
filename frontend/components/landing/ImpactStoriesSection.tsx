@@ -3,14 +3,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Quote, ArrowRight } from "lucide-react";
+import StoryViewModal from "@/components/ui/StoryViewModal";
 import type { Story } from "@/lib/landing-data";
 
 export default function ImpactStoriesSection({ stories }: { stories: Story[] }) {
   const [index, setIndex] = useState(0);
-  const [expanded, setExpanded] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
-    setExpanded(false);
+    setModalOpen(false);
   }, [index]);
 
   if (stories.length === 0) return null;
@@ -69,16 +70,16 @@ export default function ImpactStoriesSection({ stories }: { stories: Story[] }) 
                   {story.title}
                 </p>
                 <p className="font-semibold text-gray-900 text-lg mt-1">{story.name}</p>
-                <p className={`text-[15px] text-gray-600 mt-3 leading-relaxed ${!expanded ? "line-clamp-4" : ""}`}>
+                <p className="text-[15px] text-gray-600 mt-3 leading-relaxed line-clamp-4">
                   {story.body}
                 </p>
                 {isLong && (
                   <button
-                    onClick={() => setExpanded(!expanded)}
+                    onClick={() => setModalOpen(true)}
                     className="inline-flex items-center gap-1.5 text-sm text-white font-semibold mt-4 bg-[#1A534A] hover:bg-[#134038] px-4 py-2 rounded-full transition-colors"
                   >
-                    {expanded ? "Show less" : "Read full story"}
-                    <ChevronRight className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
+                    Read full story
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
@@ -118,6 +119,15 @@ export default function ImpactStoriesSection({ stories }: { stories: Story[] }) 
           <p className="text-xs text-gray-400 mt-2.5">Log in to view more graduate stories.</p>
         </div>
       </div>
+
+      <StoryViewModal
+        open={modalOpen}
+        name={story.name}
+        title={story.title}
+        body={story.body}
+        imageUrl={story.image_url}
+        onClose={() => setModalOpen(false)}
+      />
     </section>
   );
 }

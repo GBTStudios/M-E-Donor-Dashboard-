@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Pencil, Trash2, Plus, Star } from "lucide-react";
+import { Loader2, Pencil, Trash2, Plus, Star, ChevronDown } from "lucide-react";
 import { fetchAdminStories, deleteAdminStory, Story } from "@/lib/adminStories";
+
+const INITIAL_VISIBLE = 10;
 
 export default function AdminStoriesList() {
   const router = useRouter();
@@ -13,6 +15,7 @@ export default function AdminStoriesList() {
   const [accessDenied, setAccessDenied] = useState(false);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     loadStories();
@@ -116,7 +119,7 @@ export default function AdminStoriesList() {
         <p className="text-sm text-gray-500">No stories yet. Create the first one.</p>
       ) : (
         <div className="space-y-3">
-          {stories.map((story) => (
+          {(showAll ? stories : stories.slice(0, INITIAL_VISIBLE)).map((story) => (
             <div
               key={story.id}
               className="flex items-center gap-4 bg-white rounded-xl border border-black/5 shadow-sm p-4"
@@ -165,6 +168,17 @@ export default function AdminStoriesList() {
             </div>
           ))}
         </div>
+      )}
+
+      {!showAll && stories.length > INITIAL_VISIBLE && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="w-full flex items-center justify-center gap-2 mt-4 py-2.5 rounded-lg border border-black/10 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
+        >
+          View all stories ({stories.length})
+          <ChevronDown className="w-4 h-4" />
+        </button>
       )}
     </div>
   );
