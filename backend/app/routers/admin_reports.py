@@ -56,16 +56,20 @@ def _apply_extracted_report_data(cohort_id: str, report_id: str, filename: str, 
         supabase.table("cohort_outcomes").upsert(outcomes_clean, on_conflict="cohort_id").execute()
 
     notable_projects = extracted.get("notable_projects") or []
-    for p in notable_projects:
-        if not p.get("name") or not p.get("title") or not p.get("body"):
-            continue
-        supabase.table("stories").insert({
-            "name": p["name"][:200],
-            "title": p["title"][:200],
-            "body": p["body"][:1000],
-            "cohort_id": cohort_id,
-            "featured": False,
-        }).execute()
+    if notable_projects:
+        # Replace existing extracted projects for this cohort, same as
+        # tracks - a re-uploaded/corrected report shouldn't leave stale
+        # duplicates behind.
+        supabase.table("cohort_projects").delete().eq("cohort_id", cohort_id).execute()
+        for p in notable_projects:
+            if not p.get("name") or not p.get("title") or not p.get("body"):
+                continue
+            supabase.table("cohort_projects").insert({
+                "cohort_id": cohort_id,
+                "name": p["name"][:200],
+                "title": p["title"][:200],
+                "body": p["body"][:1000],
+            }).execute()
 
     tracks = extracted.get("tracks") or []
     if tracks:

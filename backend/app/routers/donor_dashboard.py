@@ -167,7 +167,7 @@ async def get_cohort_outcomes(cohort_id: str, user: dict = Depends(get_current_u
     result = supabase.table("cohort_outcomes").select("*").eq("cohort_id", cohort_id).execute()
     outcomes = result.data[0] if result.data else {}
 
-    projects_result = supabase.table("stories").select("id").eq("cohort_id", cohort_id).execute()
+    projects_result = supabase.table("cohort_projects").select("id").eq("cohort_id", cohort_id).execute()
     notable_count = len(projects_result.data)
 
     return {
@@ -187,7 +187,7 @@ async def get_cohort_projects(cohort_id: str, user: dict = Depends(get_current_u
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cohort not found.")
 
     result = (
-        supabase.table("stories")
+        supabase.table("cohort_projects")
         .select("*")
         .eq("cohort_id", cohort_id)
         .order("created_at", desc=True)
