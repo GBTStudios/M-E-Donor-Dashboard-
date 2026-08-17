@@ -11,7 +11,6 @@
       "logout": "Logout"
     }
   },
-
   "profile": {
     "heading": "Donor Profile",
     "badge": "Donor",
@@ -33,11 +32,8 @@
       "inactive": "Inactive",
       "notSet": "—"
     },
-    "errors": {
-      "couldNotLoad": "Could not load your profile."
-    }
+    "errors": { "couldNotLoad": "Could not load your profile." }
   },
-
   "settings": {
     "heading": "Donor Settings",
     "subheading": "System configuration & security.",
@@ -65,7 +61,6 @@
       "disclaimer": "This saves your preferred language as a stored setting. It doesn't yet translate the app's displayed text — that's a separate feature not built yet."
     }
   },
-
   "dashboard": {
     "heading": "Impact Overview",
     "description": "Real-time tracking of long-term outcomes and social mobility metrics across your sponsored initiatives.",
@@ -81,7 +76,6 @@
       "incomeSentHome": { "label": "Income Sent Home", "note": "Of graduate income flows directly back to support their families." }
     }
   },
-
   "baseline": {
     "title": "Before the Program",
     "subtitle": "Aggregated data collected at enrollment phase.",
@@ -102,59 +96,39 @@
       "notAvailable": "—"
     }
   },
-
   "cohortProgress": {
     "title": "Active Cohort Progress",
     "subtitle": "Performance tracking across the most recent groups",
     "viewAll": "View All Cohorts",
     "empty": "No active cohorts to show yet.",
     "activeParticipants": "{{count}} Active Participants",
-    "status": {
-      "completed": "Completed",
-      "inProgress": "In Progress"
-    }
+    "status": { "completed": "Completed", "inProgress": "In Progress" }
   },
-
   "insights": {
     "title": "Strategic Insights",
     "subtitle": "Key observations from recent data cycles",
     "requestAnalysis": "Request Detailed Analysis",
     "comingSoon": "Coming soon"
   },
-
   "origins": {
     "title": "Where Our Talents Originate From",
     "subtitleDistrictsOnly": "{{count}} districts across Uganda",
     "subtitleWithInternational": "{{count}} districts across Uganda, plus international participants",
     "loadingMap": "Loading map...",
-    "legend": {
-      "district": "District",
-      "country": "Country"
-    },
+    "legend": { "district": "District", "country": "Country" },
     "locationPending": "Location pending for: {{list}}",
     "alsoRepresenting": "Also Representing"
   },
-
   "cohorts": {
     "eyebrow": "Regional Impact Groups",
     "heading": "Program Cohorts",
     "description": "Review detailed progress and performance metrics across historical and active program cycles. Data transparency is maintained through standardised outcome assessments at intake, graduation, and endline.",
-    "tabs": {
-      "all": "All Cohorts"
-    },
-    "status": {
-      "completed": "Completed",
-      "inProgress": "In Progress"
-    },
+    "tabs": { "all": "All Cohorts" },
+    "status": { "completed": "Completed", "inProgress": "In Progress" },
     "lifecycle": {
       "title": "Program Lifecycle",
       "percentComplete": "{{pct}}% Complete",
-      "stages": {
-        "intake": "Intake",
-        "training": "Training",
-        "graduation": "Graduation",
-        "endline": "Endline"
-      }
+      "stages": { "intake": "Intake", "training": "Training", "graduation": "Graduation", "endline": "Endline" }
     },
     "summary": {
       "totalCohorts": "Total Cohorts",
@@ -178,10 +152,7 @@
       "title": "Impact Methodology Update",
       "body": "Starting from Cohort 3, we implemented standardised surveying across all tracks to ensure long-term outcome comparability. Data for Cohorts 1 and 2 remains verified but utilises legacy categorisation metrics."
     },
-    "empty": {
-      "title": "No cohorts found",
-      "subtitle": "Try adjusting your search or filters."
-    },
+    "empty": { "title": "No cohorts found", "subtitle": "Try adjusting your search or filters." },
     "card": {
       "track": "Track",
       "participants": "{{count}} Participants",
@@ -253,7 +224,6 @@
       }
     }
   },
-
   "reports": {
     "heading": "Impact Reports",
     "description": "Select a report structure to view performance data and export official documentation.",
@@ -268,26 +238,22 @@
       "downloadPdf": "Download PDF"
     }
   },
-
   "stories": {
     "heading": "Talent Stories",
     "description": "Real graduates, real outcomes. Every contribution creates an opportunity — these are the full stories of learners whose lives have been changed through the program you support.",
     "talentsGraduated": "Talents graduated"
   },
-
   "errors": {
     "sessionExpired": "Session expired due to inactivity. Please log in again.",
     "sessionExpiredGeneric": "Your session has expired. Please log in again.",
     "networkError": "Network error. Please try again.",
     "noAccess": "You do not have access to this page.",
-
     "profile": {
       "couldNotLoad": "Could not load your profile.",
       "noFieldsToUpdate": "No fields provided to update.",
       "somethingWentWrong": "Something went wrong. Please try again.",
       "photoInvalid": "Image must be JPEG, PNG, or WEBP, under 5MB."
     },
-
     "settings": {
       "couldNotLoad": "Could not load your settings.",
       "noFieldsToUpdate": "No fields provided to update.",
@@ -295,7 +261,6 @@
       "languageInvalid": "Please choose a supported language.",
       "couldNotLoadOptions": "Could not load language options."
     },
-
     "security": {
       "currentPasswordIncorrect": "Current password is incorrect.",
       "checkNewPassword": "Please check your new password.",
@@ -306,7 +271,6 @@
       "deviceSignedOut": "Device signed out.",
       "signedOutOthers": "Signed out of other devices."
     },
-
     "dashboard": {
       "couldNotLoadSummary": "Something went wrong loading your dashboard.",
       "couldNotLoadCohorts": "Something went wrong loading cohort progress.",
@@ -323,7 +287,6 @@
       "couldNotLoadProjects": "Could not load projects.",
       "couldNotDownloadReport": "Could not download report."
     },
-
     "reports": {
       "couldNotLoad": "Something went wrong loading reports.",
       "reportNotFound": "Report not found.",
@@ -331,6 +294,34 @@
       "noCohortReport": "No report found for this cohort.",
       "couldNotGenerate": "Something went wrong generating the report.",
       "notLinkedToCohort": "This report isn't linked to a cohort, so it can't be previewed here yet."
+    }
+  },
+  "shared": {
+    "sessions": {
+      "title": "Active Sessions",
+      "description": "Devices currently signed in to your account.",
+      "signOutOthers": "Sign out all other devices",
+      "thisDevice": "This device",
+      "signOut": "Sign Out",
+      "noSessions": "No active sessions found.",
+      "showingRange": "Showing {{from}}–{{to}} of {{total}}",
+      "activeNow": "Active now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago"
+    },
+    "stories": {
+      "empty": "Stories are being added — check back soon.",
+      "showLess": "Show less",
+      "readMore": "Read more"
+    },
+    "reportViewer": {
+      "openInNewTab": "Open in new tab",
+      "close": "Close",
+      "noPreview": "Preview isn't available for this file type.",
+      "needsDownload": "{{type}} needs to be downloaded to view.",
+      "thisFile": "This file",
+      "downloadToView": "Download to view"
     }
   }
 }

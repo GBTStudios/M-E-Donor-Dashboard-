@@ -1,42 +1,42 @@
 {
   "buttons": {
-    "save": "Save Changes",
-    "cancel": "Cancel",
-    "edit": "Edit Profile",
-    "saving": "Saving…"
+    "save": "Änderungen speichern",
+    "cancel": "Abbrechen",
+    "edit": "Profil bearbeiten",
+    "saving": "Wird gespeichert…"
   },
   "status": {
-    "loading": "Loading…"
+    "loading": "Wird geladen…"
   },
   "password": {
-    "showLabel": "Show {{field}}",
-    "hideLabel": "Hide {{field}}",
+    "showLabel": "{{field}} anzeigen",
+    "hideLabel": "{{field}} verbergen",
     "strength": {
-      "tooWeak": "Too weak",
-      "weak": "Weak",
-      "good": "Good",
-      "strong": "Strong"
+      "tooWeak": "Zu schwach",
+      "weak": "Schwach",
+      "good": "Gut",
+      "strong": "Stark"
     },
     "requirements": {
-      "length": "At least {{count}} characters",
-      "number": "At least one number",
-      "symbol": "At least one special symbol"
+      "length": "Mindestens {{count}} Zeichen",
+      "number": "Mindestens eine Zahl",
+      "symbol": "Mindestens ein Sonderzeichen"
     },
     "confirmErrors": {
-      "confirmRequired": "Please confirm your new password.",
-      "confirmMismatch": "Passwords do not match."
+      "confirmRequired": "Bitte bestätigen Sie Ihr neues Passwort.",
+      "confirmMismatch": "Die Passwörter stimmen nicht überein."
     }
   },
   "changePassword": {
-    "title": "Update Password",
-    "description": "Change your account password. You'll stay signed in on this device.",
-    "currentPassword": "Current Password",
-    "currentPasswordPlaceholder": "Enter current password",
-    "newPassword": "New Password",
-    "newPasswordPlaceholder": "Enter new password",
-    "confirmPassword": "Confirm New Password",
-    "confirmPasswordPlaceholder": "Re-enter new password",
-    "updating": "Updating…",
-    "submit": "Update Password"
+    "title": "Passwort aktualisieren",
+    "description": "Ändern Sie Ihr Kontopasswort. Sie bleiben auf diesem Gerät angemeldet.",
+    "currentPassword": "Aktuelles Passwort",
+    "currentPasswordPlaceholder": "Aktuelles Passwort eingeben",
+    "newPassword": "Neues Passwort",
+    "newPasswordPlaceholder": "Neues Passwort eingeben",
+    "confirmPassword": "Neues Passwort bestätigen",
+    "confirmPasswordPlaceholder": "Neues Passwort erneut eingeben",
+    "updating": "Wird aktualisiert…",
+    "submit": "Passwort aktualisieren"
   }
 }

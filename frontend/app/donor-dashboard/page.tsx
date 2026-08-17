@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import DonorLayout from "@/components/donor/DonorLayout";
@@ -20,7 +21,9 @@ import {
   BaselineData,
   OriginsData,
 } from "@/lib/donorDashboard";
+
 export default function DonorDashboardPage() {
+  const { t } = useTranslation("donor");
   const router = useRouter();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
@@ -51,11 +54,12 @@ export default function DonorDashboardPage() {
       if (baselineRes.success && baselineRes.baseline) setBaseline(baselineRes.baseline);
       if (originsRes.success && originsRes.origins) setOrigins(originsRes.origins);
       if (!summaryRes.success) {
-        setError(summaryRes.error ?? "Something went wrong loading your dashboard.");
+        setError(summaryRes.error ?? t("errors.dashboard.couldNotLoadSummary"));
       }
       setLoading(false);
     }
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
   if (loading) {
     return (
@@ -68,10 +72,9 @@ export default function DonorDashboardPage() {
   }
   return (
     <DonorLayout>
-      <h1 className="text-2xl font-bold text-gray-900">Impact Overview</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t("dashboard.heading")}</h1>
       <p className="text-sm text-gray-500 mt-1 mb-6">
-        Real-time tracking of long-term outcomes and social mobility metrics across your sponsored
-        initiatives.
+        {t("dashboard.description")}
       </p>
       {error && (
         <p role="alert" className="text-sm text-red-600 mb-4">

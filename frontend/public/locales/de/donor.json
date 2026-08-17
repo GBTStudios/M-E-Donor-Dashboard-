@@ -1,336 +1,327 @@
 {
   "sidebar": {
-  "badge": "TEST-DE",
+    "badge": "Spender",
     "nav": {
-      "dashboard": "Dashboard",
-      "cohorts": "Cohorts",
-      "stories": "Success Stories",
-      "reports": "Reports",
-      "profile": "Profile",
-      "settings": "Settings",
-      "logout": "Logout"
+      "dashboard": "Übersicht",
+      "cohorts": "Kohorten",
+      "stories": "Erfolgsgeschichten",
+      "reports": "Berichte",
+      "profile": "Profil",
+      "settings": "Einstellungen",
+      "logout": "Abmelden"
     }
   },
-
   "profile": {
-    "heading": "Donor Profile",
-    "badge": "Donor",
-    "memberSince": "Member since {{date}}",
+    "heading": "Spenderprofil",
+    "badge": "Spender",
+    "memberSince": "Mitglied seit {{date}}",
     "fields": {
-      "fullName": "Full Name",
-      "email": "Email",
-      "emailReadOnly": "Email cannot be changed",
-      "company": "Company",
-      "companyPlaceholder": "e.g. Hima Group"
+      "fullName": "Vollständiger Name",
+      "email": "E-Mail",
+      "emailReadOnly": "E-Mail kann nicht geändert werden",
+      "company": "Unternehmen",
+      "companyPlaceholder": "z. B. Hima Group"
     },
     "accountAccess": {
-      "title": "Account Access",
-      "description": "Donor account details and system status.",
-      "company": "Company",
-      "accountStatus": "Account Status",
-      "createdOn": "Created On",
-      "active": "Active",
-      "inactive": "Inactive",
+      "title": "Kontozugriff",
+      "description": "Kontodetails und Systemstatus des Spenders.",
+      "company": "Unternehmen",
+      "accountStatus": "Kontostatus",
+      "createdOn": "Erstellt am",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
       "notSet": "—"
     },
-    "errors": {
-      "couldNotLoad": "Could not load your profile."
-    }
+    "errors": { "couldNotLoad": "Ihr Profil konnte nicht geladen werden." }
   },
-
   "settings": {
-    "heading": "Donor Settings",
-    "subheading": "System configuration & security.",
+    "heading": "Spendereinstellungen",
+    "subheading": "Systemkonfiguration & Sicherheit.",
     "notifications": {
-      "title": "System Notifications",
-      "description": "Choose what you want to be notified about.",
+      "title": "Systembenachrichtigungen",
+      "description": "Wählen Sie aus, worüber Sie benachrichtigt werden möchten.",
       "quarterlyReportReady": {
-        "label": "Quarterly report ready",
-        "description": "Get notified as soon as the latest impact and financial reports are available for review."
+        "label": "Quartalsbericht verfügbar",
+        "description": "Werden Sie benachrichtigt, sobald die neuesten Wirkungs- und Finanzberichte zur Überprüfung bereitstehen."
       },
       "newCohortMilestones": {
-        "label": "New cohort milestones",
-        "description": "Real-time alerts when active student cohorts reach significant educational or employment milestones."
+        "label": "Neue Kohorten-Meilensteine",
+        "description": "Echtzeit-Benachrichtigungen, wenn aktive Kohorten bedeutende Bildungs- oder Beschäftigungsmeilensteine erreichen."
       },
       "answerCorrections": {
-        "label": "Answer corrections",
-        "description": "Notify me when the assistant's answers are reviewed and corrected."
+        "label": "Antwortkorrekturen",
+        "description": "Benachrichtigen Sie mich, wenn Antworten des Assistenten überprüft und korrigiert werden."
       }
     },
     "regional": {
-      "title": "Regional Preferences",
-      "description": "Set your local language and time zone for system reports and display.",
-      "language": "Language",
-      "timeZone": "Time Zone",
-      "disclaimer": "This saves your preferred language as a stored setting. It doesn't yet translate the app's displayed text — that's a separate feature not built yet."
+      "title": "Regionale Einstellungen",
+      "description": "Legen Sie Ihre Sprache und Zeitzone für Systemberichte und Anzeige fest.",
+      "language": "Sprache",
+      "timeZone": "Zeitzone",
+      "disclaimer": "Die Sprachänderung aktualisiert die angezeigten Texte der App sofort. Die deutschen Übersetzungen werden noch fertiggestellt, daher kann derzeit noch Text auf Englisch erscheinen."
     }
   },
-
   "dashboard": {
-    "heading": "Impact Overview",
-    "description": "Real-time tracking of long-term outcomes and social mobility metrics across your sponsored initiatives.",
+    "heading": "Wirkungsübersicht",
+    "description": "Echtzeit-Verfolgung langfristiger Ergebnisse und Kennzahlen zur sozialen Mobilität in Ihren geförderten Programmen.",
     "cards": {
-      "participants": { "label": "Participants", "note": "High-potential individuals currently enrolled in active tracks." },
-      "graduationRate": { "label": "Graduation Rate", "note": "Successful completion rate." },
-      "employmentRate": { "label": "Employment Rate", "note": "Graduates who secure stable roles within 6 months." },
-      "incomeGrowth": { "label": "Income Growth", "note": "Average increase in monthly earnings post-graduation." },
-      "activeCohorts": { "label": "Active Cohorts", "note": "Concurrent training programs running across regional hubs." },
-      "refugeeInclusion": { "label": "Refugee Inclusion", "note": "Dedicated tracks for displaced talents in border communities." },
-      "internationalRoles": { "label": "International Roles", "note": "Talents employed by global tech firms in remote/relocation roles." },
-      "africanCompanies": { "label": "African Companies", "note": "Graduates fueling the growth of local African tech ecosystems." },
-      "incomeSentHome": { "label": "Income Sent Home", "note": "Of graduate income flows directly back to support their families." }
+      "participants": { "label": "Teilnehmende", "note": "Vielversprechende Personen, die derzeit in aktiven Tracks eingeschrieben sind." },
+      "graduationRate": { "label": "Abschlussquote", "note": "Erfolgreiche Abschlussquote." },
+      "employmentRate": { "label": "Beschäftigungsquote", "note": "Absolvent:innen, die innerhalb von 6 Monaten eine feste Anstellung finden." },
+      "incomeGrowth": { "label": "Einkommenswachstum", "note": "Durchschnittlicher Anstieg des monatlichen Einkommens nach dem Abschluss." },
+      "activeCohorts": { "label": "Aktive Kohorten", "note": "Parallel laufende Trainingsprogramme in regionalen Zentren." },
+      "refugeeInclusion": { "label": "Einbindung von Geflüchteten", "note": "Spezielle Tracks für vertriebene Talente in Grenzregionen." },
+      "internationalRoles": { "label": "Internationale Positionen", "note": "Talente, die bei globalen Technologieunternehmen in Remote- oder Umzugspositionen beschäftigt sind." },
+      "africanCompanies": { "label": "Afrikanische Unternehmen", "note": "Absolvent:innen, die das Wachstum lokaler afrikanischer Tech-Ökosysteme vorantreiben." },
+      "incomeSentHome": { "label": "Nach Hause gesendetes Einkommen", "note": "Anteil des Einkommens der Absolvent:innen, der direkt zur Unterstützung ihrer Familien zurückfließt." }
     }
   },
-
   "baseline": {
-    "title": "Before the Program",
-    "subtitle": "Aggregated data collected at enrollment phase.",
+    "title": "Vor dem Programm",
+    "subtitle": "Aggregierte Daten, die bei der Einschreibung erhoben wurden.",
     "rows": {
-      "avgHouseholdSize": "Avg. Household Size",
-      "avgIncomePreProgram": "Avg. Income Pre-Program",
-      "mainBreadwinner": "Main Breadwinner",
-      "avgAge": "Avg. Age",
-      "highestEducation": "Highest Education",
-      "employedBefore": "Employed Before",
-      "jobTypes": "Job Types"
+      "avgHouseholdSize": "Durchschn. Haushaltsgröße",
+      "avgIncomePreProgram": "Durchschn. Einkommen vor dem Programm",
+      "mainBreadwinner": "Hauptverdiener:in",
+      "avgAge": "Durchschn. Alter",
+      "highestEducation": "Höchster Bildungsabschluss",
+      "employedBefore": "Zuvor beschäftigt",
+      "jobTypes": "Beschäftigungsarten"
     },
     "values": {
-      "people": "{{count}} People",
-      "perMonth": "${{amount}} / mo",
-      "years": "{{count}} Years",
-      "informalPct": "{{pct}}% (Informal)",
+      "people": "{{count}} Personen",
+      "perMonth": "${{amount}} / Monat",
+      "years": "{{count}} Jahre",
+      "informalPct": "{{pct}}% (informell)",
       "notAvailable": "—"
     }
   },
-
   "cohortProgress": {
-    "title": "Active Cohort Progress",
-    "subtitle": "Performance tracking across the most recent groups",
-    "viewAll": "View All Cohorts",
-    "empty": "No active cohorts to show yet.",
-    "activeParticipants": "{{count}} Active Participants",
-    "status": {
-      "completed": "Completed",
-      "inProgress": "In Progress"
-    }
+    "title": "Fortschritt aktiver Kohorten",
+    "subtitle": "Leistungsverfolgung der aktuellsten Gruppen",
+    "viewAll": "Alle Kohorten anzeigen",
+    "empty": "Noch keine aktiven Kohorten vorhanden.",
+    "activeParticipants": "{{count}} aktive Teilnehmende",
+    "status": { "completed": "Abgeschlossen", "inProgress": "In Bearbeitung" }
   },
-
   "insights": {
-    "title": "Strategic Insights",
-    "subtitle": "Key observations from recent data cycles",
-    "requestAnalysis": "Request Detailed Analysis",
-    "comingSoon": "Coming soon"
+    "title": "Strategische Einblicke",
+    "subtitle": "Wichtige Erkenntnisse aus aktuellen Datenzyklen",
+    "requestAnalysis": "Detaillierte Analyse anfordern",
+    "comingSoon": "Demnächst verfügbar"
   },
-
   "origins": {
-    "title": "Where Our Talents Originate From",
-    "subtitleDistrictsOnly": "{{count}} districts across Uganda",
-    "subtitleWithInternational": "{{count}} districts across Uganda, plus international participants",
-    "loadingMap": "Loading map...",
-    "legend": {
-      "district": "District",
-      "country": "Country"
-    },
-    "locationPending": "Location pending for: {{list}}",
-    "alsoRepresenting": "Also Representing"
+    "title": "Herkunft unserer Talente",
+    "subtitleDistrictsOnly": "{{count}} Distrikte in Uganda",
+    "subtitleWithInternational": "{{count}} Distrikte in Uganda, sowie internationale Teilnehmende",
+    "loadingMap": "Karte wird geladen...",
+    "legend": { "district": "Distrikt", "country": "Land" },
+    "locationPending": "Standort noch offen für: {{list}}",
+    "alsoRepresenting": "Ebenfalls vertreten"
   },
-
   "cohorts": {
-    "eyebrow": "Regional Impact Groups",
-    "heading": "Program Cohorts",
-    "description": "Review detailed progress and performance metrics across historical and active program cycles. Data transparency is maintained through standardised outcome assessments at intake, graduation, and endline.",
-    "tabs": {
-      "all": "All Cohorts"
-    },
-    "status": {
-      "completed": "Completed",
-      "inProgress": "In Progress"
-    },
+    "eyebrow": "Regionale Wirkungsgruppen",
+    "heading": "Programmkohorten",
+    "description": "Überprüfen Sie detaillierte Fortschritts- und Leistungskennzahlen über historische und aktive Programmzyklen hinweg. Die Datentransparenz wird durch standardisierte Ergebnisbewertungen bei Aufnahme, Abschluss und Endlinie sichergestellt.",
+    "tabs": { "all": "Alle Kohorten" },
+    "status": { "completed": "Abgeschlossen", "inProgress": "In Bearbeitung" },
     "lifecycle": {
-      "title": "Program Lifecycle",
-      "percentComplete": "{{pct}}% Complete",
-      "stages": {
-        "intake": "Intake",
-        "training": "Training",
-        "graduation": "Graduation",
-        "endline": "Endline"
-      }
+      "title": "Programmverlauf",
+      "percentComplete": "{{pct}}% abgeschlossen",
+      "stages": { "intake": "Aufnahme", "training": "Training", "graduation": "Abschluss", "endline": "Endlinie" }
     },
     "summary": {
-      "totalCohorts": "Total Cohorts",
-      "totalParticipants": "Total Participants",
-      "avgGraduationRate": "Avg Graduation Rate",
-      "avgCompletion": "Avg Completion"
+      "totalCohorts": "Kohorten insgesamt",
+      "totalParticipants": "Teilnehmende insgesamt",
+      "avgGraduationRate": "Durchschn. Abschlussquote",
+      "avgCompletion": "Durchschn. Fertigstellung"
     },
     "search": {
-      "placeholder": "Search tracks or names...",
-      "advancedFilters": "Advanced Filters",
+      "placeholder": "Tracks oder Namen suchen...",
+      "advancedFilters": "Erweiterte Filter",
       "statusLabel": "Status:",
-      "sortByLabel": "Sort by:",
-      "sortDefault": "Default",
-      "sortGraduation": "Graduation Rate",
-      "sortCompletion": "Completion",
-      "clear": "Clear",
-      "resultsCount": "Showing {{shown}} of {{total}} cohorts",
-      "completedSuffix": " · {{count}} completed"
+      "sortByLabel": "Sortieren nach:",
+      "sortDefault": "Standard",
+      "sortGraduation": "Abschlussquote",
+      "sortCompletion": "Fertigstellung",
+      "clear": "Zurücksetzen",
+      "resultsCount": "{{shown}} von {{total}} Kohorten werden angezeigt",
+      "completedSuffix": " · {{count}} abgeschlossen"
     },
     "methodology": {
-      "title": "Impact Methodology Update",
-      "body": "Starting from Cohort 3, we implemented standardised surveying across all tracks to ensure long-term outcome comparability. Data for Cohorts 1 and 2 remains verified but utilises legacy categorisation metrics."
+      "title": "Aktualisierung der Wirkungsmethodik",
+      "body": "Ab Kohorte 3 haben wir eine standardisierte Erhebung über alle Tracks hinweg eingeführt, um die langfristige Vergleichbarkeit der Ergebnisse zu gewährleisten. Die Daten für Kohorte 1 und 2 bleiben verifiziert, verwenden jedoch noch die frühere Kategorisierungsmethodik."
     },
-    "empty": {
-      "title": "No cohorts found",
-      "subtitle": "Try adjusting your search or filters."
-    },
+    "empty": { "title": "Keine Kohorten gefunden", "subtitle": "Passen Sie Ihre Suche oder Filter an." },
     "card": {
       "track": "Track",
-      "participants": "{{count}} Participants",
-      "intakeDate": "Intake Date",
-      "estEndline": "Est. Endline",
-      "endlineDate": "Endline Date",
-      "graduation": "Graduation",
-      "employment": "Employment",
-      "viewDetails": "View Details",
-      "downloadReport": "Download Report"
+      "participants": "{{count}} Teilnehmende",
+      "intakeDate": "Aufnahmedatum",
+      "estEndline": "Voraussichtl. Endlinie",
+      "endlineDate": "Endliniendatum",
+      "graduation": "Abschluss",
+      "employment": "Beschäftigung",
+      "viewDetails": "Details anzeigen",
+      "downloadReport": "Bericht herunterladen"
     },
     "detail": {
-      "programDuration": "Program Duration",
+      "programDuration": "Programmdauer",
       "kpi": {
-        "totalParticipants": "Total Participants",
-        "completionRate": "Completion Rate",
-        "employmentRate": "Employment Rate",
-        "avgIncomeGrowth": "Avg Income Growth"
+        "totalParticipants": "Teilnehmende insgesamt",
+        "completionRate": "Abschlussquote",
+        "employmentRate": "Beschäftigungsquote",
+        "avgIncomeGrowth": "Durchschn. Einkommenswachstum"
       },
       "tracks": {
         "title": "Tracks",
-        "subtitle": "Percentages of different tracks across the cohort",
-        "participants": "{{count}} Participants"
+        "subtitle": "Prozentualer Anteil der verschiedenen Tracks innerhalb der Kohorte",
+        "participants": "{{count}} Teilnehmende"
       },
       "before": {
-        "title": "Before the Programme",
-        "subtitle": "Self-reported pre-program values (USD)",
-        "avgMonthlyIncome": "Avg. Monthly Income",
-        "avgMonthlyIncomeSub": "Pre-program average",
-        "avgHouseholdSize": "Avg. Household Size",
-        "avgHouseholdSizeSub": "Individuals per home",
-        "priorEmployment": "Prior Employment",
-        "priorEmploymentSub": "Informal/Unstable",
-        "highestEducation": "Highest Education",
-        "highestEducationSub": "Secondary school",
-        "footnote": "Baseline data represents the socio-economic status of participants upon entry. Average individual income is calculated based on informal labor or secondary support structures."
+        "title": "Vor dem Programm",
+        "subtitle": "Selbstberichtete Werte vor dem Programm (USD)",
+        "avgMonthlyIncome": "Durchschn. Monatseinkommen",
+        "avgMonthlyIncomeSub": "Durchschnitt vor dem Programm",
+        "avgHouseholdSize": "Durchschn. Haushaltsgröße",
+        "avgHouseholdSizeSub": "Personen pro Haushalt",
+        "priorEmployment": "Vorherige Beschäftigung",
+        "priorEmploymentSub": "Informell/Unbeständig",
+        "highestEducation": "Höchster Bildungsabschluss",
+        "highestEducationSub": "Sekundarschule",
+        "footnote": "Die Ausgangsdaten stellen den sozioökonomischen Status der Teilnehmenden bei Eintritt dar. Das durchschnittliche individuelle Einkommen basiert auf informeller Arbeit oder sekundären Unterstützungsstrukturen."
       },
       "after": {
-        "title": "After the Programme",
-        "subtitle": "Post-program verified professional metrics",
-        "avgMonthlyIncome": "Avg. Monthly Income",
-        "avgMonthlyIncomeSub": "25x increase avg.",
-        "employmentRate": "Employment Rate",
-        "employmentRateSub": "High-growth tech roles",
-        "africanCompanies": "African Companies",
-        "africanCompaniesSub": "Local tech ecosystem",
-        "globalCompanies": "Global/Intl Companies",
-        "globalCompaniesSub": "Remote/Global export",
-        "notableProjects": "Notable Projects",
-        "notableProjectsSub": "Production-ready apps",
+        "title": "Nach dem Programm",
+        "subtitle": "Verifizierte berufliche Kennzahlen nach dem Programm",
+        "avgMonthlyIncome": "Durchschn. Monatseinkommen",
+        "avgMonthlyIncomeSub": "25-facher Anstieg im Durchschnitt",
+        "employmentRate": "Beschäftigungsquote",
+        "employmentRateSub": "Technologiepositionen mit hohem Wachstum",
+        "africanCompanies": "Afrikanische Unternehmen",
+        "africanCompaniesSub": "Lokales Tech-Ökosystem",
+        "globalCompanies": "Globale/Internationale Unternehmen",
+        "globalCompaniesSub": "Remote/Globaler Export",
+        "notableProjects": "Bemerkenswerte Projekte",
+        "notableProjectsSub": "Produktionsreife Anwendungen",
         "notableProjectsValue": "{{count}}+"
       },
-      "exchangeRateFootnote": "Results data conversion calculated using a historical average exchange rate of 1 USD = 3,750 UGX for the duration of the program.",
+      "exchangeRateFootnote": "Die Umrechnung der Ergebnisdaten erfolgt auf Basis eines historischen Durchschnittswechselkurses von 1 USD = 3.750 UGX für die Dauer des Programms.",
       "strategicInsight": {
-        "title": "Strategic Insight",
-        "body": "The {{multiplier}}x income growth observed in {{cohortName}} represents our highest mobility rate to date."
+        "title": "Strategischer Einblick",
+        "body": "Das {{multiplier}}-fache Einkommenswachstum in {{cohortName}} stellt unsere bisher höchste Mobilitätsrate dar."
       },
       "notableProjects": {
-        "title": "Notable Projects",
-        "viewStories": "View participant stories",
-        "empty": "No project images yet"
+        "title": "Bemerkenswerte Projekte",
+        "viewStories": "Erfahrungsberichte der Teilnehmenden ansehen",
+        "empty": "Noch keine Projektbilder vorhanden"
       },
       "narrative": {
-        "title": "Impact Narrative",
-        "subtitle": "Qualitative growth observations",
-        "professionalDevelopment": "Professional Development",
-        "keySuccessFactors": "Key Success Factors",
-        "downloadButton": "Download Cohort Impact Report"
+        "title": "Wirkungsbericht",
+        "subtitle": "Qualitative Beobachtungen zum Wachstum",
+        "professionalDevelopment": "Berufliche Entwicklung",
+        "keySuccessFactors": "Wichtige Erfolgsfaktoren",
+        "downloadButton": "Kohorten-Wirkungsbericht herunterladen"
       }
     }
   },
-
   "reports": {
-    "heading": "Impact Reports",
-    "description": "Select a report structure to view performance data and export official documentation.",
-    "availableReports": "Available Reports",
-    "empty": "No reports have been uploaded yet.",
-    "viewLabel": "View {{title}}",
-    "liveSnapshotBadge": "Live Snapshot",
+    "heading": "Wirkungsberichte",
+    "description": "Wählen Sie eine Berichtsstruktur aus, um Leistungsdaten anzuzeigen und offizielle Dokumentationen zu exportieren.",
+    "availableReports": "Verfügbare Berichte",
+    "empty": "Es wurden noch keine Berichte hochgeladen.",
+    "viewLabel": "{{title}} ansehen",
+    "liveSnapshotBadge": "Live-Momentaufnahme",
     "impactSummary": {
-      "title": "Impact Summary",
-      "description": "A real-time snapshot of current program outcomes, cohort completion, and participant baseline data, generated fresh from live figures.",
-      "generating": "Generating report...",
-      "downloadPdf": "Download PDF"
+      "title": "Wirkungszusammenfassung",
+      "description": "Eine Echtzeit-Momentaufnahme der aktuellen Programmergebnisse, des Kohortenabschlusses und der Ausgangsdaten der Teilnehmenden, frisch aus Live-Daten generiert.",
+      "generating": "Bericht wird erstellt...",
+      "downloadPdf": "PDF herunterladen"
     }
   },
-
   "stories": {
-    "heading": "Talent Stories",
-    "description": "Real graduates, real outcomes. Every contribution creates an opportunity — these are the full stories of learners whose lives have been changed through the program you support.",
-    "talentsGraduated": "Talents graduated"
+    "heading": "Erfolgsgeschichten der Talente",
+    "description": "Echte Absolvent:innen, echte Ergebnisse. Jeder Beitrag schafft eine Chance — dies sind die vollständigen Geschichten von Lernenden, deren Leben sich durch das von Ihnen unterstützte Programm verändert hat.",
+    "talentsGraduated": "Talente ausgebildet"
   },
-
   "errors": {
-    "sessionExpired": "Session expired due to inactivity. Please log in again.",
-    "sessionExpiredGeneric": "Your session has expired. Please log in again.",
-    "networkError": "Network error. Please try again.",
-    "noAccess": "You do not have access to this page.",
-
+    "sessionExpired": "Sitzung aufgrund von Inaktivität abgelaufen. Bitte melden Sie sich erneut an.",
+    "sessionExpiredGeneric": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
+    "networkError": "Netzwerkfehler. Bitte versuchen Sie es erneut.",
+    "noAccess": "Sie haben keinen Zugriff auf diese Seite.",
     "profile": {
-      "couldNotLoad": "Could not load your profile.",
-      "noFieldsToUpdate": "No fields provided to update.",
-      "somethingWentWrong": "Something went wrong. Please try again.",
-      "photoInvalid": "Image must be JPEG, PNG, or WEBP, under 5MB."
+      "couldNotLoad": "Ihr Profil konnte nicht geladen werden.",
+      "noFieldsToUpdate": "Keine Felder zur Aktualisierung angegeben.",
+      "somethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "photoInvalid": "Das Bild muss im Format JPEG, PNG oder WEBP und unter 5 MB groß sein."
     },
-
     "settings": {
-      "couldNotLoad": "Could not load your settings.",
-      "noFieldsToUpdate": "No fields provided to update.",
-      "somethingWentWrong": "Something went wrong. Please try again.",
-      "languageInvalid": "Please choose a supported language.",
-      "couldNotLoadOptions": "Could not load language options."
+      "couldNotLoad": "Ihre Einstellungen konnten nicht geladen werden.",
+      "noFieldsToUpdate": "Keine Felder zur Aktualisierung angegeben.",
+      "somethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "languageInvalid": "Bitte wählen Sie eine unterstützte Sprache.",
+      "couldNotLoadOptions": "Sprachoptionen konnten nicht geladen werden."
     },
-
     "security": {
-      "currentPasswordIncorrect": "Current password is incorrect.",
-      "checkNewPassword": "Please check your new password.",
-      "passwordChanged": "Password changed successfully.",
-      "somethingWentWrong": "Something went wrong. Please try again.",
-      "couldNotLoadDevices": "Could not load your devices.",
-      "sessionNotFound": "Session not found.",
-      "deviceSignedOut": "Device signed out.",
-      "signedOutOthers": "Signed out of other devices."
+      "currentPasswordIncorrect": "Das aktuelle Passwort ist falsch.",
+      "checkNewPassword": "Bitte überprüfen Sie Ihr neues Passwort.",
+      "passwordChanged": "Passwort erfolgreich geändert.",
+      "somethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "couldNotLoadDevices": "Ihre Geräte konnten nicht geladen werden.",
+      "sessionNotFound": "Sitzung nicht gefunden.",
+      "deviceSignedOut": "Gerät abgemeldet.",
+      "signedOutOthers": "Von anderen Geräten abgemeldet."
     },
-
     "dashboard": {
-      "couldNotLoadSummary": "Something went wrong loading your dashboard.",
-      "couldNotLoadCohorts": "Something went wrong loading cohort progress.",
-      "couldNotLoadInsights": "Something went wrong loading insights.",
-      "couldNotLoadBaseline": "Something went wrong loading baseline data.",
-      "couldNotLoadOrigins": "Something went wrong loading origin data.",
-      "sessionExpiredShort": "Session expired.",
-      "cohortNotFound": "Cohort not found.",
-      "couldNotLoadDetails": "Could not load cohort details.",
-      "couldNotLoadTracks": "Could not load tracks.",
-      "couldNotLoadCohortBaseline": "Could not load baseline data.",
-      "couldNotLoadOutcomes": "Could not load outcomes.",
-      "couldNotLoadNarrative": "Could not load narrative.",
-      "couldNotLoadProjects": "Could not load projects.",
-      "couldNotDownloadReport": "Could not download report."
+      "couldNotLoadSummary": "Beim Laden Ihrer Übersicht ist ein Fehler aufgetreten.",
+      "couldNotLoadCohorts": "Beim Laden des Kohortenfortschritts ist ein Fehler aufgetreten.",
+      "couldNotLoadInsights": "Beim Laden der Einblicke ist ein Fehler aufgetreten.",
+      "couldNotLoadBaseline": "Beim Laden der Ausgangsdaten ist ein Fehler aufgetreten.",
+      "couldNotLoadOrigins": "Beim Laden der Herkunftsdaten ist ein Fehler aufgetreten.",
+      "sessionExpiredShort": "Sitzung abgelaufen.",
+      "cohortNotFound": "Kohorte nicht gefunden.",
+      "couldNotLoadDetails": "Kohortendetails konnten nicht geladen werden.",
+      "couldNotLoadTracks": "Tracks konnten nicht geladen werden.",
+      "couldNotLoadCohortBaseline": "Ausgangsdaten konnten nicht geladen werden.",
+      "couldNotLoadOutcomes": "Ergebnisse konnten nicht geladen werden.",
+      "couldNotLoadNarrative": "Bericht konnte nicht geladen werden.",
+      "couldNotLoadProjects": "Projekte konnten nicht geladen werden.",
+      "couldNotDownloadReport": "Bericht konnte nicht heruntergeladen werden."
     },
-
     "reports": {
-      "couldNotLoad": "Something went wrong loading reports.",
-      "reportNotFound": "Report not found.",
-      "couldNotOpen": "Something went wrong opening this report.",
-      "noCohortReport": "No report found for this cohort.",
-      "couldNotGenerate": "Something went wrong generating the report.",
-      "notLinkedToCohort": "This report isn't linked to a cohort, so it can't be previewed here yet."
+      "couldNotLoad": "Beim Laden der Berichte ist ein Fehler aufgetreten.",
+      "reportNotFound": "Bericht nicht gefunden.",
+      "couldNotOpen": "Beim Öffnen dieses Berichts ist ein Fehler aufgetreten.",
+      "noCohortReport": "Kein Bericht für diese Kohorte gefunden.",
+      "couldNotGenerate": "Beim Erstellen des Berichts ist ein Fehler aufgetreten.",
+      "notLinkedToCohort": "Dieser Bericht ist mit keiner Kohorte verknüpft und kann hier noch nicht in der Vorschau angezeigt werden."
     }
+  },
+  "shared": {
+    "sessions": {
+    "title": "Aktive Sitzungen",
+    "description": "Geräte, die derzeit bei Ihrem Konto angemeldet sind.",
+    "signOutOthers": "Von allen anderen Geräten abmelden",
+    "thisDevice": "Dieses Gerät",
+    "signOut": "Abmelden",
+    "noSessions": "Keine aktiven Sitzungen gefunden.",
+    "showingRange": "{{from}}–{{to}} von {{total}} werden angezeigt",
+    "activeNow": "Gerade aktiv",
+    "minutesAgo": "vor {{count}} Min.",
+    "hoursAgo": "vor {{count}} Std.",
+    "daysAgo": "vor {{count}} Tagen"
+  },
+  "stories": {
+    "empty": "Weitere Geschichten werden hinzugefügt — schauen Sie bald wieder vorbei.",
+    "showLess": "Weniger anzeigen",
+    "readMore": "Weiterlesen"
+  },
+  "reportViewer": {
+    "openInNewTab": "In neuem Tab öffnen",
+    "close": "Schließen",
+    "noPreview": "Für diesen Dateityp ist keine Vorschau verfügbar.",
+    "needsDownload": "{{type}} muss zur Ansicht heruntergeladen werden.",
+    "thisFile": "Diese Datei",
+    "downloadToView": "Zum Ansehen herunterladen"
   }
+}
 }

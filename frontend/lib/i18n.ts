@@ -38,6 +38,10 @@ const LANGUAGE_STORAGE_KEY = "donor_language";
 export const SUPPORTED_LANGUAGES = ["English", "German"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
+// The rest of the app (and the backend) refers to languages by their full
+// English name ("English" / "German") per the /settings/options contract.
+// i18next wants short locale codes — this maps between the two so nothing
+// else has to know i18next's internal naming.
 const LANGUAGE_TO_LOCALE: Record<SupportedLanguage, string> = {
   English: "en",
   German: "de",
@@ -56,8 +60,9 @@ export function localeToLanguage(locale: string): SupportedLanguage {
   return LOCALE_TO_LANGUAGE[locale] ?? "English";
 }
 
-// Exported so I18nInit.tsx can read it post-mount (client-only, safe) to
-// sync i18next to whatever locale the donor previously chose.
+// Exported so components/I18nInit.tsx can read it post-mount (client-only,
+// safe there) to sync i18next to whatever locale the donor previously
+// chose. Must NOT be called during i18n.init() below — see file header.
 export function getStoredLocale(): string {
   if (typeof window === "undefined") return "en";
   return localStorage.getItem(LANGUAGE_STORAGE_KEY) ?? "en";

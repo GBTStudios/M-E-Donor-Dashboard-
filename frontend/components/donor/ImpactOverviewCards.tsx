@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Users, GraduationCap, Briefcase, TrendingUp, Layers, Heart, Globe, Building2, ArrowUpRight } from "lucide-react";
 import type { DashboardSummary } from "@/lib/donorDashboard";
 
@@ -28,73 +29,75 @@ function RingStat({ pct, color }: { pct: number; color: string }) {
 }
 
 export default function ImpactOverviewCards({ summary }: { summary: DashboardSummary }) {
+  const { t } = useTranslation("donor");
+
   const cards = [
     {
-      label: "Participants",
+      label: t("dashboard.cards.participants.label"),
       value: summary.participants,
       suffix: "",
       icon: Users,
-      note: "High-potential individuals currently enrolled in active tracks.",
+      note: t("dashboard.cards.participants.note"),
     },
     {
-      label: "Graduation Rate",
+      label: t("dashboard.cards.graduationRate.label"),
       value: summary.graduation_rate,
       suffix: "%",
       icon: GraduationCap,
-      note: "Successful completion rate.",
+      note: t("dashboard.cards.graduationRate.note"),
     },
     {
-      label: "Employment Rate",
+      label: t("dashboard.cards.employmentRate.label"),
       value: summary.employment_rate,
       suffix: "%",
       icon: Briefcase,
-      note: "Graduates who secure stable roles within 6 months.",
+      note: t("dashboard.cards.employmentRate.note"),
     },
     {
-      label: "Income Growth",
+      label: t("dashboard.cards.incomeGrowth.label"),
       value: summary.income_growth_multiplier,
       suffix: "×",
       icon: TrendingUp,
-      note: "Average increase in monthly earnings post-graduation.",
+      note: t("dashboard.cards.incomeGrowth.note"),
       accent: true,
     },
     {
-      label: "Active Cohorts",
+      label: t("dashboard.cards.activeCohorts.label"),
       value: summary.cohorts,
       suffix: "",
       icon: Layers,
-      note: "Concurrent training programs running across regional hubs.",
+      note: t("dashboard.cards.activeCohorts.note"),
     },
     {
-      label: "Refugee Inclusion",
+      label: t("dashboard.cards.refugeeInclusion.label"),
       value: summary.refugee_participants_pct,
       suffix: "%",
       icon: Heart,
-      note: "Dedicated tracks for displaced talents in border communities.",
+      note: t("dashboard.cards.refugeeInclusion.note"),
       ring: true,
     },
     {
-      label: "International Roles",
+      label: t("dashboard.cards.internationalRoles.label"),
       value: summary.international_roles_pct,
       suffix: "%",
       icon: Globe,
-      note: "Talents employed by global tech firms in remote/relocation roles.",
+      note: t("dashboard.cards.internationalRoles.note"),
       ring: true,
     },
     {
-      label: "African Companies",
+      label: t("dashboard.cards.africanCompanies.label"),
       value: summary.african_companies_pct,
       suffix: "%",
       icon: Building2,
-      note: "Graduates fueling the growth of local African tech ecosystems.",
+      note: t("dashboard.cards.africanCompanies.note"),
       ring: true,
     },
     {
-      label: "Income Sent Home",
+      label: t("dashboard.cards.incomeSentHome.label"),
       value: summary.income_sent_home_pct,
       suffix: "%",
       icon: ArrowUpRight,
-      note: "Of graduate income flows directly back to support their families.",
+      note: t("dashboard.cards.incomeSentHome.note"),
       accent: true,
     },
   ];

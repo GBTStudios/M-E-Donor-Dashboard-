@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, XCircle, Info } from "lucide-react";
 import {
   getMyDonorSettings,
@@ -13,9 +14,6 @@ import i18n, { languageToLocale, storeLocale } from "@/lib/i18n";
 
 const ACCESS_TOKEN_KEY = "access_token";
 
-// No backend endpoint exists for timezone options — /settings/options only
-// covers language. This list is a frontend placeholder; swap for a real
-// options source if the backend ever adds one.
 const TIMEZONES = [
   { value: "Africa/Kampala", label: "Africa/Kampala (EAT)" },
   { value: "Europe/Berlin", label: "Europe/Berlin (CET)" },
@@ -26,6 +24,7 @@ const TIMEZONES = [
 ];
 
 export function DonorRegionalPreferences() {
+  const { t } = useTranslation("donor");
   const [language, setLanguage] = useState("English");
   const [timezone, setTimezone] = useState("");
   const [languageOptions, setLanguageOptions] = useState<string[]>(["English"]);
@@ -37,7 +36,7 @@ export function DonorRegionalPreferences() {
     async function load() {
       const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
       if (!accessToken) {
-        setError("Your session has expired. Please log in again.");
+        setError(t("errors.sessionExpiredGeneric"));
         setIsLoading(false);
         return;
       }
@@ -54,11 +53,6 @@ export function DonorRegionalPreferences() {
         setLanguage(settingsResult.settings.language);
         setTimezone(settingsResult.settings.timezone);
 
-        // Sync i18next to the donor's saved backend preference on load —
-        // otherwise a fresh session (e.g. new device, cleared localStorage)
-        // would show a German-language dropdown selection while every
-        // other component still renders in English until the donor
-        // touches the dropdown themselves.
         const locale = languageToLocale(settingsResult.settings.language);
         if (i18n.language !== locale) {
           i18n.changeLanguage(locale);
@@ -71,6 +65,7 @@ export function DonorRegionalPreferences() {
       }
     }
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleLanguageChange(next: string) {
@@ -78,7 +73,7 @@ export function DonorRegionalPreferences() {
     setError(undefined);
     const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
     if (!accessToken) {
-      setError("Your session has expired. Please log in again.");
+      setError(t("errors.sessionExpiredGeneric"));
       return;
     }
     const previous = language;
@@ -94,10 +89,6 @@ export function DonorRegionalPreferences() {
     setLanguage(result.settings.language);
     setTimezone(result.settings.timezone);
 
-    // This is the actual fix: tell i18next to switch. Without this call,
-    // saving the preference to the backend has zero effect on what's
-    // rendered on screen — every component's useTranslation() hook keeps
-    // using whatever locale i18next was last set to.
     const locale = languageToLocale(result.settings.language);
     i18n.changeLanguage(locale);
     storeLocale(locale);
@@ -108,7 +99,7 @@ export function DonorRegionalPreferences() {
     setError(undefined);
     const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
     if (!accessToken) {
-      setError("Your session has expired. Please log in again.");
+      setError(t("errors.sessionExpiredGeneric"));
       return;
     }
     const previous = timezone;
@@ -135,9 +126,9 @@ export function DonorRegionalPreferences() {
 
   return (
     <div className="bg-[#eaf5f0] rounded-2xl border border-black/10 p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-[#1A534A] mb-1">Regional Preferences</h2>
+      <h2 className="text-lg font-semibold text-[#1A534A] mb-1">{t("settings.regional.title")}</h2>
       <p className="text-sm text-[#5B7571] mb-4">
-        Set your local language and time zone for system reports and display.
+        {t("settings.regional.description")}
       </p>
 
       {error && (
@@ -150,7 +141,7 @@ export function DonorRegionalPreferences() {
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="language" className="block text-xs font-bold text-[#1A534A] mb-1.5 uppercase tracking-wide">
-            Language
+            {t("settings.regional.language")}
           </label>
           <select
             id="language"
@@ -169,7 +160,7 @@ export function DonorRegionalPreferences() {
 
         <div>
           <label htmlFor="timezone" className="block text-xs font-bold text-[#1A534A] mb-1.5 uppercase tracking-wide">
-            Time Zone
+            {t("settings.regional.timeZone")}
           </label>
           <select
             id="timezone"
@@ -192,10 +183,7 @@ export function DonorRegionalPreferences() {
 
       <div className="flex items-start gap-2 text-xs text-[#7C9791] mt-4">
         <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-        <p>
-          Changing language updates the app&apos;s displayed text immediately. German translations
-          are still being finalized, so some text may currently appear in English.
-        </p>
+        <p>{t("settings.regional.disclaimer")}</p>
       </div>
     </div>
   );

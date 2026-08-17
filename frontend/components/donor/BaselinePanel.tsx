@@ -1,24 +1,27 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Info } from "lucide-react";
 import type { BaselineData } from "@/lib/donorDashboard";
 
 export default function BaselinePanel({ baseline }: { baseline: BaselineData }) {
+  const { t } = useTranslation("donor");
+
   const topBreadwinner = Object.entries(baseline.main_breadwinner_breakdown).sort(
     (a, b) => b[1] - a[1]
   )[0];
 
   const rows = [
-    { label: "Avg. Household Size", value: `${baseline.avg_household_size} People` },
-    { label: "Avg. Income Pre-Program", value: `$${baseline.avg_pre_program_income} / mo` },
+    { label: t("baseline.rows.avgHouseholdSize"), value: t("baseline.values.people", { count: baseline.avg_household_size }) },
+    { label: t("baseline.rows.avgIncomePreProgram"), value: t("baseline.values.perMonth", { amount: baseline.avg_pre_program_income }) },
     {
-      label: "Main Breadwinner",
-      value: topBreadwinner ? `${topBreadwinner[0]} (${topBreadwinner[1]}%)` : "—",
+      label: t("baseline.rows.mainBreadwinner"),
+      value: topBreadwinner ? `${topBreadwinner[0]} (${topBreadwinner[1]}%)` : t("baseline.values.notAvailable"),
     },
-    { label: "Avg. Age", value: `${baseline.avg_age} Years` },
-    { label: "Highest Education", value: baseline.highest_education_common },
-    { label: "Employed Before", value: `${baseline.employed_before_pct}% (Informal)` },
-    { label: "Job Types", value: baseline.employed_before_type_common },
+    { label: t("baseline.rows.avgAge"), value: t("baseline.values.years", { count: baseline.avg_age }) },
+    { label: t("baseline.rows.highestEducation"), value: baseline.highest_education_common },
+    { label: t("baseline.rows.employedBefore"), value: t("baseline.values.informalPct", { pct: baseline.employed_before_pct }) },
+    { label: t("baseline.rows.jobTypes"), value: baseline.employed_before_type_common },
   ];
 
   return (
@@ -26,10 +29,10 @@ export default function BaselinePanel({ baseline }: { baseline: BaselineData }) 
       <div className="flex items-center gap-1.5 mb-1">
         <Info className="w-3.5 h-3.5 text-gray-400" />
         <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-          Before the Program
+          {t("baseline.title")}
         </p>
       </div>
-      <p className="text-xs text-gray-400 mb-4">Aggregated data collected at enrollment phase.</p>
+      <p className="text-xs text-gray-400 mb-4">{t("baseline.subtitle")}</p>
 
       <div className="divide-y divide-black/5">
         {rows.map((row) => (

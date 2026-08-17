@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, XCircle } from "lucide-react";
 import {
   getMyDonorSettings,
@@ -10,14 +11,9 @@ import {
 
 const ACCESS_TOKEN_KEY = "access_token";
 
-interface ToggleRowProps {
-  label: string;
-  description: string;
-  checked: boolean;
-  onChange: (value: boolean) => void;
-}
-
-function ToggleRow({ label, description, checked, onChange }: ToggleRowProps) {
+function ToggleRow({
+  label, description, checked, onChange,
+}: { label: string; description: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
     <div className="flex items-center justify-between gap-4 py-3">
       <div>
@@ -45,6 +41,7 @@ function ToggleRow({ label, description, checked, onChange }: ToggleRowProps) {
 }
 
 export function DonorNotificationSettings() {
+  const { t } = useTranslation("donor");
   const [quarterlyReportReady, setQuarterlyReportReady] = useState(true);
   const [newCohortMilestones, setNewCohortMilestones] = useState(true);
   const [answerCorrections, setAnswerCorrections] = useState(false);
@@ -55,7 +52,7 @@ export function DonorNotificationSettings() {
     async function load() {
       const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
       if (!accessToken) {
-        setError("Your session has expired. Please log in again.");
+        setError(t("errors.sessionExpiredGeneric"));
         setIsLoading(false);
         return;
       }
@@ -70,6 +67,7 @@ export function DonorNotificationSettings() {
       setAnswerCorrections(result.settings.answerCorrections);
     }
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleToggle(
@@ -79,12 +77,10 @@ export function DonorNotificationSettings() {
     setError(undefined);
     const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
     if (!accessToken) {
-      setError("Your session has expired. Please log in again.");
+      setError(t("errors.sessionExpiredGeneric"));
       return;
     }
 
-    // Isolated setter per field — same fix admin's NotificationSettings has,
-    // so a slow first request can't clobber a fast second toggle.
     const setters: Record<typeof field, (v: boolean) => void> = {
       quarterlyReportReady: setQuarterlyReportReady,
       newCohortMilestones: setNewCohortMilestones,
@@ -114,8 +110,8 @@ export function DonorNotificationSettings() {
 
   return (
     <div className="bg-[#eaf5f0] rounded-2xl border border-black/10 p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-[#1A534A] mb-1">System Notifications</h2>
-      <p className="text-sm text-[#5B7571] mb-2">Choose what you want to be notified about.</p>
+      <h2 className="text-lg font-semibold text-[#1A534A] mb-1">{t("settings.notifications.title")}</h2>
+      <p className="text-sm text-[#5B7571] mb-2">{t("settings.notifications.description")}</p>
 
       {error && (
         <div role="alert" className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 my-3">
@@ -126,20 +122,20 @@ export function DonorNotificationSettings() {
 
       <div className="divide-y divide-black/5">
         <ToggleRow
-          label="Quarterly report ready"
-          description="Get notified as soon as the latest impact and financial reports are available for review."
+          label={t("settings.notifications.quarterlyReportReady.label")}
+          description={t("settings.notifications.quarterlyReportReady.description")}
           checked={quarterlyReportReady}
           onChange={(v) => handleToggle("quarterlyReportReady", v)}
         />
         <ToggleRow
-          label="New cohort milestones"
-          description="Real-time alerts when active student cohorts reach significant educational or employment milestones."
+          label={t("settings.notifications.newCohortMilestones.label")}
+          description={t("settings.notifications.newCohortMilestones.description")}
           checked={newCohortMilestones}
           onChange={(v) => handleToggle("newCohortMilestones", v)}
         />
         <ToggleRow
-          label="Answer corrections"
-          description="Notify me when the assistant's answers are reviewed and corrected."
+          label={t("settings.notifications.answerCorrections.label")}
+          description={t("settings.notifications.answerCorrections.description")}
           checked={answerCorrections}
           onChange={(v) => handleToggle("answerCorrections", v)}
         />

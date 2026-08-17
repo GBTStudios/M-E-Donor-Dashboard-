@@ -13,12 +13,19 @@ import {
 } from "lucide-react";
 import { logoutUser } from "@/lib/auth";
 
-const NAV_ITEMS = [
+interface NavItem {
+  key: string;
+  icon: React.ComponentType<{ className?: string }>;
+  href: string;
+  exact?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { key: "dashboard", icon: LayoutDashboard, href: "/donor-dashboard", exact: true },
   { key: "cohorts", icon: Users, href: "/donor/cohorts" },
   { key: "stories", icon: Sparkles, href: "/donor-dashboard/stories" },
   { key: "reports", icon: FileText, href: "/donor-dashboard/reports" },
-] as const;
+];
 
 function NavLink({
   label,
@@ -115,4 +122,3 @@ export default function DonorSidebar() {
     </aside>
   );
 }
-
