@@ -1,7 +1,8 @@
 "use client";
 
 import { Check, X } from "lucide-react";
-import { getAdminPasswordRequirements } from "@/lib/adminPassword";
+import { useTranslation } from "react-i18next";
+import { getAdminPasswordRequirements, MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/adminPassword";
 
 export interface PasswordRequirementChecklistProps {
   password: string;
@@ -14,7 +15,14 @@ export interface PasswordRequirementChecklistProps {
  * the strength meter and submit-button gating both use.
  */
 export function PasswordRequirementChecklist({ password }: PasswordRequirementChecklistProps) {
+  const { t } = useTranslation("common");
   const requirements = getAdminPasswordRequirements(password);
+
+  const labels: Record<string, string> = {
+    length: t("password.requirements.length", { count: MIN_ADMIN_PASSWORD_LENGTH }),
+    number: t("password.requirements.number"),
+    symbol: t("password.requirements.symbol"),
+  };
 
   return (
     <ul className="flex flex-col gap-1 mt-2">
@@ -30,7 +38,7 @@ export function PasswordRequirementChecklist({ password }: PasswordRequirementCh
           ) : (
             <X className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
           )}
-          <span>{req.label}</span>
+          <span>{labels[req.id]}</span>
         </li>
       ))}
     </ul>

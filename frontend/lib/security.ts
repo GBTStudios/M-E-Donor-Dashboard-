@@ -4,6 +4,7 @@
  * backend) for the full spec.
  */
 
+import i18n from "@/lib/i18n";
 import { handleSessionExpiredIfNeeded } from "@/lib/sessionTimeout";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -12,8 +13,6 @@ export type SimpleResult =
   | { success: true; message: string }
   | { success: false; message: string };
 
-/** Explicit type guard — see lib/api.ts / lib/profile.ts for why this
- * pattern is used instead of `if (!result.success)` inline narrowing. */
 export function isSimpleError(
   result: SimpleResult
 ): result is { success: false; message: string } {
@@ -42,24 +41,24 @@ export async function changePassword(
     const data = await response.json().catch(() => ({}));
 
     if (handleSessionExpiredIfNeeded(response.status, data.detail)) {
-      return { success: false, message: "Session expired due to inactivity. Please log in again." };
+      return { success: false, message: i18n.t("errors.sessionExpired", { ns: "donor" }) };
     }
 
     if (response.status === 200) {
-      return { success: true, message: data.message ?? "Password changed successfully." };
+      return { success: true, message: data.message ?? i18n.t("errors.security.passwordChanged", { ns: "donor" }) };
     }
 
     if (response.status === 401) {
-      return { success: false, message: data.detail ?? "Current password is incorrect." };
+      return { success: false, message: data.detail ?? i18n.t("errors.security.currentPasswordIncorrect", { ns: "donor" }) };
     }
 
     if (response.status === 400) {
-      return { success: false, message: data.detail ?? "Please check your new password." };
+      return { success: false, message: data.detail ?? i18n.t("errors.security.checkNewPassword", { ns: "donor" }) };
     }
 
-    return { success: false, message: data.detail ?? "Something went wrong. Please try again." };
+    return { success: false, message: data.detail ?? i18n.t("errors.security.somethingWentWrong", { ns: "donor" }) };
   } catch {
-    return { success: false, message: "Network error. Please try again." };
+    return { success: false, message: i18n.t("errors.networkError", { ns: "donor" }) };
   }
 }
 
@@ -108,7 +107,7 @@ export async function getSessions(accessToken: string): Promise<SessionsListResu
     const data = await response.json().catch(() => ({}));
 
     if (handleSessionExpiredIfNeeded(response.status, data?.detail)) {
-      return { success: false, message: "Session expired due to inactivity. Please log in again." };
+      return { success: false, message: i18n.t("errors.sessionExpired", { ns: "donor" }) };
     }
 
     if (response.status === 200) {
@@ -116,9 +115,9 @@ export async function getSessions(accessToken: string): Promise<SessionsListResu
       return { success: true, sessions: rawList.map((r) => mapRawSession(r as Record<string, unknown>)) };
     }
 
-    return { success: false, message: data?.detail ?? "Could not load your devices." };
+    return { success: false, message: data?.detail ?? i18n.t("errors.security.couldNotLoadDevices", { ns: "donor" }) };
   } catch {
-    return { success: false, message: "Network error. Please try again." };
+    return { success: false, message: i18n.t("errors.networkError", { ns: "donor" }) };
   }
 }
 
@@ -133,20 +132,20 @@ export async function revokeSession(accessToken: string, sessionId: string): Pro
     const data = await response.json().catch(() => ({}));
 
     if (handleSessionExpiredIfNeeded(response.status, data.detail)) {
-      return { success: false, message: "Session expired due to inactivity. Please log in again." };
+      return { success: false, message: i18n.t("errors.sessionExpired", { ns: "donor" }) };
     }
 
     if (response.status === 200) {
-      return { success: true, message: data.message ?? "Device signed out." };
+      return { success: true, message: data.message ?? i18n.t("errors.security.deviceSignedOut", { ns: "donor" }) };
     }
 
     if (response.status === 404) {
-      return { success: false, message: data.detail ?? "Session not found." };
+      return { success: false, message: data.detail ?? i18n.t("errors.security.sessionNotFound", { ns: "donor" }) };
     }
 
-    return { success: false, message: data.detail ?? "Something went wrong. Please try again." };
+    return { success: false, message: data.detail ?? i18n.t("errors.security.somethingWentWrong", { ns: "donor" }) };
   } catch {
-    return { success: false, message: "Network error. Please try again." };
+    return { success: false, message: i18n.t("errors.networkError", { ns: "donor" }) };
   }
 }
 
@@ -171,19 +170,19 @@ export async function revokeOtherSessions(accessToken: string): Promise<RevokeOt
     const data = await response.json().catch(() => ({}));
 
     if (handleSessionExpiredIfNeeded(response.status, data.detail)) {
-      return { success: false, message: "Session expired due to inactivity. Please log in again." };
+      return { success: false, message: i18n.t("errors.sessionExpired", { ns: "donor" }) };
     }
 
     if (response.status === 200) {
       return {
         success: true,
-        message: data.message ?? "Signed out of other devices.",
+        message: data.message ?? i18n.t("errors.security.signedOutOthers", { ns: "donor" }),
         revokedCount: Number(data.revoked_count ?? 0),
       };
     }
 
-    return { success: false, message: data.detail ?? "Something went wrong. Please try again." };
+    return { success: false, message: data.detail ?? i18n.t("errors.security.somethingWentWrong", { ns: "donor" }) };
   } catch {
-    return { success: false, message: "Network error. Please try again." };
+    return { success: false, message: i18n.t("errors.networkError", { ns: "donor" }) };
   }
 }

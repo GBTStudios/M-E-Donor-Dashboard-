@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, XCircle, CheckCircle2 } from "lucide-react";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { AdminPasswordStrengthMeter } from "@/components/admin/AdminPasswordStrengthMeter";
@@ -11,6 +12,7 @@ import { changePassword, isSimpleError } from "@/lib/security";
 const ACCESS_TOKEN_KEY = "access_token";
 
 export function ChangePasswordForm() {
+  const { t } = useTranslation("common");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -25,6 +27,13 @@ export function ChangePasswordForm() {
     isAdminPasswordValid(newPassword) &&
     confirmPassword.length > 0 &&
     confirmPassword === newPassword;
+
+  // confirmError stores a CODE ("confirmRequired" | "confirmMismatch"),
+  // translated here at render/display time.
+  function translateConfirmError(code: string | undefined): string | undefined {
+    if (!code) return undefined;
+    return t(`password.confirmErrors.${code}`);
+  }
 
   function handleConfirmChange(value: string) {
     setConfirmPassword(value);
@@ -48,7 +57,7 @@ export function ChangePasswordForm() {
 
     const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
     if (!accessToken) {
-      setError("Your session has expired. Please log in again.");
+      setError(t("errors.sessionExpiredGeneric", { ns: "donor" }));
       return;
     }
 
@@ -70,10 +79,8 @@ export function ChangePasswordForm() {
 
   return (
     <div className="bg-[#eaf5f0] rounded-2xl border border-black/10 p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-[#1A534A] mb-1">Update Password</h2>
-      <p className="text-sm text-[#5B7571] mb-5">
-        Change your account password. You&apos;ll stay signed in on this device.
-      </p>
+      <h2 className="text-lg font-semibold text-[#1A534A] mb-1">{t("changePassword.title")}</h2>
+      <p className="text-sm text-[#5B7571] mb-5">{t("changePassword.description")}</p>
 
       {error && (
         <div
@@ -95,19 +102,19 @@ export function ChangePasswordForm() {
       <form onSubmit={handleSubmit} className="grid sm:grid-cols-3 gap-4 items-start">
         <PasswordField
           id="current-password"
-          label="Current Password"
+          label={t("changePassword.currentPassword")}
           value={currentPassword}
           onChange={setCurrentPassword}
-          placeholder="Enter current password"
+          placeholder={t("changePassword.currentPasswordPlaceholder")}
         />
 
         <div>
           <PasswordField
             id="new-password"
-            label="New Password"
+            label={t("changePassword.newPassword")}
             value={newPassword}
             onChange={setNewPassword}
-            placeholder="Enter new password"
+            placeholder={t("changePassword.newPasswordPlaceholder")}
             describedByExtra="change-password-requirements"
           />
           <div id="change-password-requirements">
@@ -118,12 +125,12 @@ export function ChangePasswordForm() {
 
         <PasswordField
           id="confirm-new-password"
-          label="Confirm New Password"
+          label={t("changePassword.confirmPassword")}
           value={confirmPassword}
           onChange={handleConfirmChange}
           onBlur={handleConfirmBlur}
-          error={confirmTouched ? confirmError : undefined}
-          placeholder="Re-enter new password"
+          error={confirmTouched ? translateConfirmError(confirmError) : undefined}
+          placeholder={t("changePassword.confirmPasswordPlaceholder")}
         />
 
         <div className="sm:col-span-3">
@@ -133,7 +140,7 @@ export function ChangePasswordForm() {
             className="flex items-center justify-center gap-2 bg-[#1A534A] hover:bg-[#134038] disabled:bg-[#1A534A]/90 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors shadow-sm"
           >
             {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isSubmitting ? "Updating…" : "Update Password"}
+            {isSubmitting ? t("changePassword.updating") : t("changePassword.submit")}
           </button>
         </div>
       </form>
