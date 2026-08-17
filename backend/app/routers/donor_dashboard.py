@@ -256,7 +256,13 @@ async def get_summary(user: dict = Depends(get_current_user)):
 
 @router.get("/insights")
 async def get_insights(user: dict = Depends(get_current_user)):
-    result = supabase.table("dashboard_insights").select("title, body").order("generated_at").execute()
+    result = (
+        supabase.table("dashboard_insights")
+        .select("title, body")
+        .is_("cohort_id", "null")
+        .order("generated_at")
+        .execute()
+    )
     return result.data
 
 
