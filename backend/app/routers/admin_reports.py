@@ -21,11 +21,10 @@ CONTENT_TYPES = {
 
 def _apply_extracted_report_data(cohort_id: str, report_id: str, filename: str, file_bytes: bytes):
     """
-    Background task: reads the uploaded report and auto-populates the
-    linked cohort's outcomes, tracks, and narrative. Runs after the
-    upload response has already been returned, so it never slows down
-    the admin's upload. Baseline/before-program data is never touched
-    here - that stays computed live from real participant records.
+    Background task: reads a single-cohort report and auto-populates that
+    cohort's outcomes, tracks, and narrative. Baseline/before-program data
+    is never touched here - that stays computed live from real participant
+    records.
     """
     from app.services.report_extractor import extract_report_data
     from app.services.notification_service import create_notification
@@ -56,16 +55,17 @@ def _apply_extracted_report_data(cohort_id: str, report_id: str, filename: str, 
         supabase.table("cohort_outcomes").upsert(outcomes_clean, on_conflict="cohort_id").execute()
 
     notable_projects = extracted.get("notable_projects") or []
-    for p in notable_projects:
-        if not p.get("name") or not p.get("title") or not p.get("body"):
-            continue
-        supabase.table("stories").insert({
-            "name": p["name"][:200],
-            "title": p["title"][:200],
-            "body": p["body"][:1000],
-            "cohort_id": cohort_id,
-            "featured": False,
-        }).execute()
+    if notable_projects:
+        supabase.table("cohort_projects").delete().eq("cohort_id", cohort_id).execute()
+        for p in notable_projects:
+            if not p.get("name") or not p.get("title") or not p.get("body"):
+                continue
+            supabase.table("cohort_projects").insert({
+                "cohort_id": cohort_id,
+                "name": p["name"][:200],
+                "title": p["title"][:200],
+                "body": p["body"][:1000],
+            }).execute()
 
     tracks = extracted.get("tracks") or []
     if tracks:
@@ -83,6 +83,7 @@ def _apply_extracted_report_data(cohort_id: str, report_id: str, filename: str, 
 
     narrative = extracted.get("narrative") or {}
     if narrative.get("title") and narrative.get("body"):
+        supabase.table("dashboard_insights").delete().eq("cohort_id", cohort_id).execute()
         supabase.table("dashboard_insights").insert({
             "title": narrative["title"],
             "body": narrative["body"],
@@ -93,15 +94,91 @@ def _apply_extracted_report_data(cohort_id: str, report_id: str, filename: str, 
     supabase.table("reports").update({"extraction_status": "completed"}).eq("id", report_id).execute()
 
 
+def _apply_multi_cohort_extracted_data(report_id: str, filename: str, file_bytes: bytes):
+    """
+    Background task for a "Multi-cohort" report - one document covering
+    several cohorts (e.g. a consolidated M&E workbook). Updates each
+    matching cohort's core fields and outcomes. Does not touch tracks,
+    notable projects, or narrative, since this document format doesn't
+    contain that kind of content. Cohorts are matched by name (case
+    insensitive) - any cohort mentioned in the document that doesn't match
+    an existing cohort name is skipped and reported in the notification.
+    """
+    from app.services.report_extractor import extract_multi_cohort_data
+    from app.services.notification_service import create_notification
+
+    extracted = extract_multi_cohort_data(filename, file_bytes)
+    if not extracted:
+        supabase.table("reports").update({"extraction_status": "failed"}).eq("id", report_id).execute()
+        create_notification(
+            "report_extraction_failed",
+            "Couldn't extract data from the multi-cohort report - please review and enter the numbers manually.",
+            related_id=report_id,
+        )
+        return
+
+    all_cohorts = supabase.table("cohorts").select("id, name").execute().data
+    name_to_id = {c["name"].strip().lower(): c["id"] for c in all_cohorts}
+
+    updated_cohorts = []
+    skipped_cohorts = []
+
+    for entry in extracted:
+        raw_name = (entry.get("cohort_name") or "").strip()
+        cohort_id = name_to_id.get(raw_name.lower())
+        if not cohort_id:
+            skipped_cohorts.append(raw_name or "(unnamed)")
+            continue
+
+        core_fields = {
+            k: entry.get(k)
+            for k in ("active_participants", "graduation_pct", "completion_pct", "status")
+            if entry.get(k) is not None
+        }
+        if core_fields:
+            core_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
+            supabase.table("cohorts").update(core_fields).eq("id", cohort_id).execute()
+
+        outcome_fields = {
+            k: entry.get(k)
+            for k in (
+                "employment_rate", "avg_income_growth_multiplier", "post_avg_monthly_income",
+                "african_companies_pct", "global_companies_pct",
+            )
+            if entry.get(k) is not None
+        }
+        if outcome_fields:
+            outcome_fields["cohort_id"] = cohort_id
+            outcome_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
+            supabase.table("cohort_outcomes").upsert(outcome_fields, on_conflict="cohort_id").execute()
+
+        updated_cohorts.append(raw_name)
+
+    status_value = "completed" if updated_cohorts else "failed"
+    supabase.table("reports").update({"extraction_status": status_value}).eq("id", report_id).execute()
+
+    message = f"Multi-cohort report processed: updated {', '.join(updated_cohorts) or 'no cohorts'}."
+    if skipped_cohorts:
+        message += f" Could not match: {', '.join(skipped_cohorts)}."
+    create_notification("report_extraction_completed" if updated_cohorts else "report_extraction_failed", message, related_id=report_id)
+
+
 @router.post("", response_model=UploadReportResponse, status_code=status.HTTP_201_CREATED)
 async def upload_report(
     background_tasks: BackgroundTasks,
     title: str = Form(...),
     report_date: date = Form(...),
     cohort_id: Optional[str] = Form(default=None),
+    report_scope: str = Form(default="single_cohort"),
     file: UploadFile = File(...),
     admin: dict = Depends(get_current_admin_user),
 ):
+    if report_scope not in ("single_cohort", "multi_cohort"):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="report_scope must be 'single_cohort' or 'multi_cohort'.")
+
+    if report_scope == "single_cohort" and not cohort_id:
+        pass  # cohort_id remains optional even for single_cohort - matches existing behavior (general/uncategorized reports)
+
     ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
@@ -111,10 +188,12 @@ async def upload_report(
     file_bytes = await file.read()
     if len(file_bytes) > MAX_FILE_SIZE:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="File must be under 45MB.")
+
     if cohort_id:
         cohort_check = supabase.table("cohorts").select("id").eq("id", cohort_id).execute()
         if not cohort_check.data:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cohort not found.")
+
     storage_path = f"{uuid.uuid4()}.{ext}"
     try:
         supabase.storage.from_("reports-documents").upload(
@@ -126,47 +205,26 @@ async def upload_report(
             detail=f"Upload to storage failed - the file may exceed the storage provider's size limit. ({e})",
         )
     file_url = supabase.storage.from_("reports-documents").get_public_url(storage_path)
+
     result = supabase.table("reports").insert({
         "title": title,
-        "cohort_id": cohort_id,
+        "cohort_id": cohort_id if report_scope == "single_cohort" else None,
+        "report_scope": report_scope,
         "report_date": report_date.isoformat(),
         "file_url": file_url,
         "file_type": ext,
         "file_size": len(file_bytes),
         "uploaded_by": admin["id"],
-        "extraction_status": "pending" if cohort_id else None,
+        "extraction_status": "pending" if (report_scope == "multi_cohort" or cohort_id) else None,
     }).execute()
     report = result.data[0]
 
-    if cohort_id:
+    if report_scope == "multi_cohort":
+        background_tasks.add_task(_apply_multi_cohort_extracted_data, report["id"], file.filename, file_bytes)
+    elif cohort_id:
         background_tasks.add_task(_apply_extracted_report_data, cohort_id, report["id"], file.filename, file_bytes)
 
     return UploadReportResponse(id=report["id"], title=report["title"])
-
-
-@router.post("/{report_id}/reprocess", response_model=ReportActionResponse)
-async def reprocess_report(report_id: str, background_tasks: BackgroundTasks, admin: dict = Depends(get_current_admin_user)):
-    """
-    Re-runs extraction for a report that's stuck (e.g. status still
-    'pending' long after upload - usually means the background task got
-    interrupted by a server restart before it could finish or record a
-    failure). Re-downloads the file from storage and reprocesses it.
-    """
-    existing = supabase.table("reports").select("*").eq("id", report_id).execute()
-    if not existing.data:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
-
-    report = existing.data[0]
-    if not report.get("cohort_id"):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="This report isn't linked to a cohort - nothing to extract into.")
-
-    file_path = report["file_url"].split("/reports-documents/")[-1]
-    file_bytes = supabase.storage.from_("reports-documents").download(file_path)
-
-    supabase.table("reports").update({"extraction_status": "pending"}).eq("id", report_id).execute()
-    background_tasks.add_task(_apply_extracted_report_data, report["cohort_id"], report_id, f"report.{report['file_type']}", file_bytes)
-
-    return ReportActionResponse(message="Reprocessing started.", id=report_id)
 
 
 @router.get("", response_model=List[ReportListItem])
@@ -218,6 +276,36 @@ async def update_report(report_id: str, payload: UpdateReportRequest, admin: dic
 
     result = supabase.table("reports").update(update_data).eq("id", report_id).execute()
     return result.data[0]
+
+
+@router.post("/{report_id}/reprocess", response_model=ReportActionResponse)
+async def reprocess_report(report_id: str, background_tasks: BackgroundTasks, admin: dict = Depends(get_current_admin_user)):
+    """
+    Re-runs extraction for a report that's stuck. Re-downloads the file
+    from storage and reprocesses it, using the same scope (single vs
+    multi-cohort) it was originally uploaded with.
+    """
+    existing = supabase.table("reports").select("*").eq("id", report_id).execute()
+    if not existing.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
+
+    report = existing.data[0]
+    scope = report.get("report_scope", "single_cohort")
+
+    if scope == "single_cohort" and not report.get("cohort_id"):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="This report isn't linked to a cohort - nothing to extract into.")
+
+    file_path = report["file_url"].split("/reports-documents/")[-1]
+    file_bytes = supabase.storage.from_("reports-documents").download(file_path)
+
+    supabase.table("reports").update({"extraction_status": "pending"}).eq("id", report_id).execute()
+
+    if scope == "multi_cohort":
+        background_tasks.add_task(_apply_multi_cohort_extracted_data, report_id, f"report.{report['file_type']}", file_bytes)
+    else:
+        background_tasks.add_task(_apply_extracted_report_data, report["cohort_id"], report_id, f"report.{report['file_type']}", file_bytes)
+
+    return ReportActionResponse(message="Reprocessing started.", id=report_id)
 
 
 @router.delete("/{report_id}", response_model=ReportActionResponse)
