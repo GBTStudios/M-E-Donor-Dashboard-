@@ -24,13 +24,6 @@ export default function StrategicInsights({ insights }: { insights: Insight[] })
           </div>
         ))}
       </div>
-      <button
-        disabled
-        title={t("insights.comingSoon")}
-        className="w-full mt-4 bg-white/10 text-white/50 text-sm font-medium py-2.5 rounded-lg cursor-not-allowed"
-      >
-        {t("insights.requestAnalysis")}
-      </button>
     </div>
   );
 }
