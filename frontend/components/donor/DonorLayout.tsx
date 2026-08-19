@@ -1,9 +1,10 @@
 import DonorSidebar from "@/components/donor/DonorSidebar";
 import ChatbotButton from "@/components/landing/ChatbotButton";
 import { DonorSessionTimeoutGuard } from "@/components/donor/DonorSessionTimeoutGuard";
+import { DonorI18nProvider } from "@/components/donor/DonorI18nProvider";
 
 /**
- * Shared shell for donor pages. Now wrapped with DonorSessionTimeoutGuard —
+ * Shared shell for donor pages. Wrapped with DonorSessionTimeoutGuard —
  * mirrors admin's 30-minute inactivity timeout (with a 25-minute warning
  * toast), redirecting to /session-expired via lib/sessionTimeout.ts.
  *
@@ -14,12 +15,14 @@ import { DonorSessionTimeoutGuard } from "@/components/donor/DonorSessionTimeout
  */
 export default function DonorLayout({ children }: { children: React.ReactNode }) {
   return (
-    <DonorSessionTimeoutGuard>
-      <div className="h-screen bg-[#f5efe4] flex overflow-hidden">
-        <DonorSidebar />
-        <main className="flex-1 min-w-0 px-10 py-10 overflow-y-auto">{children}</main>
-        <ChatbotButton />
-      </div>
-    </DonorSessionTimeoutGuard>
+    <DonorI18nProvider>
+      <DonorSessionTimeoutGuard>
+        <div className="h-screen bg-[#f5efe4] flex overflow-hidden">
+          <DonorSidebar />
+          <main className="flex-1 min-w-0 px-10 py-10 overflow-y-auto">{children}</main>
+          <ChatbotButton />
+        </div>
+      </DonorSessionTimeoutGuard>
+    </DonorI18nProvider>
   );
 }

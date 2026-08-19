@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
   Users,
@@ -12,12 +13,19 @@ import {
 } from "lucide-react";
 import { logoutUser } from "@/lib/auth";
 
-const NAV_ITEMS = [
-  { label: "Dashboard", icon: LayoutDashboard, href: "/donor-dashboard", exact: true },
-  { label: "Cohorts", icon: Users, href: "/donor/cohorts" },
-  { label: "Success Stories", icon: Sparkles, href: "/donor-dashboard/stories" },
-  { label: "Reports", icon: FileText, href: "/donor-dashboard/reports" },
-] as const;
+interface NavItem {
+  key: string;
+  icon: React.ComponentType<{ className?: string }>;
+  href: string;
+  exact?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { key: "dashboard", icon: LayoutDashboard, href: "/donor-dashboard", exact: true },
+  { key: "cohorts", icon: Users, href: "/donor/cohorts" },
+  { key: "stories", icon: Sparkles, href: "/donor-dashboard/stories" },
+  { key: "reports", icon: FileText, href: "/donor-dashboard/reports" },
+];
 
 function NavLink({
   label,
@@ -50,6 +58,8 @@ function NavLink({
 }
 
 export default function DonorSidebar() {
+  const { t } = useTranslation("donor");
+
   return (
     <aside className="w-64 h-screen sticky top-0 bg-[#1A534A] flex flex-col py-7 px-5 flex-shrink-0 overflow-y-auto">
       {/* Logo */}
@@ -71,21 +81,27 @@ export default function DonorSidebar() {
 
       <div className="px-1 mb-7">
         <span className="inline-block text-[10px] font-bold uppercase tracking-wide bg-white/10 text-white/80 px-2 py-0.5 rounded">
-          Donor
+          {t("sidebar.badge")}
         </span>
       </div>
 
       <nav className="flex flex-col gap-1">
         {NAV_ITEMS.map((item) => (
-          <NavLink key={item.label} {...item} />
+          <NavLink
+            key={item.key}
+            label={t(`sidebar.nav.${item.key}`)}
+            icon={item.icon}
+            href={item.href}
+            exact={item.exact}
+          />
         ))}
       </nav>
 
       <div className="my-4 border-t border-white/10" />
 
       <nav className="flex flex-col gap-1">
-        <NavLink label="Profile" icon={User} href="/donor/profile" />
-        <NavLink label="Settings" icon={Settings} href="#" />
+        <NavLink label={t("sidebar.nav.profile")} icon={User} href="/donor/profile" />
+        <NavLink label={t("sidebar.nav.settings")} icon={Settings} href="/donor/settings" />
       </nav>
 
       <div className="flex-1" />
@@ -100,7 +116,7 @@ export default function DonorSidebar() {
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors"
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
-          Logout
+          {t("sidebar.nav.logout")}
         </button>
       </div>
     </aside>

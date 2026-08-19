@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { getAdminPasswordRequirements } from "@/lib/adminPassword";
 
 export interface AdminPasswordStrengthMeterProps {
@@ -7,7 +8,12 @@ export interface AdminPasswordStrengthMeterProps {
 }
 
 const SEGMENT_COLORS = ["#E4DFD1", "#B3402A", "#B08900", "#1c5e59"];
-const LABELS = ["Too weak", "Weak", "Good", "Strong"];
+const LABEL_KEYS = [
+  "password.strength.tooWeak",
+  "password.strength.weak",
+  "password.strength.good",
+  "password.strength.strong",
+];
 
 /**
  * Live strength meter for the admin first-login password setup. Segment
@@ -16,12 +22,13 @@ const LABELS = ["Too weak", "Weak", "Good", "Strong"];
  * alongside it, since both read from the same requirements list.
  */
 export function AdminPasswordStrengthMeter({ password }: AdminPasswordStrengthMeterProps) {
+  const { t } = useTranslation("common");
   if (!password) return null;
 
   const requirements = getAdminPasswordRequirements(password);
   const metCount = requirements.filter((r) => r.met).length;
   const color = SEGMENT_COLORS[metCount];
-  const label = LABELS[metCount];
+  const label = t(LABEL_KEYS[metCount]);
   const segments = [0, 1, 2];
 
   return (

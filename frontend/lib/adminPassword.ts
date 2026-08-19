@@ -4,13 +4,18 @@
  * the two flows have different strength rules per the API contract:
  * donor signup = 8 chars + uppercase + number; admin first-login = 6 chars
  * + number + special symbol. Do not merge these two rule sets.
+ *
+ * i18n note: this file no longer returns display strings for requirement
+ * labels or confirm-password errors — it returns stable IDs/codes instead,
+ * translated at render time in PasswordRequirementChecklist.tsx and
+ * ChangePasswordForm.tsx (see common.json's "password" keys). This keeps
+ * the validation logic free of any UI-language concerns.
  */
 
 export const MIN_ADMIN_PASSWORD_LENGTH = 6;
 
 export interface PasswordRequirement {
   id: "length" | "number" | "symbol";
-  label: string;
   met: boolean;
 }
 
@@ -24,17 +29,14 @@ export function getAdminPasswordRequirements(password: string): PasswordRequirem
   return [
     {
       id: "length",
-      label: `At least ${MIN_ADMIN_PASSWORD_LENGTH} characters`,
       met: password.length >= MIN_ADMIN_PASSWORD_LENGTH,
     },
     {
       id: "number",
-      label: "At least one number",
       met: /[0-9]/.test(password),
     },
     {
       id: "symbol",
-      label: "At least one special symbol",
       met: /[^A-Za-z0-9]/.test(password),
     },
   ];
@@ -45,12 +47,17 @@ export function isAdminPasswordValid(password: string): boolean {
   return getAdminPasswordRequirements(password).every((r) => r.met);
 }
 
-/** Validates the confirm-password field against the new password. */
+/**
+ * Validates the confirm-password field against the new password.
+ * Returns an error CODE (matching common.json's password.confirmErrors
+ * keys) rather than display text — translate with
+ * t(`password.confirmErrors.${code}`) at the call site.
+ */
 export function validateConfirmAdminPassword(
   password: string,
   confirmPassword: string
 ): string | undefined {
-  if (!confirmPassword) return "Please confirm your new password.";
-  if (confirmPassword !== password) return "Passwords do not match.";
+  if (!confirmPassword) return "confirmRequired";
+  if (confirmPassword !== password) return "confirmMismatch";
   return undefined;
 }

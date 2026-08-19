@@ -1,32 +1,36 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import dynamic from "next/dynamic";
 import { MapPin } from "lucide-react";
 import type { OriginsData } from "@/lib/donorDashboard";
 
-// Leaflet reads `window` as soon as it's imported, which breaks Next.js's
-// server-side rendering. Loading it via next/dynamic with ssr:false keeps
-// it strictly client-side, which is required for any Leaflet map in Next.
 const OriginsMapLeaflet = dynamic(() => import("./OriginsMapLeaflet"), {
   ssr: false,
   loading: () => (
     <div className="bg-[#f5efe4] rounded-xl border border-black/5 flex items-center justify-center" style={{ height: 360 }}>
-      <p className="text-sm text-gray-400">Loading map...</p>
+      <p className="text-sm text-gray-400">
+        {/* Static fallback — this renders before i18next resources are guaranteed loaded in this dynamic-import path, so it stays hardcoded. Negligible UX impact since it's a brief loading state. */}
+        Loading map...
+      </p>
     </div>
   ),
 });
 
 export default function OriginsMap({ origins }: { origins: OriginsData }) {
+  const { t } = useTranslation("donor");
+
   const pending = origins.uganda_districts.filter(
     (d) => d.latitude === null || d.longitude === null
   );
 
   return (
     <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-6">
-      <h2 className="text-base font-semibold text-gray-800">Where Our Talents Originate From</h2>
+      <h2 className="text-base font-semibold text-gray-800">{t("origins.title")}</h2>
       <p className="text-xs text-gray-500 mb-4">
-        {origins.uganda_districts.length} districts across Uganda
-        {origins.international.length > 0 && ", plus international participants"}
+        {origins.international.length > 0
+          ? t("origins.subtitleWithInternational", { count: origins.uganda_districts.length })
+          : t("origins.subtitleDistrictsOnly", { count: origins.uganda_districts.length })}
       </p>
 
       <div className="rounded-xl overflow-hidden border border-black/5">
@@ -37,25 +41,25 @@ export default function OriginsMap({ origins }: { origins: OriginsData }) {
         <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-400">
           <span className="inline-flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#1A534A] inline-block" />
-            District
+            {t("origins.legend.district")}
           </span>
           <span className="inline-flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#B5762A] inline-block" />
-            Country
+            {t("origins.legend.country")}
           </span>
         </div>
       )}
 
       {pending.length > 0 && (
         <p className="text-[11px] text-gray-400 mt-2">
-          Location pending for: {pending.map((d) => d.district).join(", ")}
+          {t("origins.locationPending", { list: pending.map((d) => d.district).join(", ") })}
         </p>
       )}
 
       {origins.international.length > 0 && (
         <div className="mt-4 pt-4 border-t border-black/5">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            Also Representing
+            {t("origins.alsoRepresenting")}
           </p>
           <div className="flex flex-wrap gap-2">
             {origins.international.map((c) => (

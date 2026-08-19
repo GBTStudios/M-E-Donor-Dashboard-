@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Eye, EyeOff } from "lucide-react";
 
 interface PasswordFieldProps {
@@ -31,6 +32,7 @@ export function PasswordField({
   autoComplete = "new-password",
   describedByExtra,
 }: PasswordFieldProps) {
+  const { t } = useTranslation("common");
   const [visible, setVisible] = useState(false);
   const errorId = `${id}-error`;
 
@@ -61,7 +63,11 @@ export function PasswordField({
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
-          aria-label={visible ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+          aria-label={
+            visible
+              ? t("password.hideLabel", { field: label.toLowerCase() })
+              : t("password.showLabel", { field: label.toLowerCase() })
+          }
           className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7C9791] hover:text-[#2C3E38] p-1 transition-colors"
         >
           {visible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}

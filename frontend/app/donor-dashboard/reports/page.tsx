@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useRouter } from "next/navigation";
 import { Download, FileText, Loader2, Eye } from "lucide-react";
 import DonorLayout from "@/components/donor/DonorLayout";
@@ -21,6 +22,7 @@ function formatFileSize(bytes: number | null): string {
 }
 
 export default function DonorReportsPage() {
+  const { t } = useTranslation("donor");
   const router = useRouter();
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [loadingReports, setLoadingReports] = useState(true);
@@ -78,13 +80,13 @@ export default function DonorReportsPage() {
       if (viaCohort.success && viaCohort.file_url) {
         setViewUrl(viaCohort.file_url);
       } else {
-        setViewError(viaCohort.error ?? "Something went wrong opening this report.");
+        setViewError(viaCohort.error ?? t("errors.reports.couldNotOpen"));
       }
       return;
     }
 
     setViewLoading(false);
-    setViewError("This report isn't linked to a cohort, so it can't be previewed here yet.");
+    setViewError(t("errors.reports.notLinkedToCohort"));
   }
 
   async function handleDownloadSummary() {
@@ -103,14 +105,14 @@ export default function DonorReportsPage() {
 
   return (
     <DonorLayout>
-      <h1 className="text-2xl font-bold text-gray-900">Impact Reports</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t("reports.heading")}</h1>
       <p className="text-sm text-gray-500 mt-1 mb-6">
-        Select a report structure to view performance data and export official documentation.
+        {t("reports.description")}
       </p>
 
       <div className="grid lg:grid-cols-[1fr_1.6fr] gap-6 items-start">
         <div className="bg-white rounded-xl border border-black/5 p-5">
-          <h2 className="text-sm font-semibold text-gray-800 mb-4">Available Reports</h2>
+          <h2 className="text-sm font-semibold text-gray-800 mb-4">{t("reports.availableReports")}</h2>
 
           {loadingReports ? (
             <div className="flex items-center justify-center py-10">
@@ -123,7 +125,7 @@ export default function DonorReportsPage() {
           ) : reports.length === 0 ? (
             <div className="text-center py-10">
               <FileText className="w-6 h-6 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">No reports have been uploaded yet.</p>
+              <p className="text-sm text-gray-400">{t("reports.empty")}</p>
             </div>
           ) : (
             <ul className="space-y-2">
@@ -144,7 +146,7 @@ export default function DonorReportsPage() {
                     <button
                       type="button"
                       onClick={() => handleView(r)}
-                      aria-label={`View ${r.title}`}
+                      aria-label={t("reports.viewLabel", { title: r.title })}
                       className="text-teal-700 hover:text-teal-900 flex-shrink-0"
                     >
                       <Eye className="w-4 h-4" />
@@ -158,12 +160,11 @@ export default function DonorReportsPage() {
 
         <div className="bg-[#1A534A] rounded-xl p-6 text-white">
           <span className="inline-block text-[10px] font-bold uppercase tracking-wide bg-white/10 px-2 py-0.5 rounded mb-3">
-            Live Snapshot
+            {t("reports.liveSnapshotBadge")}
           </span>
-          <h2 className="text-lg font-semibold">Impact Summary</h2>
+          <h2 className="text-lg font-semibold">{t("reports.impactSummary.title")}</h2>
           <p className="text-sm text-white/70 mt-1 mb-6">
-            A real-time snapshot of current program outcomes, cohort completion, and
-            participant baseline data, generated fresh from live figures.
+            {t("reports.impactSummary.description")}
           </p>
 
           {downloadError && (
@@ -181,12 +182,12 @@ export default function DonorReportsPage() {
             {downloading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Generating report...
+                {t("reports.impactSummary.generating")}
               </>
             ) : (
               <>
                 <Download className="w-4 h-4" />
-                Download PDF
+                {t("reports.impactSummary.downloadPdf")}
               </>
             )}
           </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, X, AlertCircle, ExternalLink, FileWarning } from "lucide-react";
 
 interface ReportViewerModalProps {
@@ -24,6 +25,8 @@ export default function ReportViewerModal({
   error,
   onClose,
 }: ReportViewerModalProps) {
+  const { t } = useTranslation("donor");
+
   useEffect(() => {
     if (!open) return;
     function handleKey(e: KeyboardEvent) {
@@ -56,14 +59,14 @@ export default function ReportViewerModal({
           </h2>
           <div className="flex items-center gap-1 flex-shrink-0">
             {fileUrl && (
-              <a href={fileUrl} target="_blank" rel="noopener noreferrer" aria-label="Open in new tab" className="text-gray-400 hover:text-teal-700 p-1.5 rounded-lg hover:bg-gray-50 transition">
+              <a href={fileUrl} target="_blank" rel="noopener noreferrer" aria-label={t("shared.reportViewer.openInNewTab")} className="text-gray-400 hover:text-teal-700 p-1.5 rounded-lg hover:bg-gray-50 transition">
                 <ExternalLink className="w-4 h-4" />
               </a>
             )}
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close"
+              aria-label={t("shared.reportViewer.close")}
               className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-50 transition"
             >
               <X className="w-4 h-4" />
@@ -88,15 +91,17 @@ export default function ReportViewerModal({
               <FileWarning className="w-8 h-8 text-gray-300" />
               <div>
                 <p className="text-sm text-gray-600">
-                  Preview isn&apos;t available for this file type.
+                  {t("shared.reportViewer.noPreview")}
                 </p>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {normalizedType ? normalizedType.toUpperCase() : "This file"} needs to be downloaded to view.
+                  {t("shared.reportViewer.needsDownload", {
+                    type: normalizedType ? normalizedType.toUpperCase() : t("shared.reportViewer.thisFile"),
+                  })}
                 </p>
               </div>
               <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-teal-800 hover:bg-teal-900 text-white rounded-lg py-2 px-4 text-sm font-medium transition">
                 <ExternalLink className="w-3.5 h-3.5" />
-                Download to view
+                {t("shared.reportViewer.downloadToView")}
               </a>
             </div>
           ) : null}
