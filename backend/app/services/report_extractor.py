@@ -78,3 +78,69 @@ def extract_report_data(filename: str, file_bytes: bytes) -> Optional[dict]:
         return json.loads(raw_output)
     except Exception:
         return None
+
+
+MULTI_COHORT_EXTRACTION_PROMPT = """The document below contains M&E reporting data for MULTIPLE cohorts, one section per cohort. Extract every cohort you find into a JSON array with exactly this shape:
+
+[
+  {{
+    "cohort_name": string,
+    "active_participants": number or null,
+    "graduation_pct": number or null,
+    "completion_pct": number or null,
+    "status": "in_progress" or "completed" or null,
+    "employment_rate": number or null,
+    "avg_income_growth_multiplier": number or null,
+    "post_avg_monthly_income": number or null,
+    "african_companies_pct": number or null,
+    "global_companies_pct": number or null
+  }}
+]
+
+Field notes:
+- cohort_name: normalize to the form "Cohort N" (e.g. a column or section labeled "C1" or "Cohort 1" both become "Cohort 1"). This is used to match against existing records, so be consistent.
+- active_participants: use the graduate/completed count if given (e.g. "No. graduates" or "Talents Graduated"), not the total intake, unless no graduate count is given.
+- graduation_pct: the graduation rate percentage.
+- completion_pct: only set to 100 if the cohort is explicitly described as finished/completed. Leave null otherwise - do not guess.
+- status: "completed" if graduation/employment data exists for this cohort, "in_progress" if the cohort has no endline data yet (e.g. graduates/employment fields are blank or marked not available).
+- employment_rate: percentage employed at endline.
+- avg_income_growth_multiplier: the income increase factor (e.g. "19.4x" -> 19.4).
+- post_avg_monthly_income: average individual income post-program, in USD if given.
+- african_companies_pct: if the document splits company location into Local + Regional + International (or similar), COMBINE Local + Regional into this one value. If it already gives a single "African companies" or "Local+Regional" figure, use that directly.
+- global_companies_pct: maps to "International" percentage.
+- If a cohort's section has no data at all for a field (still in progress, not yet available), use null - do not invent a number.
+
+Return ONLY the JSON array, no other text, no markdown fences.
+
+DOCUMENT TEXT:
+{text}
+"""
+
+
+def extract_multi_cohort_data(filename: str, file_bytes: bytes) -> Optional[list]:
+    """
+    Same best-effort extraction approach as extract_report_data, but for a
+    single document covering multiple cohorts at once (e.g. a consolidated
+    M&E reporting workbook). Returns a list of per-cohort dicts, or None on
+    failure.
+    """
+    try:
+        raw_text = extract_text(filename, file_bytes)
+    except Exception:
+        return None
+
+    prompt = MULTI_COHORT_EXTRACTION_PROMPT.format(text=raw_text[:30000])
+
+    try:
+        response = anthropic_client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw_output = response.content[0].text.strip()
+        if raw_output.startswith("```"):
+            raw_output = raw_output.strip("`").lstrip("json").strip()
+        result = json.loads(raw_output)
+        return result if isinstance(result, list) else None
+    except Exception:
+        return None
