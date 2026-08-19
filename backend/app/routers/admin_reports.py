@@ -107,60 +107,68 @@ def _apply_multi_cohort_extracted_data(report_id: str, filename: str, file_bytes
     from app.services.report_extractor import extract_multi_cohort_data
     from app.services.notification_service import create_notification
 
-    extracted = extract_multi_cohort_data(filename, file_bytes)
-    if not extracted:
+    try:
+        extracted = extract_multi_cohort_data(filename, file_bytes)
+        if not extracted:
+            supabase.table("reports").update({"extraction_status": "failed"}).eq("id", report_id).execute()
+            create_notification(
+                "report_extraction_failed",
+                "Couldn't extract data from the multi-cohort report - please review and enter the numbers manually.",
+                related_id=report_id,
+            )
+            return
+
+        all_cohorts = supabase.table("cohorts").select("id, name").execute().data
+        name_to_id = {c["name"].strip().lower(): c["id"] for c in all_cohorts}
+
+        updated_cohorts = []
+        skipped_cohorts = []
+
+        for entry in extracted:
+            raw_name = (entry.get("cohort_name") or "").strip()
+            cohort_id = name_to_id.get(raw_name.lower())
+            if not cohort_id:
+                skipped_cohorts.append(raw_name or "(unnamed)")
+                continue
+
+            core_fields = {
+                k: entry.get(k)
+                for k in ("active_participants", "graduation_pct", "completion_pct", "status")
+                if entry.get(k) is not None
+            }
+            if core_fields:
+                core_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
+                supabase.table("cohorts").update(core_fields).eq("id", cohort_id).execute()
+
+            outcome_fields = {
+                k: entry.get(k)
+                for k in (
+                    "employment_rate", "avg_income_growth_multiplier", "post_avg_monthly_income",
+                    "african_companies_pct", "global_companies_pct",
+                )
+                if entry.get(k) is not None
+            }
+            if outcome_fields:
+                outcome_fields["cohort_id"] = cohort_id
+                outcome_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
+                supabase.table("cohort_outcomes").upsert(outcome_fields, on_conflict="cohort_id").execute()
+
+            updated_cohorts.append(raw_name)
+
+        status_value = "completed" if updated_cohorts else "failed"
+        supabase.table("reports").update({"extraction_status": status_value}).eq("id", report_id).execute()
+
+        message = f"Multi-cohort report processed: updated {', '.join(updated_cohorts) or 'no cohorts'}."
+        if skipped_cohorts:
+            message += f" Could not match: {', '.join(skipped_cohorts)}."
+        create_notification("report_extraction_completed" if updated_cohorts else "report_extraction_failed", message, related_id=report_id)
+    except Exception as e:
         supabase.table("reports").update({"extraction_status": "failed"}).eq("id", report_id).execute()
         create_notification(
             "report_extraction_failed",
-            "Couldn't extract data from the multi-cohort report - please review and enter the numbers manually.",
+            f"Multi-cohort report processing failed unexpectedly: {e}",
             related_id=report_id,
         )
-        return
-
-    all_cohorts = supabase.table("cohorts").select("id, name").execute().data
-    name_to_id = {c["name"].strip().lower(): c["id"] for c in all_cohorts}
-
-    updated_cohorts = []
-    skipped_cohorts = []
-
-    for entry in extracted:
-        raw_name = (entry.get("cohort_name") or "").strip()
-        cohort_id = name_to_id.get(raw_name.lower())
-        if not cohort_id:
-            skipped_cohorts.append(raw_name or "(unnamed)")
-            continue
-
-        core_fields = {
-            k: entry.get(k)
-            for k in ("active_participants", "graduation_pct", "completion_pct", "status")
-            if entry.get(k) is not None
-        }
-        if core_fields:
-            core_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
-            supabase.table("cohorts").update(core_fields).eq("id", cohort_id).execute()
-
-        outcome_fields = {
-            k: entry.get(k)
-            for k in (
-                "employment_rate", "avg_income_growth_multiplier", "post_avg_monthly_income",
-                "african_companies_pct", "global_companies_pct",
-            )
-            if entry.get(k) is not None
-        }
-        if outcome_fields:
-            outcome_fields["cohort_id"] = cohort_id
-            outcome_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
-            supabase.table("cohort_outcomes").upsert(outcome_fields, on_conflict="cohort_id").execute()
-
-        updated_cohorts.append(raw_name)
-
-    status_value = "completed" if updated_cohorts else "failed"
-    supabase.table("reports").update({"extraction_status": status_value}).eq("id", report_id).execute()
-
-    message = f"Multi-cohort report processed: updated {', '.join(updated_cohorts) or 'no cohorts'}."
-    if skipped_cohorts:
-        message += f" Could not match: {', '.join(skipped_cohorts)}."
-    create_notification("report_extraction_completed" if updated_cohorts else "report_extraction_failed", message, related_id=report_id)
 
 
 @router.post("", response_model=UploadReportResponse, status_code=status.HTTP_201_CREATED)
