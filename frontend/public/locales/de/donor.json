@@ -122,6 +122,7 @@
   "cohorts": {
     "eyebrow": "Regionale Wirkungsgruppen",
     "heading": "Programmkohorten",
+    "tabLabel": "Kohorte {{number}}",
     "description": "Überprüfen Sie detaillierte Fortschritts- und Leistungskennzahlen über historische und aktive Programmzyklen hinweg. Die Datentransparenz wird durch standardisierte Ergebnisbewertungen bei Aufnahme, Abschluss und Endlinie sichergestellt.",
     "tabs": { "all": "Alle Kohorten" },
     "status": { "completed": "Abgeschlossen", "inProgress": "In Bearbeitung" },
@@ -166,6 +167,7 @@
     },
     "detail": {
       "programDuration": "Programmdauer",
+      "datePending": "Ausstehend",
       "kpi": {
         "totalParticipants": "Teilnehmende insgesamt",
         "completionRate": "Abschlussquote",
@@ -323,5 +325,19 @@
     "thisFile": "Diese Datei",
     "downloadToView": "Zum Ansehen herunterladen"
   }
-}
-}
+  },
+  "chatbot": {
+    "title": "Groundbreaker-Assistent",
+    "greeting": "Hallo! Ich bin der Groundbreaker-Assistent. Fragen Sie mich zu unseren Programmen, den Ergebnissen der Teilnehmenden oder den Wirkungsdaten.",
+    "newConversation": "Neue Unterhaltung starten",
+    "newConversationTitle": "Neue Unterhaltung",
+    "closeChat": "Chat schließen",
+    "copyMessage": "Nachricht kopieren",
+    "thinking": "Denkt nach...",
+    "inputPlaceholder": "Stellen Sie eine Frage...",
+    "sendMessage": "Nachricht senden",
+    "openChatbot": "Chatbot öffnen",
+    "closeChatbot": "Chatbot schließen",
+        "genericError": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+   }
+  }

@@ -9,6 +9,7 @@ import {
   ArrowRight, ChevronRight, ChevronLeft, X, ArrowUpDown,
 } from "lucide-react";
 import DonorLayout from "@/components/donor/DonorLayout";
+import i18n from "@/lib/i18n";
 import {
   fetchCohorts, fetchCohortDetail, fetchCohortTracks, fetchCohortBaseline,
   fetchCohortOutcomes, fetchCohortNarrative, fetchCohortProjects, downloadCohortReport,
@@ -19,15 +20,15 @@ import {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "Pending";
+  if (!iso) return i18n.t("cohorts.detail.datePending", { ns: "donor" });
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "Pending";
-  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  if (Number.isNaN(d.getTime())) return i18n.t("cohorts.detail.datePending", { ns: "donor" });
+  return d.toLocaleDateString(i18n.language === "de" ? "de-DE" : "en-US", { month: "short", year: "numeric" });
 }
 
 function cohortTabLabel(name: string): string {
   const match = name.match(/(\d+)$/);
-  return match ? `Cohort ${match[1]}` : name;
+  return match ? i18n.t("cohorts.tabLabel", { ns: "donor", number: match[1] }) : name;
 }
 
 function avg(values: (number | null | undefined)[]): number {

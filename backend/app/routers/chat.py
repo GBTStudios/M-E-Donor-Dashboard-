@@ -93,7 +93,7 @@ async def send_chat_message(
         "content": payload.message,
     }).execute()
 
-    response_text = run_chat_agent(history, payload.message)
+    response_text = run_chat_agent(history, payload.message, payload.language or "en")
 
     def _insert_assistant_message():
         supabase.table("chat_messages").insert({

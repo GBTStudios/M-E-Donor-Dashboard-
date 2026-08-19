@@ -21,6 +21,23 @@ explicitly - just answer naturally. If the knowledge base search returns nothing
 relevant, say you don't have specific information on that topic and suggest
 contacting Groundbreaker Talents directly, rather than making something up."""
 
+# Appended to SYSTEM_PROMPT based on the donor's UI language (see
+# ChatMessageRequest.language, frontend lib/chat.ts / lib/i18n.ts). The
+# knowledge base itself stays English-only — the model is instructed to
+# translate retrieved content into the target language at generation time
+# rather than requiring translated source documents. Unrecognized/missing
+# language codes fall back to "en" (no extra instruction needed).
+LANGUAGE_INSTRUCTIONS = {
+    "en": "",
+    "de": (
+        "\n\nRespond in German (Deutsch), regardless of what language the "
+        "user writes in, unless they explicitly ask you to switch languages. "
+        "This applies even when your source information (from the knowledge "
+        "base) is in English — translate naturally into German rather than "
+        "quoting English text."
+    ),
+}
+
 
 @tool
 def knowledge_base_search(query: str) -> str:
@@ -31,22 +48,28 @@ def knowledge_base_search(query: str) -> str:
     return "\n\n".join(chunks)
 
 
-_agent = None
+# One cached agent per language rather than a single global instance —
+# create_react_agent bakes its `prompt` in at construction time, so a
+# language-specific system prompt needs its own agent. Construction is
+# cheap (no network call happens until invoke()), so this trades a small
+# amount of memory for correctness.
+_agents: dict[str, object] = {}
 
 
-def _get_agent():
-    global _agent
-    if _agent is None:
+def _get_agent(language: str):
+    global _agents
+    if language not in _agents:
         model = ChatAnthropic(
             model="claude-haiku-4-5-20251001",
             api_key=settings.anthropic_api_key,
         )
-        _agent = create_react_agent(model, tools=[knowledge_base_search], prompt=SYSTEM_PROMPT)
-    return _agent
+        system_prompt = SYSTEM_PROMPT + LANGUAGE_INSTRUCTIONS.get(language, LANGUAGE_INSTRUCTIONS["en"])
+        _agents[language] = create_react_agent(model, tools=[knowledge_base_search], prompt=system_prompt)
+    return _agents[language]
 
 
-def run_chat_agent(conversation_history: list[dict], new_message: str) -> str:
-    agent = _get_agent()
+def run_chat_agent(conversation_history: list[dict], new_message: str, language: str = "en") -> str:
+    agent = _get_agent(language)
 
     messages = []
     for msg in conversation_history:

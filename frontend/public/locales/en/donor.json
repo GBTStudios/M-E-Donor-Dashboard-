@@ -122,6 +122,7 @@
   "cohorts": {
     "eyebrow": "Regional Impact Groups",
     "heading": "Program Cohorts",
+    "tabLabel": "Cohort {{number}}",
     "description": "Review detailed progress and performance metrics across historical and active program cycles. Data transparency is maintained through standardised outcome assessments at intake, graduation, and endline.",
     "tabs": { "all": "All Cohorts" },
     "status": { "completed": "Completed", "inProgress": "In Progress" },
@@ -166,6 +167,7 @@
     },
     "detail": {
       "programDuration": "Program Duration",
+      "datePending": "Pending",
       "kpi": {
         "totalParticipants": "Total Participants",
         "completionRate": "Completion Rate",
@@ -323,5 +325,19 @@
       "thisFile": "This file",
       "downloadToView": "Download to view"
     }
+  },
+  "chatbot": {
+    "title": "Groundbreaker Assistant",
+    "greeting": "Hi! I'm the Groundbreaker assistant. Ask me about our programs, participant outcomes, or impact data.",
+    "newConversation": "Start a new conversation",
+    "newConversationTitle": "New conversation",
+    "closeChat": "Close chat",
+    "copyMessage": "Copy message",
+    "thinking": "Thinking...",
+    "inputPlaceholder": "Ask a question...",
+    "sendMessage": "Send message",
+    "openChatbot": "Open chatbot",
+    "closeChatbot": "Close chatbot",
+    "genericError": "Something went wrong. Please try again."
   }
 }
