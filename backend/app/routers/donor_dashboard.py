@@ -155,7 +155,30 @@ async def get_cohort_baseline(cohort_id: str, user: dict = Depends(get_current_u
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cohort not found.")
 
     result = supabase.table("participants").select("*").eq("cohort_id", cohort_id).execute()
-    return _compute_baseline(result.data)
+    computed = _compute_baseline(result.data)
+
+    override_result = supabase.table("cohort_baseline_override").select("*").eq("cohort_id", cohort_id).execute()
+    if not override_result.data:
+        return computed
+
+    override = override_result.data[0]
+    merged = dict(computed)
+    if override.get("avg_household_size") is not None:
+        merged["avg_household_size"] = override["avg_household_size"]
+    if override.get("avg_pre_program_income") is not None:
+        merged["avg_pre_program_income"] = override["avg_pre_program_income"]
+    if override.get("avg_age") is not None:
+        merged["avg_age"] = override["avg_age"]
+    if override.get("highest_education_common") is not None:
+        merged["highest_education_common"] = override["highest_education_common"]
+    if override.get("employed_before_pct") is not None:
+        merged["employed_before_pct"] = override["employed_before_pct"]
+    if override.get("employed_before_type_common") is not None:
+        merged["employed_before_type_common"] = override["employed_before_type_common"]
+    if override.get("main_breadwinner_common") is not None:
+        merged["main_breadwinner_breakdown"] = {override["main_breadwinner_common"]: 100}
+
+    return merged
 
 
 @router.get("/cohorts/{cohort_id}/outcomes", response_model=CohortOutcomesOut)

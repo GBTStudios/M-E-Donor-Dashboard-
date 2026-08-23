@@ -54,6 +54,13 @@ def _apply_extracted_report_data(cohort_id: str, report_id: str, filename: str, 
         outcomes_clean["updated_at"] = datetime.now(timezone.utc).isoformat()
         supabase.table("cohort_outcomes").upsert(outcomes_clean, on_conflict="cohort_id").execute()
 
+    baseline = extracted.get("baseline") or {}
+    baseline_clean = {k: v for k, v in baseline.items() if v is not None}
+    if baseline_clean:
+        baseline_clean["cohort_id"] = cohort_id
+        baseline_clean["updated_at"] = datetime.now(timezone.utc).isoformat()
+        supabase.table("cohort_baseline_override").upsert(baseline_clean, on_conflict="cohort_id").execute()
+
     notable_projects = extracted.get("notable_projects") or []
     if notable_projects:
         supabase.table("cohort_projects").delete().eq("cohort_id", cohort_id).execute()
@@ -152,6 +159,20 @@ def _apply_multi_cohort_extracted_data(report_id: str, filename: str, file_bytes
                 outcome_fields["cohort_id"] = cohort_id
                 outcome_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
                 supabase.table("cohort_outcomes").upsert(outcome_fields, on_conflict="cohort_id").execute()
+
+            baseline_fields = {
+                k: entry.get(k)
+                for k in (
+                    "avg_household_size", "avg_pre_program_income", "avg_age",
+                    "highest_education_common", "employed_before_pct",
+                    "employed_before_type_common", "main_breadwinner_common",
+                )
+                if entry.get(k) is not None
+            }
+            if baseline_fields:
+                baseline_fields["cohort_id"] = cohort_id
+                baseline_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
+                supabase.table("cohort_baseline_override").upsert(baseline_fields, on_conflict="cohort_id").execute()
 
             updated_cohorts.append(raw_name)
 
