@@ -13,7 +13,7 @@ import {
 } from "@/lib/adminChatAudit";
 
 const ACCESS_TOKEN_KEY = "access_token";
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 3;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

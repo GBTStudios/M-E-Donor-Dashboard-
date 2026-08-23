@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { useRouter } from "next/navigation";
 import { Download, FileText, Loader2, Eye } from "lucide-react";
 import DonorLayout from "@/components/donor/DonorLayout";
 import ReportViewerModal from "@/components/ui/ReportViewerModal";
@@ -22,8 +20,6 @@ function formatFileSize(bytes: number | null): string {
 }
 
 export default function DonorReportsPage() {
-  const { t } = useTranslation("donor");
-  const router = useRouter();
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [loadingReports, setLoadingReports] = useState(true);
   const [reportsError, setReportsError] = useState("");
@@ -39,10 +35,6 @@ export default function DonorReportsPage() {
   useEffect(() => {
     async function load() {
       const result = await fetchReports();
-      if (result.status === 401) {
-        router.replace("/session-expired");
-        return;
-      }
       if (result.success && result.reports) {
         setReports(result.reports);
       } else if (result.error) {
@@ -51,7 +43,7 @@ export default function DonorReportsPage() {
       setLoadingReports(false);
     }
     load();
-  }, [router]);
+  }, []);
 
   async function handleView(report: ReportListItem) {
     setViewTarget(report);
@@ -60,10 +52,6 @@ export default function DonorReportsPage() {
     setViewLoading(true);
 
     const direct = await fetchReportUrl(report.id);
-    if (direct.status === 401) {
-      router.replace("/session-expired");
-      return;
-    }
     if (direct.success && direct.file_url) {
       setViewLoading(false);
       setViewUrl(direct.file_url);
@@ -72,21 +60,21 @@ export default function DonorReportsPage() {
 
     if (report.cohort_id) {
       const viaCohort = await fetchCohortReportUrl(report.cohort_id);
-      if (viaCohort.status === 401) {
-        router.replace("/session-expired");
-        return;
-      }
       setViewLoading(false);
       if (viaCohort.success && viaCohort.file_url) {
         setViewUrl(viaCohort.file_url);
       } else {
-        setViewError(viaCohort.error ?? t("errors.reports.couldNotOpen"));
+        setViewError(viaCohort.error ?? "Something went wrong opening this report.");
       }
       return;
     }
 
     setViewLoading(false);
-    setViewError(t("errors.reports.notLinkedToCohort"));
+    setViewError(
+      direct.status === 401
+        ? direct.error ?? "Your session has expired. Please log in again."
+        : "This report isn't linked to a cohort, so it can't be previewed here yet."
+    );
   }
 
   async function handleDownloadSummary() {
@@ -94,10 +82,6 @@ export default function DonorReportsPage() {
     setDownloadError("");
     const result = await downloadImpactSummary();
     setDownloading(false);
-    if (result.status === 401) {
-      router.replace("/session-expired");
-      return;
-    }
     if (!result.success && result.error) {
       setDownloadError(result.error);
     }
@@ -105,92 +89,95 @@ export default function DonorReportsPage() {
 
   return (
     <DonorLayout>
-      <h1 className="text-2xl font-bold text-gray-900">{t("reports.heading")}</h1>
-      <p className="text-sm text-gray-500 mt-1 mb-6">
-        {t("reports.description")}
-      </p>
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold text-[#1A534A]">Impact Reports</h1>
+        <p className="text-sm text-[#5B7571] mt-1 mb-6">
+          Select a report to view performance data and export official documentation.
+        </p>
 
-      <div className="grid lg:grid-cols-[1fr_1.6fr] gap-6 items-start">
-        <div className="bg-white rounded-xl border border-black/5 p-5">
-          <h2 className="text-sm font-semibold text-gray-800 mb-4">{t("reports.availableReports")}</h2>
+        <div className="grid lg:grid-cols-[1fr_1.6fr] gap-6 items-start">
+          {/* Available Reports */}
+          <div className="bg-[#eaf5f0] rounded-2xl border border-black/10 p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-[#1A534A] mb-4">Available Reports</h2>
 
-          {loadingReports ? (
-            <div className="flex items-center justify-center py-10">
-              <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-            </div>
-          ) : reportsError ? (
-            <p role="alert" className="text-sm text-red-600">
-              {reportsError}
-            </p>
-          ) : reports.length === 0 ? (
-            <div className="text-center py-10">
-              <FileText className="w-6 h-6 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">{t("reports.empty")}</p>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {reports.map((r) => (
-                <li
-                  key={r.id}
-                  className="border border-black/5 rounded-lg p-3 hover:bg-gray-50 transition"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">{r.title}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {new Date(r.report_date).toLocaleDateString()}
-                        {r.file_size ? ` · ${formatFileSize(r.file_size)}` : ""}
-                        {r.file_type ? ` · ${r.file_type.toUpperCase()}` : ""}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleView(r)}
-                      aria-label={t("reports.viewLabel", { title: r.title })}
-                      className="text-teal-700 hover:text-teal-900 flex-shrink-0"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="bg-[#1A534A] rounded-xl p-6 text-white">
-          <span className="inline-block text-[10px] font-bold uppercase tracking-wide bg-white/10 px-2 py-0.5 rounded mb-3">
-            {t("reports.liveSnapshotBadge")}
-          </span>
-          <h2 className="text-lg font-semibold">{t("reports.impactSummary.title")}</h2>
-          <p className="text-sm text-white/70 mt-1 mb-6">
-            {t("reports.impactSummary.description")}
-          </p>
-
-          {downloadError && (
-            <p role="alert" className="text-sm text-red-200 bg-red-900/30 rounded-lg px-3 py-2 mb-4">
-              {downloadError}
-            </p>
-          )}
-
-          <button
-            type="button"
-            onClick={handleDownloadSummary}
-            disabled={downloading}
-            className="flex items-center justify-center gap-2 bg-white text-[#1A534A] rounded-lg py-2.5 px-4 text-sm font-medium hover:bg-white/90 transition disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {downloading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {t("reports.impactSummary.generating")}
-              </>
+            {loadingReports ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="w-5 h-5 animate-spin text-[#7C9791]" />
+              </div>
+            ) : reportsError ? (
+              <p role="alert" className="text-sm text-red-600">{reportsError}</p>
+            ) : reports.length === 0 ? (
+              <div className="text-center py-10">
+                <FileText className="w-6 h-6 text-[#7C9791] mx-auto mb-2" />
+                <p className="text-sm text-[#5B7571]">No reports have been uploaded yet.</p>
+              </div>
             ) : (
-              <>
-                <Download className="w-4 h-4" />
-                {t("reports.impactSummary.downloadPdf")}
-              </>
+              <ul className="space-y-2">
+                {reports.map((r) => (
+                  <li
+                    key={r.id}
+                    className="border border-black/5 rounded-xl p-3 hover:bg-white/60 transition"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-[#1A534A] truncate">{r.title}</p>
+                        <p className="text-xs text-[#7C9791] mt-0.5">
+                          {new Date(r.report_date).toLocaleDateString()}
+                          {r.file_size ? ` · ${formatFileSize(r.file_size)}` : ""}
+                          {r.file_type ? ` · ${r.file_type.toUpperCase()}` : ""}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleView(r)}
+                        aria-label={`View ${r.title}`}
+                        className="text-[#1A534A] hover:text-[#134038] flex-shrink-0"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
-          </button>
+          </div>
+
+          {/* Impact Summary */}
+          <div className="bg-[#1A534A] rounded-2xl p-6 text-white shadow-sm">
+            <span className="inline-block text-[10px] font-bold uppercase tracking-wide bg-white/10 px-2 py-0.5 rounded mb-3">
+              Live Snapshot
+            </span>
+            <h2 className="text-lg font-semibold">Impact Summary</h2>
+            <p className="text-sm text-white/70 mt-1 mb-6">
+              A real-time snapshot of current program outcomes, cohort completion, and
+              participant baseline data, generated fresh from live figures.
+            </p>
+
+            {downloadError && (
+              <p role="alert" className="text-sm text-red-200 bg-red-900/30 rounded-lg px-3 py-2 mb-4">
+                {downloadError}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={handleDownloadSummary}
+              disabled={downloading}
+              className="flex items-center justify-center gap-2 bg-white text-[#1A534A] rounded-full py-2.5 px-5 text-sm font-semibold hover:bg-white/90 transition disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {downloading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Generating report...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Download PDF
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

@@ -76,7 +76,7 @@ export async function getAuditLogs(
         id: String(item.id),
         logNumber: Number(item.log_number),
         conversationId: String(item.conversation_id),
-        originatingIdentity: String(item.originating_identity),
+        originatingIdentity: String(item.user_name || item.originating_identity),
         inquiry: String(item.inquiry),
         response: String(item.response),
         status: item.status as "answered" | "declined" | "flagged",
@@ -133,7 +133,7 @@ export async function getConversationContext(
         success: true,
         context: {
           conversationId: String(data.conversation_id),
-          originatingIdentity: String(data.originating_identity),
+          originatingIdentity: String(data.user_name || data.originating_identity),
           messages: (data.messages ?? []).map((m: Record<string, unknown>) => ({
             inquiry: String(m.inquiry),
             response: String(m.response),
