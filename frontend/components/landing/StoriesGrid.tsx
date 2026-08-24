@@ -67,15 +67,15 @@ export default function StoriesGrid({ stories }: { stories: Story[] }) {
         ))}
       </div>
 
-      {!showAll && stories.length > INITIAL_VISIBLE && (
+      {stories.length > INITIAL_VISIBLE && (
         <div className="flex justify-center mt-8">
           <button
             type="button"
-            onClick={() => setShowAll(true)}
+            onClick={() => setShowAll(!showAll)}
             className="inline-flex items-center gap-2 border border-black/10 text-sm font-medium text-gray-700 px-5 py-2.5 rounded-full hover:bg-gray-50 transition"
           >
-            View all stories ({stories.length})
-            <ChevronDown className="w-4 h-4" />
+            {showAll ? "Show less" : `View all stories (${stories.length})`}
+            <ChevronDown className={`w-4 h-4 transition-transform ${showAll ? "rotate-180" : ""}`} />
           </button>
         </div>
       )}
