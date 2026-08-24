@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import type { Story } from "@/lib/landing-data";
 import StoryViewModal from "@/components/ui/StoryViewModal";
@@ -8,6 +9,7 @@ import StoryViewModal from "@/components/ui/StoryViewModal";
 const INITIAL_VISIBLE = 10;
 
 function StoryCard({ story, onReadMore }: { story: Story; onReadMore: (story: Story) => void }) {
+  const { t } = useTranslation("donor");
   const isLong = story.body.length > 140;
 
   return (
@@ -36,7 +38,7 @@ function StoryCard({ story, onReadMore }: { story: Story; onReadMore: (story: St
             onClick={() => onReadMore(story)}
             className="inline-flex items-center gap-1 text-sm text-[#1A534A] font-semibold mt-3 self-start hover:underline"
           >
-            Read more
+            {t("shared.stories.readMore")}
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         )}
@@ -46,13 +48,14 @@ function StoryCard({ story, onReadMore }: { story: Story; onReadMore: (story: St
 }
 
 export default function StoriesGrid({ stories }: { stories: Story[] }) {
+  const { t } = useTranslation("donor");
   const [activeStory, setActiveStory] = useState<Story | null>(null);
   const [showAll, setShowAll] = useState(false);
 
   if (stories.length === 0) {
     return (
       <p className="text-center text-gray-500 py-16">
-        Stories are being added — check back soon.
+        {t("shared.stories.empty")}
       </p>
     );
   }
@@ -74,7 +77,7 @@ export default function StoriesGrid({ stories }: { stories: Story[] }) {
             onClick={() => setShowAll(!showAll)}
             className="inline-flex items-center gap-2 border border-black/10 text-sm font-medium text-gray-700 px-5 py-2.5 rounded-full hover:bg-gray-50 transition"
           >
-            {showAll ? "Show less" : `View all stories (${stories.length})`}
+            {showAll ? t("shared.stories.showLess") : `View all stories (${stories.length})`}
             <ChevronDown className={`w-4 h-4 transition-transform ${showAll ? "rotate-180" : ""}`} />
           </button>
         </div>

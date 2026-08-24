@@ -67,48 +67,57 @@ export default function AdminSidebar() {
   const [role] = useState<UserRole | null>(() => getRole());
 
   return (
-    <aside className="w-64 h-full bg-[#1A534A] flex flex-col py-7 px-5 flex-shrink-0 overflow-y-auto">
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-1 mb-1">
-        <Image
-          src="/logo.png"
-          alt="Groundbreaker"
-          width={36}
-          height={36}
-          className="object-contain"
-        />
-        <span className="text-white font-bold text-sm leading-snug">
-          Groundbreaker
-          <br />
-          <span className="font-normal text-white/75">Impact</span>
-        </span>
-      </div>
-
-      <div className="px-1 mb-7">
-        {role && (
-          <span className="inline-block text-[10px] font-bold uppercase tracking-wide bg-[#F4C542] text-[#4a3b00] px-2 py-0.5 rounded">
-            {role === "superadmin" ? "Superadmin" : "Admin"}
+    // Sidebar is now three vertical zones: a fixed header, a middle nav
+    // section that's the ONLY part allowed to scroll if content is taller
+    // than the window, and a fixed footer. This guarantees Logout (and the
+    // logo/badge) are always visible and clickable regardless of screen
+    // height or how many nav items exist — only the nav list itself is
+    // ever at risk of scrolling, never the whole sidebar.
+    <aside className="w-64 h-full bg-[#1A534A] flex flex-col flex-shrink-0 overflow-hidden">
+      {/* Fixed header — never scrolls */}
+      <div className="flex-shrink-0 px-5 pt-7">
+        <div className="flex items-center gap-3 px-1 mb-1">
+          <Image
+            src="/logo.png"
+            alt="Groundbreaker"
+            width={36}
+            height={36}
+            className="object-contain"
+          />
+          <span className="text-white font-bold text-sm leading-snug">
+            Groundbreaker
+            <br />
+            <span className="font-normal text-white/75">Impact</span>
           </span>
-        )}
+        </div>
+
+        <div className="px-1 mb-4">
+          {role && (
+            <span className="inline-block text-[10px] font-bold uppercase tracking-wide bg-[#F4C542] text-[#4a3b00] px-2 py-0.5 rounded">
+              {role === "superadmin" ? "Superadmin" : "Admin"}
+            </span>
+          )}
+        </div>
       </div>
 
-      <nav className="flex flex-col gap-1">
+      {/* Scrollable middle — nav links only. On a screen tall enough to
+          fit everything (the common case), this never shows a scrollbar
+          and looks identical to a fully static sidebar. It only becomes
+          scrollable on genuinely short viewports, and even then, only
+          this section scrolls — logo and Logout stay put. */}
+      <nav className="flex-1 min-h-0 overflow-y-auto px-5 flex flex-col gap-1 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
         {PRIMARY_NAV_ITEMS.map((item) => (
           <NavLink key={item.label} {...item} />
         ))}
-      </nav>
 
-      <div className="my-4 border-t border-white/10" />
+        <div className="my-3 border-t border-white/10" />
 
-      <nav className="flex flex-col gap-1">
         {CONTENT_NAV_ITEMS.map((item) => (
           <NavLink key={item.label} {...item} />
         ))}
-      </nav>
 
-      <div className="my-4 border-t border-white/10" />
+        <div className="my-3 border-t border-white/10" />
 
-      <nav className="flex flex-col gap-1">
         {role === "superadmin" && (
           <NavLink label="Manage Users" icon={Users} href="/admin/users" />
         )}
@@ -116,9 +125,8 @@ export default function AdminSidebar() {
         <NavLink label="Settings" icon={Settings} href="/admin/settings" />
       </nav>
 
-      <div className="flex-1" />
-
-      <div className="pt-4 border-t border-white/10">
+      {/* Fixed footer — always visible, always clickable */}
+      <div className="flex-shrink-0 px-5 pb-7 pt-4 border-t border-white/10">
         <button
           type="button"
           onClick={() => {

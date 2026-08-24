@@ -1,13 +1,16 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { ChevronRight } from "lucide-react";
 import type { Cohort } from "@/lib/donorDashboard";
 
 export default function CohortProgressList({ cohorts }: { cohorts: Cohort[] }) {
+  const { t } = useTranslation("donor");
+
   if (cohorts.length === 0) {
     return (
       <div className="bg-[#eaf5f0] rounded-2xl p-6 text-center text-sm text-gray-500">
-        No active cohorts to show yet.
+        {t("cohortProgress.empty")}
       </div>
     );
   }
@@ -15,13 +18,13 @@ export default function CohortProgressList({ cohorts }: { cohorts: Cohort[] }) {
   return (
     <div className="bg-[#eaf5f0] rounded-2xl p-6">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-base font-semibold text-gray-800">Active Cohort Progress</h2>
+        <h2 className="text-base font-semibold text-gray-800">{t("cohortProgress.title")}</h2>
         <button className="text-sm text-teal-700 font-medium flex items-center gap-0.5 hover:underline">
-          View All Cohorts
+          {t("cohortProgress.viewAll")}
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
-      <p className="text-xs text-gray-500 mb-5">Performance tracking across the most recent groups</p>
+      <p className="text-xs text-gray-500 mb-5">{t("cohortProgress.subtitle")}</p>
 
       <div className="space-y-5">
         {cohorts.map((cohort) => (
@@ -29,7 +32,7 @@ export default function CohortProgressList({ cohorts }: { cohorts: Cohort[] }) {
             <div className="flex items-center justify-between mb-1.5">
               <div>
                 <p className="text-sm font-semibold text-gray-800">{cohort.name}</p>
-                <p className="text-xs text-gray-500">{cohort.active_participants} Active Participants</p>
+                <p className="text-xs text-gray-500">{t("cohortProgress.activeParticipants", { count: cohort.active_participants })}</p>
               </div>
               <span
                 className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
@@ -38,7 +41,7 @@ export default function CohortProgressList({ cohorts }: { cohorts: Cohort[] }) {
                     : "bg-blue-100 text-blue-700"
                 }`}
               >
-                {cohort.status === "completed" ? "Completed" : "In Progress"}
+                {cohort.status === "completed" ? t("cohortProgress.status.completed") : t("cohortProgress.status.inProgress")}
               </span>
             </div>
             <div className="flex items-center gap-3">

@@ -13,7 +13,7 @@ import {
 } from "@/lib/adminChatAudit";
 
 const ACCESS_TOKEN_KEY = "access_token";
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 3;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -124,7 +124,7 @@ function LogRow({
   onResolve: (id: string) => void;
   onViewContext: (conversationId: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   return (
     <div className="bg-white dark:bg-[#1a2e2b] rounded-2xl border border-black/10 dark:border-white/10 shadow-sm overflow-hidden">

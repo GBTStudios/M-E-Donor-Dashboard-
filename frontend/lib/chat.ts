@@ -11,6 +11,11 @@ export interface ChatResult {
  * Calls POST /chat/message — public, no auth required, since this widget
  * sits on the public landing page for anonymous visitors.
  *
+ * If a valid access token is present in localStorage (i.e. a donor is
+ * logged in), it is included so the backend can attach the real donor
+ * name to the audit log entry. If no token exists (anonymous visitor),
+ * the request is sent without Authorization — same as before.
+ *
  * Per the contract: send only the latest message plus session_id, not
  * full conversation history — the server holds multi-turn memory itself.
  * Response is a single JSON object, not a stream.
@@ -20,9 +25,22 @@ export async function sendChatMessage(
   sessionId: string | null
 ): Promise<ChatResult> {
   try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Attach token if the donor is logged in — backend uses it to log
+    // the real name instead of "Anonymous donor" in Chat Audit Logs.
+    const token = typeof window !== "undefined"
+      ? localStorage.getItem("access_token")
+      : null;
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_URL}/chat/message`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ session_id: sessionId, message }),
     });
 

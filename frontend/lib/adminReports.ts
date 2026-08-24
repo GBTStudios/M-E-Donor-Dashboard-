@@ -73,17 +73,24 @@ export interface UploadReportResult {
   error?: string;
 }
 
+export type ReportScope = "single_cohort" | "multi_cohort";
+
 export async function uploadReport(
   title: string,
   reportDate: string,
   cohortId: string | null,
-  file: File
+  file: File,
+  reportScope: ReportScope = "single_cohort"
 ): Promise<UploadReportResult> {
   try {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("report_date", reportDate);
-    if (cohortId) formData.append("cohort_id", cohortId);
+    formData.append("report_scope", reportScope);
+    // Only send cohort_id for single cohort reports
+    if (reportScope === "single_cohort" && cohortId) {
+      formData.append("cohort_id", cohortId);
+    }
     formData.append("file", file);
 
     const response = await fetch(`${API_URL}/admin/reports`, {
@@ -141,10 +148,6 @@ export interface FetchReportUrlResult {
   error?: string;
 }
 
-// Direct-by-id lookup. Backend endpoint (GET /admin/reports/{report_id})
-// is not built yet as of this writing — this will 404 until it exists.
-// Callers should fall back to fetchCohortReportUrl for cohort-linked
-// reports in the meantime.
 export async function fetchReportUrl(reportId: string): Promise<FetchReportUrlResult> {
   try {
     const response = await fetch(`${API_URL}/admin/reports/${reportId}`, {

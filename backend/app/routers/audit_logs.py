@@ -89,35 +89,32 @@ async def list_audit_logs(
 async def get_conversation_context(session_id: str, admin: dict = Depends(get_current_admin_user)):
     _log_access(admin["id"])
 
-    qa_result = supabase.table("qa_logs").select("donor_name, user_id").eq("session_id", session_id).limit(1).execute()
-    if not qa_result.data:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found.")
-
-    identity_row = qa_result.data[0]
-
-    messages_result = (
-        supabase.table("chat_messages")
-        .select("role, content, created_at")
+    qa_result = (
+        supabase.table("qa_logs")
+        .select("donor_name, user_id, question, response, status, created_at")
         .eq("session_id", session_id)
         .order("created_at", desc=False)
         .execute()
     )
+    if not qa_result.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found.")
+
+    first_row = qa_result.data[0]
 
     return ConversationContextResponse(
         conversation_id=session_id,
-        originating_identity="Registered User" if identity_row.get("user_id") else "Donor",
-        user_name=identity_row.get("donor_name"),
+        originating_identity="Registered User" if first_row.get("user_id") else "Donor",
+        user_name=first_row.get("donor_name"),
         messages=[
             ConversationMessage(
-                inquiry=m["content"] if m["role"] == "user" else None,
-                response=m["content"] if m["role"] == "assistant" else None,
-                status="answered",
-                created_at=m["created_at"],
+                inquiry=row["question"],
+                response=row["response"],
+                status=row["status"],
+                created_at=row["created_at"],
             )
-            for m in messages_result.data
+            for row in qa_result.data
         ],
     )
-
 
 @router.post("/{log_id}/resolve", response_model=ResolveFlaggedResponse)
 async def resolve_flagged_log(log_id: str, admin: dict = Depends(get_current_admin_user)):

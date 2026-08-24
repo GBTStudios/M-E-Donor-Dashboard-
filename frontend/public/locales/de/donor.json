@@ -1,0 +1,343 @@
+{
+  "sidebar": {
+    "badge": "Spender",
+    "nav": {
+      "dashboard": "Übersicht",
+      "cohorts": "Kohorten",
+      "stories": "Erfolgsgeschichten",
+      "reports": "Berichte",
+      "profile": "Profil",
+      "settings": "Einstellungen",
+      "logout": "Abmelden"
+    }
+  },
+  "profile": {
+    "heading": "Spenderprofil",
+    "badge": "Spender",
+    "memberSince": "Mitglied seit {{date}}",
+    "fields": {
+      "fullName": "Vollständiger Name",
+      "email": "E-Mail",
+      "emailReadOnly": "E-Mail kann nicht geändert werden",
+      "company": "Unternehmen",
+      "companyPlaceholder": "z. B. Hima Group"
+    },
+    "accountAccess": {
+      "title": "Kontozugriff",
+      "description": "Kontodetails und Systemstatus des Spenders.",
+      "company": "Unternehmen",
+      "accountStatus": "Kontostatus",
+      "createdOn": "Erstellt am",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "notSet": "—"
+    },
+    "errors": { "couldNotLoad": "Ihr Profil konnte nicht geladen werden." }
+  },
+  "settings": {
+    "heading": "Spendereinstellungen",
+    "subheading": "Systemkonfiguration & Sicherheit.",
+    "notifications": {
+      "title": "Systembenachrichtigungen",
+      "description": "Wählen Sie aus, worüber Sie benachrichtigt werden möchten.",
+      "quarterlyReportReady": {
+        "label": "Quartalsbericht verfügbar",
+        "description": "Werden Sie benachrichtigt, sobald die neuesten Wirkungs- und Finanzberichte zur Überprüfung bereitstehen."
+      },
+      "newCohortMilestones": {
+        "label": "Neue Kohorten-Meilensteine",
+        "description": "Echtzeit-Benachrichtigungen, wenn aktive Kohorten bedeutende Bildungs- oder Beschäftigungsmeilensteine erreichen."
+      },
+      "answerCorrections": {
+        "label": "Antwortkorrekturen",
+        "description": "Benachrichtigen Sie mich, wenn Antworten des Assistenten überprüft und korrigiert werden."
+      }
+    },
+    "regional": {
+      "title": "Regionale Einstellungen",
+      "description": "Legen Sie Ihre Sprache und Zeitzone für Systemberichte und Anzeige fest.",
+      "language": "Sprache",
+      "timeZone": "Zeitzone",
+      "disclaimer": "Die Sprachänderung aktualisiert die angezeigten Texte der App sofort. Die deutschen Übersetzungen werden noch fertiggestellt, daher kann derzeit noch Text auf Englisch erscheinen."
+    }
+  },
+  "dashboard": {
+    "heading": "Wirkungsübersicht",
+    "description": "Echtzeit-Verfolgung langfristiger Ergebnisse und Kennzahlen zur sozialen Mobilität in Ihren geförderten Programmen.",
+    "cards": {
+      "participants": { "label": "Teilnehmende", "note": "Vielversprechende Personen, die derzeit in aktiven Tracks eingeschrieben sind." },
+      "graduationRate": { "label": "Abschlussquote", "note": "Erfolgreiche Abschlussquote." },
+      "employmentRate": { "label": "Beschäftigungsquote", "note": "Absolvent:innen, die innerhalb von 6 Monaten eine feste Anstellung finden." },
+      "incomeGrowth": { "label": "Einkommenswachstum", "note": "Durchschnittlicher Anstieg des monatlichen Einkommens nach dem Abschluss." },
+      "activeCohorts": { "label": "Aktive Kohorten", "note": "Parallel laufende Trainingsprogramme in regionalen Zentren." },
+      "refugeeInclusion": { "label": "Einbindung von Geflüchteten", "note": "Spezielle Tracks für vertriebene Talente in Grenzregionen." },
+      "internationalRoles": { "label": "Internationale Positionen", "note": "Talente, die bei globalen Technologieunternehmen in Remote- oder Umzugspositionen beschäftigt sind." },
+      "africanCompanies": { "label": "Afrikanische Unternehmen", "note": "Absolvent:innen, die das Wachstum lokaler afrikanischer Tech-Ökosysteme vorantreiben." },
+      "incomeSentHome": { "label": "Nach Hause gesendetes Einkommen", "note": "Anteil des Einkommens der Absolvent:innen, der direkt zur Unterstützung ihrer Familien zurückfließt." }
+    }
+  },
+  "baseline": {
+    "title": "Vor dem Programm",
+    "subtitle": "Aggregierte Daten, die bei der Einschreibung erhoben wurden.",
+    "rows": {
+      "avgHouseholdSize": "Durchschn. Haushaltsgröße",
+      "avgIncomePreProgram": "Durchschn. Einkommen vor dem Programm",
+      "mainBreadwinner": "Hauptverdiener:in",
+      "avgAge": "Durchschn. Alter",
+      "highestEducation": "Höchster Bildungsabschluss",
+      "employedBefore": "Zuvor beschäftigt",
+      "jobTypes": "Beschäftigungsarten"
+    },
+    "values": {
+      "people": "{{count}} Personen",
+      "perMonth": "${{amount}} / Monat",
+      "years": "{{count}} Jahre",
+      "informalPct": "{{pct}}% (informell)",
+      "notAvailable": "—"
+    }
+  },
+  "cohortProgress": {
+    "title": "Fortschritt aktiver Kohorten",
+    "subtitle": "Leistungsverfolgung der aktuellsten Gruppen",
+    "viewAll": "Alle Kohorten anzeigen",
+    "empty": "Noch keine aktiven Kohorten vorhanden.",
+    "activeParticipants": "{{count}} aktive Teilnehmende",
+    "status": { "completed": "Abgeschlossen", "inProgress": "In Bearbeitung" }
+  },
+  "insights": {
+    "title": "Strategische Einblicke",
+    "subtitle": "Wichtige Erkenntnisse aus aktuellen Datenzyklen",
+    "requestAnalysis": "Detaillierte Analyse anfordern",
+    "comingSoon": "Demnächst verfügbar"
+  },
+  "origins": {
+    "title": "Herkunft unserer Talente",
+    "subtitleDistrictsOnly": "{{count}} Distrikte in Uganda",
+    "subtitleWithInternational": "{{count}} Distrikte in Uganda, sowie internationale Teilnehmende",
+    "loadingMap": "Karte wird geladen...",
+    "legend": { "district": "Distrikt", "country": "Land" },
+    "locationPending": "Standort noch offen für: {{list}}",
+    "alsoRepresenting": "Ebenfalls vertreten"
+  },
+  "cohorts": {
+    "eyebrow": "Regionale Wirkungsgruppen",
+    "heading": "Programmkohorten",
+    "tabLabel": "Kohorte {{number}}",
+    "description": "Überprüfen Sie detaillierte Fortschritts- und Leistungskennzahlen über historische und aktive Programmzyklen hinweg. Die Datentransparenz wird durch standardisierte Ergebnisbewertungen bei Aufnahme, Abschluss und Endlinie sichergestellt.",
+    "tabs": { "all": "Alle Kohorten" },
+    "status": { "completed": "Abgeschlossen", "inProgress": "In Bearbeitung" },
+    "lifecycle": {
+      "title": "Programmverlauf",
+      "percentComplete": "{{pct}}% abgeschlossen",
+      "stages": { "intake": "Aufnahme", "training": "Training", "graduation": "Abschluss", "endline": "Endlinie" }
+    },
+    "summary": {
+      "totalCohorts": "Kohorten insgesamt",
+      "totalParticipants": "Teilnehmende insgesamt",
+      "avgGraduationRate": "Durchschn. Abschlussquote",
+      "avgCompletion": "Durchschn. Fertigstellung"
+    },
+    "search": {
+      "placeholder": "Tracks oder Namen suchen...",
+      "advancedFilters": "Erweiterte Filter",
+      "statusLabel": "Status:",
+      "sortByLabel": "Sortieren nach:",
+      "sortDefault": "Standard",
+      "sortGraduation": "Abschlussquote",
+      "sortCompletion": "Fertigstellung",
+      "clear": "Zurücksetzen",
+      "resultsCount": "{{shown}} von {{total}} Kohorten werden angezeigt",
+      "completedSuffix": " · {{count}} abgeschlossen"
+    },
+    "methodology": {
+      "title": "Aktualisierung der Wirkungsmethodik",
+      "body": "Ab Kohorte 3 haben wir eine standardisierte Erhebung über alle Tracks hinweg eingeführt, um die langfristige Vergleichbarkeit der Ergebnisse zu gewährleisten. Die Daten für Kohorte 1 und 2 bleiben verifiziert, verwenden jedoch noch die frühere Kategorisierungsmethodik."
+    },
+    "empty": { "title": "Keine Kohorten gefunden", "subtitle": "Passen Sie Ihre Suche oder Filter an." },
+    "card": {
+      "track": "Track",
+      "participants": "{{count}} Teilnehmende",
+      "intakeDate": "Aufnahmedatum",
+      "estEndline": "Voraussichtl. Endlinie",
+      "endlineDate": "Endliniendatum",
+      "graduation": "Abschluss",
+      "employment": "Beschäftigung",
+      "viewDetails": "Details anzeigen",
+      "downloadReport": "Bericht herunterladen"
+    },
+    "detail": {
+      "programDuration": "Programmdauer",
+      "datePending": "Ausstehend",
+      "kpi": {
+        "totalParticipants": "Teilnehmende insgesamt",
+        "completionRate": "Abschlussquote",
+        "employmentRate": "Beschäftigungsquote",
+        "avgIncomeGrowth": "Durchschn. Einkommenswachstum"
+      },
+      "tracks": {
+        "title": "Tracks",
+        "subtitle": "Prozentualer Anteil der verschiedenen Tracks innerhalb der Kohorte",
+        "participants": "{{count}} Teilnehmende"
+      },
+      "before": {
+        "title": "Vor dem Programm",
+        "subtitle": "Selbstberichtete Werte vor dem Programm (USD)",
+        "avgMonthlyIncome": "Durchschn. Monatseinkommen",
+        "avgMonthlyIncomeSub": "Durchschnitt vor dem Programm",
+        "avgHouseholdSize": "Durchschn. Haushaltsgröße",
+        "avgHouseholdSizeSub": "Personen pro Haushalt",
+        "priorEmployment": "Vorherige Beschäftigung",
+        "priorEmploymentSub": "Informell/Unbeständig",
+        "highestEducation": "Höchster Bildungsabschluss",
+        "highestEducationSub": "Sekundarschule",
+        "footnote": "Die Ausgangsdaten stellen den sozioökonomischen Status der Teilnehmenden bei Eintritt dar. Das durchschnittliche individuelle Einkommen basiert auf informeller Arbeit oder sekundären Unterstützungsstrukturen."
+      },
+      "after": {
+        "title": "Nach dem Programm",
+        "subtitle": "Verifizierte berufliche Kennzahlen nach dem Programm",
+        "avgMonthlyIncome": "Durchschn. Monatseinkommen",
+        "avgMonthlyIncomeSub": "25-facher Anstieg im Durchschnitt",
+        "employmentRate": "Beschäftigungsquote",
+        "employmentRateSub": "Technologiepositionen mit hohem Wachstum",
+        "africanCompanies": "Afrikanische Unternehmen",
+        "africanCompaniesSub": "Lokales Tech-Ökosystem",
+        "globalCompanies": "Globale/Internationale Unternehmen",
+        "globalCompaniesSub": "Remote/Globaler Export",
+        "notableProjects": "Bemerkenswerte Projekte",
+        "notableProjectsSub": "Produktionsreife Anwendungen",
+        "notableProjectsValue": "{{count}}+"
+      },
+      "exchangeRateFootnote": "Die Umrechnung der Ergebnisdaten erfolgt auf Basis eines historischen Durchschnittswechselkurses von 1 USD = 3.750 UGX für die Dauer des Programms.",
+      "strategicInsight": {
+        "title": "Strategischer Einblick",
+        "body": "Das {{multiplier}}-fache Einkommenswachstum in {{cohortName}} stellt unsere bisher höchste Mobilitätsrate dar."
+      },
+      "notableProjects": {
+        "title": "Bemerkenswerte Projekte",
+        "viewStories": "Erfahrungsberichte der Teilnehmenden ansehen",
+        "empty": "Noch keine Projektbilder vorhanden"
+      },
+      "narrative": {
+        "title": "Wirkungsbericht",
+        "subtitle": "Qualitative Beobachtungen zum Wachstum",
+        "professionalDevelopment": "Berufliche Entwicklung",
+        "keySuccessFactors": "Wichtige Erfolgsfaktoren",
+        "downloadButton": "Kohorten-Wirkungsbericht herunterladen"
+      }
+    }
+  },
+  "reports": {
+    "heading": "Wirkungsberichte",
+    "description": "Wählen Sie eine Berichtsstruktur aus, um Leistungsdaten anzuzeigen und offizielle Dokumentationen zu exportieren.",
+    "availableReports": "Verfügbare Berichte",
+    "empty": "Es wurden noch keine Berichte hochgeladen.",
+    "viewLabel": "{{title}} ansehen",
+    "liveSnapshotBadge": "Live-Momentaufnahme",
+    "impactSummary": {
+      "title": "Wirkungszusammenfassung",
+      "description": "Eine Echtzeit-Momentaufnahme der aktuellen Programmergebnisse, des Kohortenabschlusses und der Ausgangsdaten der Teilnehmenden, frisch aus Live-Daten generiert.",
+      "generating": "Bericht wird erstellt...",
+      "downloadPdf": "PDF herunterladen"
+    }
+  },
+  "stories": {
+    "heading": "Erfolgsgeschichten der Talente",
+    "description": "Echte Absolvent:innen, echte Ergebnisse. Jeder Beitrag schafft eine Chance — dies sind die vollständigen Geschichten von Lernenden, deren Leben sich durch das von Ihnen unterstützte Programm verändert hat.",
+    "talentsGraduated": "Talente ausgebildet"
+  },
+  "errors": {
+    "sessionExpired": "Sitzung aufgrund von Inaktivität abgelaufen. Bitte melden Sie sich erneut an.",
+    "sessionExpiredGeneric": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
+    "networkError": "Netzwerkfehler. Bitte versuchen Sie es erneut.",
+    "noAccess": "Sie haben keinen Zugriff auf diese Seite.",
+    "profile": {
+      "couldNotLoad": "Ihr Profil konnte nicht geladen werden.",
+      "noFieldsToUpdate": "Keine Felder zur Aktualisierung angegeben.",
+      "somethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "photoInvalid": "Das Bild muss im Format JPEG, PNG oder WEBP und unter 5 MB groß sein."
+    },
+    "settings": {
+      "couldNotLoad": "Ihre Einstellungen konnten nicht geladen werden.",
+      "noFieldsToUpdate": "Keine Felder zur Aktualisierung angegeben.",
+      "somethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "languageInvalid": "Bitte wählen Sie eine unterstützte Sprache.",
+      "couldNotLoadOptions": "Sprachoptionen konnten nicht geladen werden."
+    },
+    "security": {
+      "currentPasswordIncorrect": "Das aktuelle Passwort ist falsch.",
+      "checkNewPassword": "Bitte überprüfen Sie Ihr neues Passwort.",
+      "passwordChanged": "Passwort erfolgreich geändert.",
+      "somethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "couldNotLoadDevices": "Ihre Geräte konnten nicht geladen werden.",
+      "sessionNotFound": "Sitzung nicht gefunden.",
+      "deviceSignedOut": "Gerät abgemeldet.",
+      "signedOutOthers": "Von anderen Geräten abgemeldet."
+    },
+    "dashboard": {
+      "couldNotLoadSummary": "Beim Laden Ihrer Übersicht ist ein Fehler aufgetreten.",
+      "couldNotLoadCohorts": "Beim Laden des Kohortenfortschritts ist ein Fehler aufgetreten.",
+      "couldNotLoadInsights": "Beim Laden der Einblicke ist ein Fehler aufgetreten.",
+      "couldNotLoadBaseline": "Beim Laden der Ausgangsdaten ist ein Fehler aufgetreten.",
+      "couldNotLoadOrigins": "Beim Laden der Herkunftsdaten ist ein Fehler aufgetreten.",
+      "sessionExpiredShort": "Sitzung abgelaufen.",
+      "cohortNotFound": "Kohorte nicht gefunden.",
+      "couldNotLoadDetails": "Kohortendetails konnten nicht geladen werden.",
+      "couldNotLoadTracks": "Tracks konnten nicht geladen werden.",
+      "couldNotLoadCohortBaseline": "Ausgangsdaten konnten nicht geladen werden.",
+      "couldNotLoadOutcomes": "Ergebnisse konnten nicht geladen werden.",
+      "couldNotLoadNarrative": "Bericht konnte nicht geladen werden.",
+      "couldNotLoadProjects": "Projekte konnten nicht geladen werden.",
+      "couldNotDownloadReport": "Bericht konnte nicht heruntergeladen werden."
+    },
+    "reports": {
+      "couldNotLoad": "Beim Laden der Berichte ist ein Fehler aufgetreten.",
+      "reportNotFound": "Bericht nicht gefunden.",
+      "couldNotOpen": "Beim Öffnen dieses Berichts ist ein Fehler aufgetreten.",
+      "noCohortReport": "Kein Bericht für diese Kohorte gefunden.",
+      "couldNotGenerate": "Beim Erstellen des Berichts ist ein Fehler aufgetreten.",
+      "notLinkedToCohort": "Dieser Bericht ist mit keiner Kohorte verknüpft und kann hier noch nicht in der Vorschau angezeigt werden."
+    }
+  },
+  "shared": {
+    "sessions": {
+    "title": "Aktive Sitzungen",
+    "description": "Geräte, die derzeit bei Ihrem Konto angemeldet sind.",
+    "signOutOthers": "Von allen anderen Geräten abmelden",
+    "thisDevice": "Dieses Gerät",
+    "signOut": "Abmelden",
+    "noSessions": "Keine aktiven Sitzungen gefunden.",
+    "showingRange": "{{from}}–{{to}} von {{total}} werden angezeigt",
+    "activeNow": "Gerade aktiv",
+    "minutesAgo": "vor {{count}} Min.",
+    "hoursAgo": "vor {{count}} Std.",
+    "daysAgo": "vor {{count}} Tagen"
+  },
+  "stories": {
+    "empty": "Weitere Geschichten werden hinzugefügt — schauen Sie bald wieder vorbei.",
+    "showLess": "Weniger anzeigen",
+    "readMore": "Weiterlesen"
+  },
+  "reportViewer": {
+    "openInNewTab": "In neuem Tab öffnen",
+    "close": "Schließen",
+    "noPreview": "Für diesen Dateityp ist keine Vorschau verfügbar.",
+    "needsDownload": "{{type}} muss zur Ansicht heruntergeladen werden.",
+    "thisFile": "Diese Datei",
+    "downloadToView": "Zum Ansehen herunterladen"
+  }
+  },
+  "chatbot": {
+    "title": "Groundbreaker-Assistent",
+    "greeting": "Hallo! Ich bin der Groundbreaker-Assistent. Fragen Sie mich zu unseren Programmen, den Ergebnissen der Teilnehmenden oder den Wirkungsdaten.",
+    "newConversation": "Neue Unterhaltung starten",
+    "newConversationTitle": "Neue Unterhaltung",
+    "closeChat": "Chat schließen",
+    "copyMessage": "Nachricht kopieren",
+    "thinking": "Denkt nach...",
+    "inputPlaceholder": "Stellen Sie eine Frage...",
+    "sendMessage": "Nachricht senden",
+    "openChatbot": "Chatbot öffnen",
+    "closeChatbot": "Chatbot schließen",
+        "genericError": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+   }
+  }

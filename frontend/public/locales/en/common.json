@@ -1,0 +1,42 @@
+{
+  "buttons": {
+    "save": "Save Changes",
+    "cancel": "Cancel",
+    "edit": "Edit Profile",
+    "saving": "Saving…"
+  },
+  "status": {
+    "loading": "Loading…"
+  },
+  "password": {
+    "showLabel": "Show {{field}}",
+    "hideLabel": "Hide {{field}}",
+    "strength": {
+      "tooWeak": "Too weak",
+      "weak": "Weak",
+      "good": "Good",
+      "strong": "Strong"
+    },
+    "requirements": {
+      "length": "At least {{count}} characters",
+      "number": "At least one number",
+      "symbol": "At least one special symbol"
+    },
+    "confirmErrors": {
+      "confirmRequired": "Please confirm your new password.",
+      "confirmMismatch": "Passwords do not match."
+    }
+  },
+  "changePassword": {
+    "title": "Update Password",
+    "description": "Change your account password. You'll stay signed in on this device.",
+    "currentPassword": "Current Password",
+    "currentPasswordPlaceholder": "Enter current password",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "Enter new password",
+    "confirmPassword": "Confirm New Password",
+    "confirmPasswordPlaceholder": "Re-enter new password",
+    "updating": "Updating…",
+    "submit": "Update Password"
+  }
+}
