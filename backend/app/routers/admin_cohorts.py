@@ -1,6 +1,7 @@
+import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 
 from app.core.deps import get_current_admin_user
 from app.db.supabase_client import supabase
@@ -9,6 +10,9 @@ from app.models.track_schemas import TrackOut, CreateTrackRequest, UpdateTrackRe
 from app.models.outcome_schemas import CohortOutcomesUpdate, CohortOutcomesOut
 
 router = APIRouter(prefix="/admin/cohorts", tags=["admin-cohorts"])
+
+MAX_IMAGE_SIZE = 5 * 1024 * 1024
+ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 
 @router.post("", response_model=CohortOut, status_code=status.HTTP_201_CREATED)
@@ -107,3 +111,44 @@ async def upsert_outcomes(cohort_id: str, payload: CohortOutcomesUpdate, admin: 
     notable_count = len(projects_result.data)
 
     return {**outcome, "notable_projects_count": notable_count}
+
+
+async def _upload_project_image(image: UploadFile) -> str:
+    if image.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Image must be JPEG, PNG, or WEBP.")
+    contents = await image.read()
+    if len(contents) > MAX_IMAGE_SIZE:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Image must be under 5MB.")
+    ext = image.filename.split(".")[-1] if "." in image.filename else "jpg"
+    path = f"{uuid.uuid4()}.{ext}"
+    supabase.storage.from_("project-images").upload(path, contents, {"content-type": image.content_type})
+    public_url = supabase.storage.from_("project-images").get_public_url(path)
+    return public_url
+
+
+@router.post("/{cohort_id}/projects/{project_id}/image")
+async def upload_project_image(
+    cohort_id: str,
+    project_id: str,
+    image: UploadFile = File(...),
+    admin: dict = Depends(get_current_admin_user),
+):
+    project_check = (
+        supabase.table("cohort_projects")
+        .select("id")
+        .eq("id", project_id)
+        .eq("cohort_id", cohort_id)
+        .execute()
+    )
+    if not project_check.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found for this cohort.")
+
+    image_url = await _upload_project_image(image)
+
+    result = (
+        supabase.table("cohort_projects")
+        .update({"image_url": image_url})
+        .eq("id", project_id)
+        .execute()
+    )
+    return {"id": result.data[0]["id"], "image_url": result.data[0]["image_url"]}

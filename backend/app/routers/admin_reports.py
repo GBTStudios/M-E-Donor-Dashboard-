@@ -63,16 +63,22 @@ def _apply_extracted_report_data(cohort_id: str, report_id: str, filename: str, 
 
     notable_projects = extracted.get("notable_projects") or []
     if notable_projects:
-        supabase.table("cohort_projects").delete().eq("cohort_id", cohort_id).execute()
+        existing_result = supabase.table("cohort_projects").select("id, title").eq("cohort_id", cohort_id).execute()
+        existing_by_title = {row["title"].strip().lower(): row["id"] for row in existing_result.data}
         for p in notable_projects:
             if not p.get("name") or not p.get("title") or not p.get("body"):
                 continue
-            supabase.table("cohort_projects").insert({
+            title_key = p["title"].strip().lower()
+            project_data = {
                 "cohort_id": cohort_id,
                 "name": p["name"][:200],
                 "title": p["title"][:200],
                 "body": p["body"][:1000],
-            }).execute()
+            }
+            if title_key in existing_by_title:
+                supabase.table("cohort_projects").update(project_data).eq("id", existing_by_title[title_key]).execute()
+            else:
+                supabase.table("cohort_projects").insert(project_data).execute()
 
     tracks = extracted.get("tracks") or []
     if tracks:
