@@ -1,7 +1,4 @@
 import io
-
-import cv2
-import numpy as np
 from PIL import Image
 
 OUTPUT_SIZE = 512  # final square dimension, px
@@ -13,6 +10,7 @@ _face_cascade = None
 def _get_face_cascade():
     global _face_cascade
     if _face_cascade is None:
+        import cv2
         cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         _face_cascade = cv2.CascadeClassifier(cascade_path)
     return _face_cascade
@@ -22,13 +20,14 @@ def _detect_largest_face(image: Image.Image):
     """Returns (center_x, center_y, box_size) of the largest detected face,
     or None if no face was found. Runs on a grayscale copy - detection
     quality only, not used for the actual crop."""
+    import cv2
+    import numpy as np
+
     gray = cv2.cvtColor(np.array(image.convert("RGB")), cv2.COLOR_RGB2GRAY)
     cascade = _get_face_cascade()
     faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
-
     if len(faces) == 0:
         return None
-
     # Largest detected face by area - most likely the primary subject.
     x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
     center_x = x + w / 2
@@ -55,20 +54,14 @@ def crop_profile_photo(image_bytes: bytes, output_format: str = "JPEG") -> bytes
     """
     image = Image.open(io.BytesIO(image_bytes))
     image = image.convert("RGB") if output_format == "JPEG" else image
-
     face_box = _detect_largest_face(image)
     center_x, center_y, box_size = face_box if face_box else _center_crop_box(image)
-
     width, height = image.size
     half = box_size / 2
-
     left = center_x - half
     top = center_y - half
     right = center_x + half
     bottom = center_y + half
-
-    # Clamp the box within image bounds so we never request pixels outside
-    # the actual photo, sliding the box back in rather than distorting it.
     if left < 0:
         right -= left
         left = 0
@@ -81,13 +74,10 @@ def crop_profile_photo(image_bytes: bytes, output_format: str = "JPEG") -> bytes
     if bottom > height:
         top -= (bottom - height)
         bottom = height
-
     left = max(0, left)
     top = max(0, top)
-
     cropped = image.crop((int(left), int(top), int(right), int(bottom)))
     resized = cropped.resize((OUTPUT_SIZE, OUTPUT_SIZE), Image.LANCZOS)
-
     output = io.BytesIO()
     resized.save(output, format=output_format, quality=90 if output_format == "JPEG" else None)
     return output.getvalue()

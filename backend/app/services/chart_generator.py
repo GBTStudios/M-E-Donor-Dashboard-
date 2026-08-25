@@ -1,11 +1,11 @@
 import io
 
-import matplotlib
-matplotlib.use("Agg")  # non-interactive backend, safe for server use
-import matplotlib.pyplot as plt
-
 
 def generate_cohort_completion_chart(cohorts: list[dict]) -> bytes:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
     names = [c["name"] for c in cohorts]
     completion = [c["completion_pct"] for c in cohorts]
 
