@@ -8,7 +8,7 @@ export default function DonorProfilePage() {
   const { t } = useTranslation("donor");
   return (
     <DonorLayout>
-      <h1 className="text-2xl font-semibold text-[#1A534A] mb-6">{t("profile.heading")}</h1>
+      <h1 className="text-2xl font-semibold text-[#1A534A] mb-6 text-center">{t("profile.heading")}</h1>
       <DonorProfileCard />
     </DonorLayout>
   );

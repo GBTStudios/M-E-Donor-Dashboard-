@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Search, FileText } from "lucide-react";
+import { Loader2, Search, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import DocumentUpload from "@/components/admin/DocumentUpload";
 import { fetchDocuments, DocumentListItem, DocumentStatus } from "@/lib/adminDocuments";
 
@@ -20,6 +20,8 @@ const STATUS_LABELS: Record<DocumentStatus, string> = {
   excluded: "Excluded",
 };
 
+const PAGE_SIZE = 5;
+
 interface DocumentRegistryProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -32,6 +34,7 @@ export default function DocumentRegistry({ selectedId, onSelect }: DocumentRegis
   const [accessDenied, setAccessDenied] = useState(false);
   const [error, setError] = useState("");
   const [filterText, setFilterText] = useState("");
+  const [page, setPage] = useState(0);
 
   const loadDocuments = useCallback(async () => {
     const result = await fetchDocuments();
@@ -75,6 +78,17 @@ export default function DocumentRegistry({ selectedId, onSelect }: DocumentRegis
   const filtered = documents.filter((d) =>
     d.filename.toLowerCase().includes(filterText.toLowerCase())
   );
+
+  // Reset to page 0 whenever the filter text changes, so the user doesn't
+  // land on an empty page after narrowing the results.
+  useEffect(() => {
+    setPage(0);
+  }, [filterText]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages - 1);
+  const start = currentPage * PAGE_SIZE;
+  const visible = filtered.slice(start, start + PAGE_SIZE);
 
   if (accessDenied) {
     return (
@@ -120,7 +134,7 @@ export default function DocumentRegistry({ selectedId, onSelect }: DocumentRegis
           <p className="text-sm text-gray-400 p-5">No documents found.</p>
         ) : (
           <ul>
-            {filtered.map((doc) => (
+            {visible.map((doc) => (
               <li key={doc.id}>
                 <button
                   onClick={() => onSelect(doc.id)}
@@ -152,6 +166,32 @@ export default function DocumentRegistry({ selectedId, onSelect }: DocumentRegis
           </ul>
         )}
       </div>
+
+      {!loading && !error && filtered.length > PAGE_SIZE && (
+        <div className="flex items-center justify-between px-5 py-3 border-t border-black/10 flex-shrink-0">
+          <button
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={currentPage === 0}
+            className="flex items-center gap-1 text-sm font-medium text-teal-700 disabled:text-gray-300 hover:text-teal-800 disabled:hover:text-gray-300 transition"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </button>
+
+          <span className="text-xs text-gray-400">
+            Page {currentPage + 1} of {totalPages}
+          </span>
+
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={currentPage === totalPages - 1}
+            className="flex items-center gap-1 text-sm font-medium text-teal-700 disabled:text-gray-300 hover:text-teal-800 disabled:hover:text-gray-300 transition"
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

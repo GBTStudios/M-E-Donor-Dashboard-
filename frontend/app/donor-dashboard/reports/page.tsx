@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Download, FileText, Loader2, Eye } from "lucide-react";
+import { Download, FileText, Loader2, Eye, ChevronDown, ChevronUp } from "lucide-react";
 import DonorLayout from "@/components/donor/DonorLayout";
 import ReportViewerModal from "@/components/ui/ReportViewerModal";
 import {
@@ -31,6 +31,8 @@ export default function DonorReportsPage() {
 
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
+  const COLLAPSED_VISIBLE = 5;
+  const [showAllReports, setShowAllReports] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -113,7 +115,7 @@ export default function DonorReportsPage() {
               </div>
             ) : (
               <ul className="space-y-2">
-                {reports.map((r) => (
+                {(showAllReports ? reports : reports.slice(0, COLLAPSED_VISIBLE)).map((r) => (
                   <li
                     key={r.id}
                     className="border border-black/5 rounded-xl p-3 hover:bg-white/60 transition"
@@ -139,7 +141,29 @@ export default function DonorReportsPage() {
                   </li>
                 ))}
               </ul>
-            )}
+              
+          )}
+
+       {reports.length > COLLAPSED_VISIBLE && (
+       <button
+       type="button"
+      onClick={() => setShowAllReports((prev) => !prev)}
+      className="w-full flex items-center justify-center gap-2 mt-3 py-2 text-sm font-medium text-[#1A534A] hover:bg-white/60 rounded-lg transition"
+      >
+      {showAllReports ? (
+      <>
+        Show less
+        <ChevronUp className="w-4 h-4" />
+      </>
+       ) : (
+      <>
+        Show more ({reports.length})
+        <ChevronDown className="w-4 h-4" />
+      </>
+       )}
+       </button>
+          )}
+            
           </div>
 
           {/* Impact Summary */}
