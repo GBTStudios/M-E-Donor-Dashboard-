@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -651,7 +651,7 @@ function AllCohortsView({ cohorts, onTabClick }: { cohorts: Cohort[]; onTabClick
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function CohortsPage() {
+function CohortsPageContent() {
   const { t } = useTranslation("donor");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -750,5 +750,13 @@ export default function CohortsPage() {
         )}
       </div>
     </DonorLayout>
+  );
+}
+
+export default function CohortsPage() {
+  return (
+    <Suspense fallback={null}>
+      <CohortsPageContent />
+    </Suspense>
   );
 }
