@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
-import { Loader2, Trash2, CheckCircle2, UploadCloud, Eye } from "lucide-react";
+import { Loader2, Trash2, CheckCircle2, UploadCloud, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import ReportViewerModal from "@/components/ui/ReportViewerModal";
@@ -12,9 +12,12 @@ import {
   fetchCohortReportUrl,
   uploadReport,
   deleteReport,
+  type ReportScope,
   ReportListItem,
   CohortOption,
 } from "@/lib/adminReports";
+
+const REPORTS_PAGE_SIZE = 4;
 
 function formatFileSize(bytes: number | null): string {
   if (!bytes) return "";
@@ -28,10 +31,12 @@ export default function AdminReportsPage() {
   const [cohorts, setCohorts] = useState<CohortOption[]>([]);
   const [loadingReports, setLoadingReports] = useState(true);
   const [listError, setListError] = useState("");
+  const [reportPage, setReportPage] = useState(1);
 
   const [title, setTitle] = useState("");
   const [reportDate, setReportDate] = useState("");
   const [cohortId, setCohortId] = useState("");
+  const [reportScope, setReportScope] = useState<ReportScope>("single_cohort");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -63,6 +68,12 @@ export default function AdminReportsPage() {
     });
   }, []);
 
+  const totalReportPages = Math.ceil(reports.length / REPORTS_PAGE_SIZE);
+  const paginatedReports = reports.slice(
+    (reportPage - 1) * REPORTS_PAGE_SIZE,
+    reportPage * REPORTS_PAGE_SIZE
+  );
+
   const formValid = title.trim().length > 0 && reportDate.length > 0 && file !== null;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -73,19 +84,30 @@ export default function AdminReportsPage() {
     setUploadError("");
     setSuccessMessage("");
 
-    const result = await uploadReport(title.trim(), reportDate, cohortId || null, file);
+    const result = await uploadReport(
+      title.trim(),
+      reportDate,
+      reportScope === "single_cohort" ? (cohortId || null) : null,
+      file,
+      reportScope
+    );
     setUploading(false);
 
     if (result.success) {
-      setSuccessMessage("Report uploaded successfully.");
+      const msg = reportScope === "multi_cohort"
+        ? "Multi-cohort report uploaded successfully. Cohort data will populate shortly — this may take 20-30 seconds."
+        : "Report uploaded successfully. Cohort data will populate shortly — this may take a few seconds.";
+      setSuccessMessage(msg);
       setTitle("");
       setReportDate("");
       setCohortId("");
+      setReportScope("single_cohort");
       setFile(null);
       const fileInput = document.getElementById("report-file") as HTMLInputElement | null;
       if (fileInput) fileInput.value = "";
+      setReportPage(1);
       loadReports();
-      setTimeout(() => setSuccessMessage(""), 4000);
+      setTimeout(() => setSuccessMessage(""), 7000);
     } else if (result.error) {
       setUploadError(result.error);
     }
@@ -99,6 +121,7 @@ export default function AdminReportsPage() {
     if (result.success) {
       setReports((prev) => prev.filter((r) => r.id !== deleteTarget.id));
       setDeleteTarget(null);
+      setReportPage(1);
     } else if (result.error) {
       setListError(result.error);
       setDeleteTarget(null);
@@ -111,8 +134,6 @@ export default function AdminReportsPage() {
     setViewError("");
     setViewLoading(true);
 
-    // Try direct-by-id first; fall back to cohort lookup if it's not
-    // available yet (backend endpoint pending) and the report has one.
     const direct = await fetchReportUrl(report.id);
     if (direct.success && direct.file_url) {
       setViewLoading(false);
@@ -147,23 +168,47 @@ export default function AdminReportsPage() {
       </p>
 
       <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-start">
+        {/* Upload form */}
         <div className="bg-white rounded-xl border border-black/5 p-5">
           <h2 className="text-sm font-semibold text-gray-800 mb-4">Upload Report</h2>
 
           {successMessage && (
-            <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-3 py-2 mb-4">
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            <div className="flex items-start gap-2 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-3 py-2 mb-4">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
               {successMessage}
             </div>
           )}
 
           {uploadError && (
-            <p role="alert" className="text-sm text-red-600 mb-4">
-              {uploadError}
-            </p>
+            <p role="alert" className="text-sm text-red-600 mb-4">{uploadError}</p>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Report Type */}
+            <div>
+              <label htmlFor="report-scope" className="text-sm font-medium text-gray-700">
+                Report Type
+              </label>
+              <select
+                id="report-scope"
+                value={reportScope}
+                onChange={(e) => {
+                  setReportScope(e.target.value as ReportScope);
+                  setCohortId("");
+                }}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-black/10 bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-700"
+              >
+                <option value="single_cohort">Single Cohort</option>
+                <option value="multi_cohort">Multi-Cohort</option>
+              </select>
+              {reportScope === "multi_cohort" && (
+                <p className="text-xs text-gray-400 mt-1">
+                  This report covers multiple cohorts. The system will automatically extract and update each cohort&apos;s data.
+                </p>
+              )}
+            </div>
+
+            {/* Title */}
             <div>
               <label htmlFor="report-title" className="text-sm font-medium text-gray-700">
                 Title
@@ -178,6 +223,7 @@ export default function AdminReportsPage() {
               />
             </div>
 
+            {/* Report Date */}
             <div>
               <label htmlFor="report-date" className="text-sm font-medium text-gray-700">
                 Report Date
@@ -191,25 +237,27 @@ export default function AdminReportsPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="report-cohort" className="text-sm font-medium text-gray-700">
-                Cohort <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <select
-                id="report-cohort"
-                value={cohortId}
-                onChange={(e) => setCohortId(e.target.value)}
-                className="w-full mt-1 px-3 py-2 rounded-lg border border-black/10 bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-700"
-              >
-                <option value="">Not linked to a cohort</option>
-                {cohorts.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Cohort picker — only for single cohort */}
+            {reportScope === "single_cohort" && (
+              <div>
+                <label htmlFor="report-cohort" className="text-sm font-medium text-gray-700">
+                  Cohort <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <select
+                  id="report-cohort"
+                  value={cohortId}
+                  onChange={(e) => setCohortId(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-black/10 bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-700"
+                >
+                  <option value="">Not linked to a cohort</option>
+                  {cohorts.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
+            {/* File */}
             <div>
               <label htmlFor="report-file" className="text-sm font-medium text-gray-700">
                 File
@@ -250,6 +298,7 @@ export default function AdminReportsPage() {
           </form>
         </div>
 
+        {/* Uploaded reports list */}
         <div className="bg-white rounded-xl border border-black/5 p-5">
           <h2 className="text-sm font-semibold text-gray-800 mb-4">Uploaded Reports</h2>
 
@@ -258,48 +307,76 @@ export default function AdminReportsPage() {
               <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
             </div>
           ) : listError ? (
-            <p role="alert" className="text-sm text-red-600">
-              {listError}
-            </p>
+            <p role="alert" className="text-sm text-red-600">{listError}</p>
           ) : reports.length === 0 ? (
             <p className="text-sm text-gray-400 py-4">No reports uploaded yet.</p>
           ) : (
-            <ul className="space-y-2">
-              {reports.map((r) => (
-                <li
-                  key={r.id}
-                  className="flex items-center justify-between gap-2 border border-black/5 rounded-lg p-3"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{r.title}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(r.report_date).toLocaleDateString()}
-                      {r.file_size ? ` · ${formatFileSize(r.file_size)}` : ""}
-                      {r.file_type ? ` · ${r.file_type.toUpperCase()}` : ""}
-                      {r.cohort_id ? " · Linked to cohort" : ""}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
+            <>
+              <ul className="space-y-2">
+                {paginatedReports.map((r) => (
+                  <li
+                    key={r.id}
+                    className="flex items-center justify-between gap-2 border border-black/5 rounded-lg p-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{r.title}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {new Date(r.report_date).toLocaleDateString()}
+                        {r.file_size ? ` · ${formatFileSize(r.file_size)}` : ""}
+                        {r.file_type ? ` · ${r.file_type.toUpperCase()}` : ""}
+                        {r.cohort_id ? " · Single cohort" : " · Multi-cohort"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleView(r)}
+                        aria-label={`View ${r.title}`}
+                        className="text-gray-400 hover:text-teal-700 p-1.5 rounded-lg hover:bg-gray-50 transition"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(r)}
+                        aria-label={`Delete ${r.title}`}
+                        className="text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-gray-50 transition"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Pagination */}
+              {totalReportPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-black/5">
+                  <p className="text-xs text-gray-400">
+                    {(reportPage - 1) * REPORTS_PAGE_SIZE + 1}–{Math.min(reportPage * REPORTS_PAGE_SIZE, reports.length)} of {reports.length}
+                  </p>
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => handleView(r)}
-                      aria-label={`View ${r.title}`}
-                      className="text-gray-400 hover:text-teal-700 p-1.5 rounded-lg hover:bg-gray-50 transition"
+                      onClick={() => setReportPage((p) => Math.max(1, p - 1))}
+                      disabled={reportPage === 1}
+                      className="flex items-center gap-1 text-sm font-medium text-[#1A534A] disabled:opacity-30 hover:bg-[#eaf5f0] px-3 py-1.5 rounded-lg transition-colors"
                     >
-                      <Eye className="w-4 h-4" />
+                      <ChevronLeft className="w-4 h-4" /> Previous
                     </button>
+                    <span className="text-xs text-gray-400">{reportPage} / {totalReportPages}</span>
                     <button
                       type="button"
-                      onClick={() => setDeleteTarget(r)}
-                      aria-label={`Delete ${r.title}`}
-                      className="text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-gray-50 transition"
+                      onClick={() => setReportPage((p) => Math.min(totalReportPages, p + 1))}
+                      disabled={reportPage === totalReportPages}
+                      className="flex items-center gap-1 text-sm font-medium text-[#1A534A] disabled:opacity-30 hover:bg-[#eaf5f0] px-3 py-1.5 rounded-lg transition-colors"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      Next <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
-                </li>
-              ))}
-            </ul>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

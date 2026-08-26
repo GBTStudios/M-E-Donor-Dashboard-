@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -35,6 +35,37 @@ function avg(values: (number | null | undefined)[]): number {
   const valid = values.filter((v) => v != null) as number[];
   if (valid.length === 0) return 0;
   return Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
+}
+
+function ProjectCarousel({ projects }: { projects: CohortProject[] }) {
+  if (projects.length === 0) {
+    return <p className="text-sm text-[#7C9791]">—</p>;
+  }
+
+  return (
+    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {projects.map((project) => {
+        const item = project as CohortProject & {
+          title?: string;
+          name?: string;
+          description?: string | null;
+          summary?: string | null;
+        };
+        return (
+          <div key={project.id} className="bg-white rounded-2xl border border-black/10 p-4 shadow-sm">
+            <h4 className="text-sm font-bold text-[#1A534A]">
+              {item.title ?? item.name ?? "Project"}
+            </h4>
+            {(item.description ?? item.summary) && (
+              <p className="text-xs text-[#5B7571] mt-2 line-clamp-3">
+                {item.description ?? item.summary}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 // ── Status badge ──────────────────────────────────────────────────────────────
@@ -209,63 +240,6 @@ function KpiCard({ label, value, icon: Icon }: { label: string; value: string; i
         <Icon className="w-4 h-4 text-[#7C9791]" />
       </div>
       <p className="text-3xl font-bold text-[#1A534A]">{value}</p>
-    </div>
-  );
-}
-
-// ── Image carousel ────────────────────────────────────────────────────────────
-
-function ProjectCarousel({ projects }: { projects: CohortProject[] }) {
-  const { t } = useTranslation("donor");
-  const [index, setIndex] = useState(0);
-
-  if (projects.length === 0) {
-    return (
-      <div className="bg-[#eaf5f0] rounded-2xl border border-black/10 h-48 flex items-center justify-center">
-        <div className="text-center">
-          <Users className="w-8 h-8 text-[#7C9791] mx-auto mb-2" />
-          <p className="text-xs text-[#5B7571]">{t("cohorts.detail.notableProjects.empty")}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const project = projects[index];
-
-  return (
-    <div className="relative bg-[#eaf5f0] rounded-2xl border border-black/10 overflow-hidden">
-      {project.image_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={project.image_url} alt={project.title} className="w-full h-56 object-cover" />
-      ) : (
-        <div className="w-full h-56 flex items-center justify-center bg-[#eaf5f0]">
-          <Users className="w-8 h-8 text-[#7C9791]" />
-        </div>
-      )}
-      {projects.length > 1 && (
-        <>
-          <button
-            type="button"
-            onClick={() => setIndex((i) => (i - 1 + projects.length) % projects.length)}
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 flex items-center justify-center shadow hover:bg-white transition"
-          >
-            <ChevronLeft className="w-4 h-4 text-[#1A534A]" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setIndex((i) => (i + 1) % projects.length)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 flex items-center justify-center shadow hover:bg-white transition"
-          >
-            <ChevronRight className="w-4 h-4 text-[#1A534A]" />
-          </button>
-        </>
-      )}
-      {project.title && (
-        <div className="px-4 py-3">
-          <p className="text-sm font-semibold text-[#1A534A]">{project.title}</p>
-          {project.description && <p className="text-xs text-[#5B7571] mt-0.5 line-clamp-2">{project.description}</p>}
-        </div>
-      )}
     </div>
   );
 }
@@ -677,7 +651,7 @@ function AllCohortsView({ cohorts, onTabClick }: { cohorts: Cohort[]; onTabClick
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function CohortsPage() {
+function CohortsPageContent() {
   const { t } = useTranslation("donor");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -776,5 +750,13 @@ export default function CohortsPage() {
         )}
       </div>
     </DonorLayout>
+  );
+}
+
+export default function CohortsPage() {
+  return (
+    <Suspense fallback={null}>
+      <CohortsPageContent />
+    </Suspense>
   );
 }

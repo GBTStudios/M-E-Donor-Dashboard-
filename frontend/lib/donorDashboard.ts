@@ -125,9 +125,12 @@ export interface CohortNarrative {
 
 export interface CohortProject {
   id: string;
+  cohort_id: string;
+  name: string;
   title: string;
+  body: string;
   image_url: string | null;
-  description: string | null;
+  created_at: string;
 }
 
 // ── Result types ──────────────────────────────────────────────────────────────
