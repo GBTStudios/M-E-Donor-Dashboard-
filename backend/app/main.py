@@ -7,7 +7,7 @@ app = FastAPI(title="Groundbreaker Donor Dashboard API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "https://m-e-donor-dashboard.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
