@@ -20,6 +20,7 @@ export interface DashboardStats {
   flagged: number | null;
   vectorDbConnectivityPct: number | null;
   queryLatencyMs: number | null;
+  vectorDbQueryLatencyMs: number | null;
   conversationsReady: boolean;
 }
 
@@ -54,6 +55,11 @@ export async function getDashboardStats(accessToken: string): Promise<DashboardS
           flagged: data.flagged ?? null,
           vectorDbConnectivityPct: data.vector_db_connectivity_pct ?? null,
           queryLatencyMs: data.query_latency_ms ?? null,
+          // Not yet returned by the backend — will stay null (rendered as
+          // "Soon" in the UI) until the backend adds this field. Update the
+          // key below if the backend ships it under a different name than
+          // vector_db_query_latency_ms.
+          vectorDbQueryLatencyMs: data.vector_db_query_latency_ms ?? null,
           conversationsReady: data.conversations_ready ?? false,
         },
       };

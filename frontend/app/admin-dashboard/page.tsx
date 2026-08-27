@@ -22,6 +22,7 @@ import {
   Database,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { exportAuditLogsPdf } from "@/lib/adminChatAudit";
 import {
   getDashboardStats,
   getNeedsAttention,
@@ -48,16 +49,83 @@ function statusColor(status: string): string {
   return "text-red-500";
 }
 
+// Query latency thresholds (ms). Below WARN is healthy, WARN–CRITICAL is
+// degraded, above CRITICAL counts as a real problem. Tune these to match
+// whatever your actual RAG/vector-db pipeline considers acceptable.
+const LATENCY_WARN_MS = 3000;
+const LATENCY_CRITICAL_MS = 10000;
+
+function latencySeverity(ms: number | null | undefined): "ok" | "degraded" | "down" | null {
+  if (ms == null) return null;
+  if (ms >= LATENCY_CRITICAL_MS) return "down";
+  if (ms >= LATENCY_WARN_MS) return "degraded";
+  return "ok";
+}
+
+// Overall banner state derived from the individual health signals, rather
+// than just "did the health endpoint respond at all". Any non-"ok" status
+// on the database, the API, or query latency downgrades the banner.
+type OverallStatus = "ok" | "degraded" | "down";
+
+function overallStatus(health: SystemHealth | null, queryLatencyMs: number | null | undefined): OverallStatus | null {
+  const latency = latencySeverity(queryLatencyMs);
+  if (!health && !latency) return null;
+
+  const worst = (a: OverallStatus | null, b: OverallStatus | null): OverallStatus | null => {
+    if (a === "down" || b === "down") return "down";
+    if (a === "degraded" || b === "degraded") return "degraded";
+    if (a === "ok" || b === "ok") return "ok";
+    return null;
+  };
+
+  let result: OverallStatus | null = latency;
+  if (health) {
+    if (health.databaseStatus === "down" || health.apiStatus === "down") {
+      result = worst(result, "down");
+    } else if (health.databaseStatus !== "ok" || health.apiStatus !== "ok") {
+      result = worst(result, "degraded");
+    } else {
+      result = worst(result, "ok");
+    }
+  }
+  return result;
+}
+
+const OVERALL_BANNER_STYLES: Record<OverallStatus, { wrap: string; dot: string; text: string; label: string }> = {
+  ok: {
+    wrap: "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800",
+    dot: "bg-emerald-500",
+    text: "text-emerald-700 dark:text-emerald-400",
+    label: "All Systems Operational",
+  },
+  degraded: {
+    wrap: "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800",
+    dot: "bg-amber-500",
+    text: "text-amber-700 dark:text-amber-400",
+    label: "Degraded Performance",
+  },
+  down: {
+    wrap: "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800",
+    dot: "bg-red-500",
+    text: "text-red-700 dark:text-red-400",
+    label: "System Outage Detected",
+  },
+};
+
 function StatCard({
   icon: Icon,
   label,
   value,
   comingSoon,
+  valueSuffix,
+  valueColorClass,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: number | null;
   comingSoon?: boolean;
+  valueSuffix?: string;
+  valueColorClass?: string;
 }) {
   return (
     <div className="bg-[#eaf5f0] dark:bg-[#1a2e2b] rounded-2xl border border-black/10 dark:border-white/10 p-5 shadow-sm flex flex-col gap-2">
@@ -69,8 +137,8 @@ function StatCard({
           </span>
         )}
       </div>
-      <p className="text-2xl font-bold text-[#1A534A] dark:text-[#7dd3c0]">
-        {value !== null ? value.toLocaleString() : "—"}
+      <p className={`text-2xl font-bold ${valueColorClass ?? "text-[#1A534A] dark:text-[#7dd3c0]"}`}>
+        {value !== null ? `${value.toLocaleString()}${valueSuffix ?? ""}` : "—"}
       </p>
       <p className="text-xs text-[#5B7571] dark:text-[#8fada9] font-medium">{label}</p>
     </div>
@@ -93,6 +161,8 @@ export default function AdminDashboardPage() {
   const [health, setHealth] = useState<SystemHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [exportingAnalytics, setExportingAnalytics] = useState(false);
+  const [exportError, setExportError] = useState("");
 
   const load = useCallback(async () => {
     const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
@@ -125,6 +195,23 @@ export default function AdminDashboardPage() {
     setLoading(false);
   }, [router]);
 
+  async function handleExportAnalytics() {
+    const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (!accessToken) {
+      router.replace("/login");
+      return;
+    }
+
+    setExportingAnalytics(true);
+    setExportError("");
+    const result = await exportAuditLogsPdf(accessToken, {});
+    setExportingAnalytics(false);
+
+    if ("message" in result) {
+      setExportError(result.message);
+    }
+  }
+
   useEffect(() => {
     load();
   }, [load]);
@@ -138,6 +225,22 @@ export default function AdminDashboardPage() {
       </AdminLayout>
     );
   }
+
+  const overall = overallStatus(health, stats?.vectorDbQueryLatencyMs);
+  const latencySeverityLevel = latencySeverity(stats?.queryLatencyMs);
+  const latencyTextColor =
+    latencySeverityLevel === "down"
+      ? "text-red-500"
+      : latencySeverityLevel === "degraded"
+        ? "text-amber-500"
+        : "text-[#1A534A] dark:text-[#7dd3c0]";
+  const vdbLatencySeverityLevel = latencySeverity(stats?.vectorDbQueryLatencyMs);
+  const vdbLatencyTextColor =
+    vdbLatencySeverityLevel === "down"
+      ? "text-red-500"
+      : vdbLatencySeverityLevel === "degraded"
+        ? "text-amber-500"
+        : "text-[#1A534A] dark:text-[#7dd3c0]";
 
   return (
     <AdminLayout>
@@ -166,11 +269,18 @@ export default function AdminDashboardPage() {
 
         {/* Chatbot stats */}
         {stats?.conversationsReady ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
             <StatCard icon={MessageSquare} label="Questions Today" value={stats.questionsToday} />
             <StatCard icon={ThumbsUp} label="Answered" value={stats.answered} />
             <StatCard icon={ThumbsDown} label="Declined" value={stats.declined} />
             <StatCard icon={Flag} label="Flagged" value={stats.flagged} />
+            <StatCard
+              icon={Zap}
+              label="Avg Response Time"
+              value={stats.queryLatencyMs ?? null}
+              valueSuffix="ms"
+              valueColorClass={latencyTextColor}
+            />
           </div>
         ) : (
           <div className="bg-[#eaf5f0] dark:bg-[#1a2e2b] rounded-2xl border border-black/10 dark:border-white/10 p-5 shadow-sm mb-8 flex items-center gap-3">
@@ -245,9 +355,15 @@ export default function AdminDashboardPage() {
                     <Wifi className="w-4 h-4 text-[#7C9791] dark:text-[#5a9e94]" />
                     <span className="text-xs font-medium text-[#5B7571] dark:text-[#8fada9]">VDB Connectivity</span>
                   </div>
-                  <span className="text-xs font-bold text-[#1A534A] dark:text-[#7dd3c0]">
-                    {stats?.vectorDbConnectivityPct != null ? `${stats.vectorDbConnectivityPct}%` : "—"}
-                  </span>
+                  {stats?.vectorDbConnectivityPct != null ? (
+                    <span className="text-xs font-bold text-[#1A534A] dark:text-[#7dd3c0]">
+                      {stats.vectorDbConnectivityPct}%
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
+                      Soon
+                    </span>
+                  )}
                 </div>
                 <div className="h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
                   <div
@@ -260,11 +376,17 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-[#7C9791] dark:text-[#5a9e94]" />
-                  <span className="text-xs font-medium text-[#5B7571] dark:text-[#8fada9]">Query Latency (Avg)</span>
+                  <span className="text-xs font-medium text-[#5B7571] dark:text-[#8fada9]">VDB Query Latency</span>
                 </div>
-                <span className="text-xs font-bold text-[#1A534A] dark:text-[#7dd3c0]">
-                  {stats?.queryLatencyMs != null ? `${stats.queryLatencyMs}ms` : "—"}
-                </span>
+                {stats?.vectorDbQueryLatencyMs != null ? (
+                  <span className={`text-xs font-bold ${vdbLatencyTextColor}`}>
+                    {stats.vectorDbQueryLatencyMs}ms
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
+                    Soon
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center justify-between">
@@ -287,11 +409,11 @@ export default function AdminDashboardPage() {
                 </span>
               </div>
 
-              {health && (
-                <div className="mt-1 flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                    All Systems Operational
+              {overall && (
+                <div className={`mt-1 flex items-center gap-2 rounded-lg px-3 py-2 ${OVERALL_BANNER_STYLES[overall].wrap}`}>
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${OVERALL_BANNER_STYLES[overall].dot}`} />
+                  <span className={`text-xs font-semibold ${OVERALL_BANNER_STYLES[overall].text}`}>
+                    {OVERALL_BANNER_STYLES[overall].label}
                   </span>
                 </div>
               )}
@@ -312,17 +434,29 @@ export default function AdminDashboardPage() {
             </Link>
             <button
               type="button"
-              disabled
-              title="Available once conversation data exists"
-              className="flex items-center gap-2 bg-white/60 dark:bg-white/10 text-[#5B7571] dark:text-[#8fada9] text-sm font-semibold px-5 py-2.5 rounded-full border border-black/10 dark:border-white/10 cursor-not-allowed opacity-60"
+              onClick={handleExportAnalytics}
+              disabled={!stats?.conversationsReady || exportingAnalytics}
+              title={stats?.conversationsReady ? undefined : "Available once conversation data exists"}
+              className="flex items-center gap-2 bg-white/60 dark:bg-white/10 text-[#5B7571] dark:text-[#8fada9] text-sm font-semibold px-5 py-2.5 rounded-full border border-black/10 dark:border-white/10 disabled:cursor-not-allowed disabled:opacity-60 hover:enabled:bg-white/90 dark:hover:enabled:bg-white/20 transition-colors"
             >
-              <BarChart3 className="w-4 h-4" />
-              Export Response Analytics
+              {exportingAnalytics ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <BarChart3 className="w-4 h-4" />
+              )}
+              {exportingAnalytics ? "Exporting..." : "Export Response Analytics"}
             </button>
           </div>
-          <p className="text-xs text-[#7C9791] dark:text-[#5a9e94] mt-3">
-            Export Response Analytics will be enabled once conversation data is available.
-          </p>
+          {exportError && (
+            <p role="alert" className="text-xs text-red-600 mt-3">
+              {exportError}
+            </p>
+          )}
+          {!stats?.conversationsReady && (
+            <p className="text-xs text-[#7C9791] dark:text-[#5a9e94] mt-3">
+              Export Response Analytics will be enabled once conversation data is available.
+            </p>
+          )}
         </div>
       </div>
     </AdminLayout>
