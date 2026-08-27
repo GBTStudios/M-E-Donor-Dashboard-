@@ -117,11 +117,15 @@ function StatCard({
   label,
   value,
   comingSoon,
+  valueSuffix,
+  valueColorClass,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: number | null;
   comingSoon?: boolean;
+  valueSuffix?: string;
+  valueColorClass?: string;
 }) {
   return (
     <div className="bg-[#eaf5f0] dark:bg-[#1a2e2b] rounded-2xl border border-black/10 dark:border-white/10 p-5 shadow-sm flex flex-col gap-2">
@@ -133,8 +137,8 @@ function StatCard({
           </span>
         )}
       </div>
-      <p className="text-2xl font-bold text-[#1A534A] dark:text-[#7dd3c0]">
-        {value !== null ? value.toLocaleString() : "—"}
+      <p className={`text-2xl font-bold ${valueColorClass ?? "text-[#1A534A] dark:text-[#7dd3c0]"}`}>
+        {value !== null ? `${value.toLocaleString()}${valueSuffix ?? ""}` : "—"}
       </p>
       <p className="text-xs text-[#5B7571] dark:text-[#8fada9] font-medium">{label}</p>
     </div>
@@ -222,12 +226,19 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const overall = overallStatus(health, stats?.queryLatencyMs);
+  const overall = overallStatus(health, stats?.vectorDbQueryLatencyMs);
   const latencySeverityLevel = latencySeverity(stats?.queryLatencyMs);
   const latencyTextColor =
     latencySeverityLevel === "down"
       ? "text-red-500"
       : latencySeverityLevel === "degraded"
+        ? "text-amber-500"
+        : "text-[#1A534A] dark:text-[#7dd3c0]";
+  const vdbLatencySeverityLevel = latencySeverity(stats?.vectorDbQueryLatencyMs);
+  const vdbLatencyTextColor =
+    vdbLatencySeverityLevel === "down"
+      ? "text-red-500"
+      : vdbLatencySeverityLevel === "degraded"
         ? "text-amber-500"
         : "text-[#1A534A] dark:text-[#7dd3c0]";
 
@@ -258,11 +269,18 @@ export default function AdminDashboardPage() {
 
         {/* Chatbot stats */}
         {stats?.conversationsReady ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
             <StatCard icon={MessageSquare} label="Questions Today" value={stats.questionsToday} />
             <StatCard icon={ThumbsUp} label="Answered" value={stats.answered} />
             <StatCard icon={ThumbsDown} label="Declined" value={stats.declined} />
             <StatCard icon={Flag} label="Flagged" value={stats.flagged} />
+            <StatCard
+              icon={Zap}
+              label="Avg Response Time"
+              value={stats.queryLatencyMs ?? null}
+              valueSuffix="ms"
+              valueColorClass={latencyTextColor}
+            />
           </div>
         ) : (
           <div className="bg-[#eaf5f0] dark:bg-[#1a2e2b] rounded-2xl border border-black/10 dark:border-white/10 p-5 shadow-sm mb-8 flex items-center gap-3">
@@ -358,11 +376,11 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-[#7C9791] dark:text-[#5a9e94]" />
-                  <span className="text-xs font-medium text-[#5B7571] dark:text-[#8fada9]">Query Latency (Avg)</span>
+                  <span className="text-xs font-medium text-[#5B7571] dark:text-[#8fada9]">VDB Query Latency</span>
                 </div>
-                {stats?.queryLatencyMs != null ? (
-                  <span className={`text-xs font-bold ${latencyTextColor}`}>
-                    {stats.queryLatencyMs}ms
+                {stats?.vectorDbQueryLatencyMs != null ? (
+                  <span className={`text-xs font-bold ${vdbLatencyTextColor}`}>
+                    {stats.vectorDbQueryLatencyMs}ms
                   </span>
                 ) : (
                   <span className="text-[10px] font-semibold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
