@@ -13,6 +13,7 @@ class DashboardStatsResponse(BaseModel):
     declined: Optional[int] = None
     flagged: Optional[int] = None
     vector_db_connectivity_pct: Optional[float] = None
+    vector_db_query_latency_ms: Optional[float] = None
     query_latency_ms: Optional[float] = None
     conversations_ready: bool = False
 
