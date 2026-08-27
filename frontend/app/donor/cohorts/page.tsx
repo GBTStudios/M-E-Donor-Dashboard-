@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Loader2, Users, GraduationCap, CheckCircle2, Clock, AlertTriangle,
@@ -591,7 +591,7 @@ function AllCohortsView({ cohorts, onTabClick }: { cohorts: Cohort[]; onTabClick
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function CohortsPage() {
+function CohortsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
@@ -687,5 +687,13 @@ export default function CohortsPage() {
         )}
       </div>
     </DonorLayout>
+  );
+}
+
+export default function CohortsPageWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <CohortsPage />
+    </Suspense>
   );
 }
