@@ -28,14 +28,14 @@ export default function ImpactStoriesSection({ stories }: { stories: Story[] }) 
   }
 
   return (
-    <section className="bg-gradient-to-b from-[#f5efe4] to-[#eaf5f0] py-24">
+    <section className="bg-gradient-to-b from-[#f5efe4] to-[#eaf5f0] dark:from-[#0f1a18] dark:to-[#122420] py-24">
       <div className="max-w-4xl mx-auto px-6 text-center">
-        <span className="inline-block bg-white border border-black/10 text-xs font-medium text-[#1A534A] px-3 py-1.5 rounded-full mb-5">
+        <span className="inline-block bg-white dark:bg-[#1e3532] border border-black/10 dark:border-white/10 text-xs font-medium text-[#1A534A] dark:text-[#7dd3c0] px-3 py-1.5 rounded-full mb-5">
           Real graduates, real outcomes
         </span>
 
-        <h2 className="text-3xl sm:text-4xl font-semibold text-gray-900">Impact Stories</h2>
-        <p className="text-gray-500 mt-3 max-w-xl mx-auto">
+        <h2 className="text-3xl sm:text-4xl font-semibold text-gray-900 dark:text-[#e2f4f0]">Impact Stories</h2>
+        <p className="text-gray-500 dark:text-[#8fada9] mt-3 max-w-xl mx-auto">
           Every contribution creates an opportunity. Explore the real stories of learners
           whose lives have been changed through the support of donors, mentors, and partners
           who believe in their potential.
@@ -45,13 +45,13 @@ export default function ImpactStoriesSection({ stories }: { stories: Story[] }) 
           <button
             onClick={goPrev}
             aria-label="Previous story"
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white border border-black/10 shadow-md flex items-center justify-center hover:bg-[#1A534A] hover:border-[#1A534A] hover:text-white text-gray-600 transition-colors"
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white dark:bg-[#1e3532] border border-black/10 dark:border-white/10 shadow-md flex items-center justify-center hover:bg-[#1A534A] hover:border-[#1A534A] hover:text-white text-gray-600 dark:text-[#8fada9] transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          <div className="relative bg-white rounded-3xl border border-black/5 shadow-lg shadow-black/[0.03] p-8 sm:p-10 text-left min-h-[260px] sm:min-h-[220px] overflow-hidden">
-            <Quote className="absolute top-6 right-6 w-16 h-16 text-[#1A534A]/[0.06]" strokeWidth={1} />
+          <div className="relative bg-white dark:bg-[#1a2e2b] rounded-3xl border border-black/5 dark:border-white/10 shadow-lg shadow-black/[0.03] p-8 sm:p-10 text-left min-h-[260px] sm:min-h-[220px] overflow-hidden">
+            <Quote className="absolute top-6 right-6 w-16 h-16 text-[#1A534A]/[0.06] dark:text-[#7dd3c0]/[0.08]" strokeWidth={1} />
 
             <div className="flex flex-col sm:flex-row items-start gap-6 relative">
               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-br from-[#1A534A] to-[#2d7a6c] flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
@@ -66,11 +66,11 @@ export default function ImpactStoriesSection({ stories }: { stories: Story[] }) 
               </div>
 
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold tracking-wide uppercase text-[#1A534A]/70">
+                <p className="text-xs font-semibold tracking-wide uppercase text-[#1A534A]/70 dark:text-[#7dd3c0]/80">
                   {story.title}
                 </p>
-                <p className="font-semibold text-gray-900 text-lg mt-1">{story.name}</p>
-                <p className="text-[15px] text-gray-600 mt-3 leading-relaxed line-clamp-4">
+                <p className="font-semibold text-gray-900 dark:text-[#e2f4f0] text-lg mt-1">{story.name}</p>
+                <p className="text-[15px] text-gray-600 dark:text-[#8fada9] mt-3 leading-relaxed line-clamp-4">
                   {story.body}
                 </p>
                 {isLong && (
@@ -89,7 +89,7 @@ export default function ImpactStoriesSection({ stories }: { stories: Story[] }) 
           <button
             onClick={goNext}
             aria-label="Next story"
-            className="absolute right-0 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white border border-black/10 shadow-md flex items-center justify-center hover:bg-[#1A534A] hover:border-[#1A534A] hover:text-white text-gray-600 transition-colors"
+            className="absolute right-0 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white dark:bg-[#1e3532] border border-black/10 dark:border-white/10 shadow-md flex items-center justify-center hover:bg-[#1A534A] hover:border-[#1A534A] hover:text-white text-gray-600 dark:text-[#8fada9] transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -102,7 +102,7 @@ export default function ImpactStoriesSection({ stories }: { stories: Story[] }) 
               onClick={() => setIndex(i)}
               aria-label={`Go to story ${i + 1}`}
               className={`h-1.5 rounded-full transition-all ${
-                i === index ? "bg-[#1A534A] w-6" : "bg-black/15 w-1.5 hover:bg-black/25"
+                i === index ? "bg-[#1A534A] dark:bg-[#7dd3c0] w-6" : "bg-black/15 dark:bg-white/15 w-1.5 hover:bg-black/25 dark:hover:bg-white/25"
               }`}
             />
           ))}
@@ -116,7 +116,7 @@ export default function ImpactStoriesSection({ stories }: { stories: Story[] }) 
             View more stories
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <p className="text-xs text-gray-400 mt-2.5">Log in to view more graduate stories.</p>
+          <p className="text-xs text-gray-400 dark:text-[#5a9e94] mt-2.5">Log in to view more graduate stories.</p>
         </div>
       </div>
 
