@@ -31,11 +31,6 @@ export default function ChatbotButton() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // The greeting is language-dependent, so it can't be built once as a
-  // static initial value (that would freeze it in whatever language was
-  // active on first mount). Instead it's set here, and re-set whenever the
-  // language changes while the conversation is still just the greeting —
-  // matching how every other component in the app picks up i18n changes.
   useEffect(() => {
     setMessages((prev) => {
       if (prev.length === 0 || (prev.length === 1 && prev[0].role === "assistant")) {
@@ -105,7 +100,7 @@ export default function ChatbotButton() {
   return (
     <>
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 w-[26rem] max-w-[calc(100vw-3rem)] h-[34rem] max-h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-xl border border-black/10 flex flex-col overflow-hidden">
+        <div className="fixed bottom-24 right-6 z-50 w-[26rem] max-w-[calc(100vw-3rem)] h-[34rem] max-h-[calc(100vh-8rem)] bg-white dark:bg-[#1a2e2b] rounded-2xl shadow-xl border border-black/10 dark:border-white/10 flex flex-col overflow-hidden">
           <div className="bg-[#1A534A] px-5 py-4 flex items-center justify-between flex-shrink-0">
             <p className="text-white text-sm font-medium">{t("chatbot.title")}</p>
             <div className="flex items-center gap-1">
@@ -132,11 +127,13 @@ export default function ChatbotButton() {
               <div key={i} className={m.role === "user" ? "flex flex-col items-end" : "flex flex-col items-start"}>
                 <div
                   className={`group relative text-sm max-w-[85%] px-3.5 py-2.5 rounded-lg leading-relaxed ${
-                    m.role === "user" ? "bg-[#1A534A] text-white" : "bg-[#eaf5f0] text-gray-800"
+                    m.role === "user"
+                      ? "bg-[#1A534A] text-white"
+                      : "bg-[#eaf5f0] dark:bg-[#243f3b] text-gray-800 dark:text-[#e2f4f0]"
                   }`}
                 >
                   {m.role === "assistant" ? (
-                    <div className="prose prose-sm max-w-none prose-p:my-1 prose-strong:text-gray-900 prose-ul:my-1 prose-li:my-0">
+                    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-strong:text-gray-900 dark:prose-strong:text-white prose-ul:my-1 prose-li:my-0">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
                     </div>
                   ) : (
@@ -147,22 +144,22 @@ export default function ChatbotButton() {
                     <button
                       onClick={() => handleCopy(m.content, i)}
                       aria-label={t("chatbot.copyMessage")}
-                      className="absolute -bottom-2 -right-2 opacity-0 group-hover:opacity-100 bg-white border border-black/10 rounded-full p-1 shadow-sm transition"
+                      className="absolute -bottom-2 -right-2 opacity-0 group-hover:opacity-100 bg-white dark:bg-[#1e3532] border border-black/10 dark:border-white/10 rounded-full p-1 shadow-sm transition"
                     >
                       {copiedIndex === i ? (
                         <Check className="w-3 h-3 text-green-600" />
                       ) : (
-                        <Copy className="w-3 h-3 text-gray-400" />
+                        <Copy className="w-3 h-3 text-gray-400 dark:text-[#8fada9]" />
                       )}
                     </button>
                   )}
                 </div>
-                <span className="text-[10px] text-gray-400 mt-1 px-1">{formatTime(m.timestamp)}</span>
+                <span className="text-[10px] text-gray-400 dark:text-[#5a9e94] mt-1 px-1">{formatTime(m.timestamp)}</span>
               </div>
             ))}
 
             {sending && (
-              <div className="bg-[#eaf5f0] text-gray-500 text-sm max-w-[85%] px-3.5 py-2.5 rounded-lg flex items-center gap-2">
+              <div className="bg-[#eaf5f0] dark:bg-[#243f3b] text-gray-500 dark:text-[#8fada9] text-sm max-w-[85%] px-3.5 py-2.5 rounded-lg flex items-center gap-2">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 {t("chatbot.thinking")}
               </div>
@@ -177,7 +174,7 @@ export default function ChatbotButton() {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="flex items-center gap-2 border-t border-black/10 p-3 flex-shrink-0">
+          <div className="flex items-center gap-2 border-t border-black/10 dark:border-white/10 p-3 flex-shrink-0">
             <input
               ref={inputRef}
               value={input}
@@ -185,7 +182,7 @@ export default function ChatbotButton() {
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               disabled={sending}
               placeholder={t("chatbot.inputPlaceholder")}
-              className="flex-1 text-sm px-3.5 py-2.5 rounded-lg border border-black/10 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1A534A]/40 disabled:opacity-60"
+              className="flex-1 text-sm px-3.5 py-2.5 rounded-lg border border-black/10 dark:border-white/15 bg-white dark:bg-[#1e3532] text-gray-900 dark:text-[#e2f4f0] placeholder:text-gray-400 dark:placeholder:text-[#5a9e94] focus:outline-none focus:ring-2 focus:ring-[#1A534A]/40 disabled:opacity-60"
             />
             <button
               onClick={sendMessage}
