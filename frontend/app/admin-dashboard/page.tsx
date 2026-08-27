@@ -48,6 +48,39 @@ function statusColor(status: string): string {
   return "text-red-500";
 }
 
+// Overall banner state derived from the individual health signals, rather
+// than just "did the health endpoint respond at all". Any non-"ok" status
+// on either the database or the API downgrades the banner.
+type OverallStatus = "ok" | "degraded" | "down";
+
+function overallStatus(health: SystemHealth | null): OverallStatus | null {
+  if (!health) return null;
+  if (health.databaseStatus === "down" || health.apiStatus === "down") return "down";
+  if (health.databaseStatus !== "ok" || health.apiStatus !== "ok") return "degraded";
+  return "ok";
+}
+
+const OVERALL_BANNER_STYLES: Record<OverallStatus, { wrap: string; dot: string; text: string; label: string }> = {
+  ok: {
+    wrap: "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800",
+    dot: "bg-emerald-500",
+    text: "text-emerald-700 dark:text-emerald-400",
+    label: "All Systems Operational",
+  },
+  degraded: {
+    wrap: "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800",
+    dot: "bg-amber-500",
+    text: "text-amber-700 dark:text-amber-400",
+    label: "Degraded Performance",
+  },
+  down: {
+    wrap: "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800",
+    dot: "bg-red-500",
+    text: "text-red-700 dark:text-red-400",
+    label: "System Outage Detected",
+  },
+};
+
 function StatCard({
   icon: Icon,
   label,
@@ -138,6 +171,8 @@ export default function AdminDashboardPage() {
       </AdminLayout>
     );
   }
+
+  const overall = overallStatus(health);
 
   return (
     <AdminLayout>
@@ -287,11 +322,11 @@ export default function AdminDashboardPage() {
                 </span>
               </div>
 
-              {health && (
-                <div className="mt-1 flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                    All Systems Operational
+              {overall && (
+                <div className={`mt-1 flex items-center gap-2 rounded-lg px-3 py-2 ${OVERALL_BANNER_STYLES[overall].wrap}`}>
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${OVERALL_BANNER_STYLES[overall].dot}`} />
+                  <span className={`text-xs font-semibold ${OVERALL_BANNER_STYLES[overall].text}`}>
+                    {OVERALL_BANNER_STYLES[overall].label}
                   </span>
                 </div>
               )}

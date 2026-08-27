@@ -1,15 +1,14 @@
 "use client";
 
-import { Suspense, useEffect, useState, useCallback, useRef } from "react";
-import { useTranslation } from "react-i18next";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Loader2, Users, GraduationCap, CheckCircle2, Clock, AlertTriangle,
   Search, SlidersHorizontal, Download, TrendingUp, Briefcase, Info,
-  ArrowRight, ChevronRight, ChevronLeft, X, ArrowUpDown,
+  ArrowRight, ChevronRight, X, ArrowUpDown,
 } from "lucide-react";
 import DonorLayout from "@/components/donor/DonorLayout";
-import i18n from "@/lib/i18n";
+import ProjectCarousel from "@/components/donor/ProjectCarousel";
 import {
   fetchCohorts, fetchCohortDetail, fetchCohortTracks, fetchCohortBaseline,
   fetchCohortOutcomes, fetchCohortNarrative, fetchCohortProjects, downloadCohortReport,
@@ -20,15 +19,15 @@ import {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string | null | undefined): string {
-  if (!iso) return i18n.t("cohorts.detail.datePending", { ns: "donor" });
+  if (!iso) return "Pending";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return i18n.t("cohorts.detail.datePending", { ns: "donor" });
-  return d.toLocaleDateString(i18n.language === "de" ? "de-DE" : "en-US", { month: "short", year: "numeric" });
+  if (Number.isNaN(d.getTime())) return "Pending";
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
 function cohortTabLabel(name: string): string {
   const match = name.match(/(\d+)$/);
-  return match ? i18n.t("cohorts.tabLabel", { ns: "donor", number: match[1] }) : name;
+  return match ? `Cohort ${match[1]}` : name;
 }
 
 function avg(values: (number | null | undefined)[]): number {
@@ -37,51 +36,19 @@ function avg(values: (number | null | undefined)[]): number {
   return Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
 }
 
-function ProjectCarousel({ projects }: { projects: CohortProject[] }) {
-  if (projects.length === 0) {
-    return <p className="text-sm text-[#7C9791]">—</p>;
-  }
-
-  return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {projects.map((project) => {
-        const item = project as CohortProject & {
-          title?: string;
-          name?: string;
-          description?: string | null;
-          summary?: string | null;
-        };
-        return (
-          <div key={project.id} className="bg-white rounded-2xl border border-black/10 p-4 shadow-sm">
-            <h4 className="text-sm font-bold text-[#1A534A]">
-              {item.title ?? item.name ?? "Project"}
-            </h4>
-            {(item.description ?? item.summary) && (
-              <p className="text-xs text-[#5B7571] mt-2 line-clamp-3">
-                {item.description ?? item.summary}
-              </p>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ── Status badge ──────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
-  const { t } = useTranslation("donor");
   if (status === "completed") {
     return (
       <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full">
-        <CheckCircle2 className="w-3 h-3" /> {t("cohorts.status.completed")}
+        <CheckCircle2 className="w-3 h-3" /> Completed
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full">
-      <Clock className="w-3 h-3" /> {t("cohorts.status.inProgress")}
+      <Clock className="w-3 h-3" /> In Progress
     </span>
   );
 }
@@ -89,20 +56,14 @@ function StatusBadge({ status }: { status: string }) {
 // ── Lifecycle bar ─────────────────────────────────────────────────────────────
 
 function LifecycleBar({ pct, status }: { pct: number; status: string }) {
-  const { t } = useTranslation("donor");
-  const stages = [
-    t("cohorts.lifecycle.stages.intake"),
-    t("cohorts.lifecycle.stages.training"),
-    t("cohorts.lifecycle.stages.graduation"),
-    t("cohorts.lifecycle.stages.endline"),
-  ];
+  const stages = ["Intake", "Training", "Graduation", "Endline"];
   const stagePositions = [0, 33, 66, 100];
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791]">{t("cohorts.lifecycle.title")}</p>
+        <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791]">Program Lifecycle</p>
         <p className={`text-[10px] font-bold ${pct >= 100 ? "text-emerald-600" : "text-amber-600"}`}>
-          {t("cohorts.lifecycle.percentComplete", { pct })}
+          {pct}% Complete
         </p>
       </div>
       <div className="relative h-2 bg-[#eaf5f0] rounded-full">
@@ -148,7 +109,6 @@ function SummaryStatCard({ label, value, icon: Icon }: { label: string; value: s
 // ── Cohort summary card ───────────────────────────────────────────────────────
 
 function CohortSummaryCard({ cohort, onTabClick }: { cohort: Cohort; onTabClick: (id: string) => void }) {
-  const { t } = useTranslation("donor");
   const [downloading, setDownloading] = useState(false);
 
   async function handleDownload() {
@@ -161,23 +121,23 @@ function CohortSummaryCard({ cohort, onTabClick }: { cohort: Cohort; onTabClick:
     <div className="bg-white rounded-2xl border border-black/10 p-6 shadow-sm flex flex-col gap-4">
       <div>
         <StatusBadge status={cohort.status} />
-        <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mt-3 mb-0.5">{t("cohorts.card.track")}</p>
+        <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mt-3 mb-0.5">Track</p>
         <p className="text-lg font-bold text-[#1A534A]">{cohort.program ?? cohort.name}</p>
         {cohort.program && <p className="text-base font-semibold text-[#1A534A]">{cohort.name}</p>}
         <div className="flex items-center gap-1.5 mt-1 text-xs text-[#5B7571]">
           <Users className="w-3.5 h-3.5" />
-          <span>{t("cohorts.card.participants", { count: cohort.active_participants })}</span>
+          <span>{cohort.active_participants} Participants</span>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-[#eaf5f0] rounded-xl p-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-1">{t("cohorts.card.intakeDate")}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-1">Intake Date</p>
           <p className="text-sm font-semibold text-[#1A534A]">{formatDate(cohort.start_date)}</p>
         </div>
         <div className="bg-[#eaf5f0] rounded-xl p-3">
           <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-1">
-            {cohort.status === "completed" ? t("cohorts.card.endlineDate") : t("cohorts.card.estEndline")}
+            {cohort.status === "completed" ? "Endline Date" : "Est. Endline"}
           </p>
           <p className={`text-sm font-semibold ${cohort.end_date ? "text-[#1A534A]" : "text-amber-600"}`}>
             {formatDate(cohort.end_date)}
@@ -189,7 +149,7 @@ function CohortSummaryCard({ cohort, onTabClick }: { cohort: Cohort; onTabClick:
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-[#eaf5f0] rounded-xl p-3">
             <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-1 flex items-center gap-1">
-              <GraduationCap className="w-3 h-3" /> {t("cohorts.card.graduation")}
+              <GraduationCap className="w-3 h-3" /> Graduation
             </p>
             <p className="text-sm font-semibold text-[#1A534A]">
               {cohort.graduation_pct != null ? `${cohort.graduation_pct}%` : "—"}
@@ -197,7 +157,7 @@ function CohortSummaryCard({ cohort, onTabClick }: { cohort: Cohort; onTabClick:
           </div>
           <div className="bg-[#eaf5f0] rounded-xl p-3">
             <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-1 flex items-center gap-1">
-              <Briefcase className="w-3 h-3" /> {t("cohorts.card.employment")}
+              <Briefcase className="w-3 h-3" /> Employment
             </p>
             <p className="text-sm font-semibold text-[#1A534A]">
               {cohort.employment_rate != null ? `${cohort.employment_rate}%` : "—"}
@@ -214,7 +174,7 @@ function CohortSummaryCard({ cohort, onTabClick }: { cohort: Cohort; onTabClick:
           onClick={() => onTabClick(cohort.id)}
           className="flex items-center gap-1 text-xs font-semibold text-[#1A534A] hover:underline"
         >
-          {t("cohorts.card.viewDetails")} <ChevronRight className="w-3 h-3" />
+          View Details <ChevronRight className="w-3 h-3" />
         </button>
         <button
           type="button"
@@ -223,7 +183,7 @@ function CohortSummaryCard({ cohort, onTabClick }: { cohort: Cohort; onTabClick:
           className="flex items-center gap-1.5 text-xs font-semibold text-white bg-[#1A534A] hover:bg-[#134038] disabled:opacity-60 px-3 py-1.5 rounded-full transition-colors"
         >
           {downloading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
-          {t("cohorts.card.downloadReport")}
+          Download Report
         </button>
       </div>
     </div>
@@ -247,7 +207,6 @@ function KpiCard({ label, value, icon: Icon }: { label: string; value: string; i
 // ── Cohort detail view ────────────────────────────────────────────────────────
 
 function CohortDetailView({ cohortId, cohortName }: { cohortId: string; cohortName: string }) {
-  const { t } = useTranslation("donor");
   const [detail, setDetail] = useState<CohortDetail | null>(null);
   const [tracks, setTracks] = useState<CohortTrack[]>([]);
   const [baseline, setBaseline] = useState<BaselineData | null>(null);
@@ -294,6 +253,15 @@ function CohortDetailView({ cohortId, cohortName }: { cohortId: string; cohortNa
     );
   }
 
+  if (!detail) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <AlertTriangle className="w-8 h-8 text-[#7C9791] mb-3" />
+        <p className="text-sm text-[#5B7571]">Could not load cohort details.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header bar */}
@@ -308,7 +276,7 @@ function CohortDetailView({ cohortId, cohortName }: { cohortId: string; cohortNa
         </div>
         {(detail?.start_date || detail?.end_date) && (
           <div className="text-right">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791]">{t("cohorts.detail.programDuration")}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791]">Program Duration</p>
             <p className="text-sm font-semibold text-[#1A534A]">
               {formatDate(detail.start_date)} — {formatDate(detail.end_date)}
             </p>
@@ -319,25 +287,25 @@ function CohortDetailView({ cohortId, cohortName }: { cohortId: string; cohortNa
       {/* KPI cards */}
       {detail && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <KpiCard label={t("cohorts.detail.kpi.totalParticipants")} value={String(detail.active_participants)} icon={Users} />
-          <KpiCard label={t("cohorts.detail.kpi.completionRate")} value={`${detail.completion_pct}%`} icon={CheckCircle2} />
-          <KpiCard label={t("cohorts.detail.kpi.employmentRate")} value={detail.employment_rate != null ? `${detail.employment_rate}%` : "—"} icon={Briefcase}/>
-          <KpiCard label={t("cohorts.detail.kpi.avgIncomeGrowth")} value={detail.avg_income_growth_multiplier != null ? `${detail.avg_income_growth_multiplier}x` : "—"} icon={TrendingUp} />
+          <KpiCard label="Total Participants" value={String(detail.active_participants)} icon={Users} />
+          <KpiCard label="Completion Rate" value={`${detail.completion_pct}%`} icon={CheckCircle2} />
+          <KpiCard label="Employment Rate" value={detail.employment_rate != null ? `${detail.employment_rate}%` : "—"} icon={Briefcase} />
+          <KpiCard label="Avg Income Growth" value={detail.avg_income_growth_multiplier != null ? `${detail.avg_income_growth_multiplier}x` : "—"} icon={TrendingUp} />
         </div>
       )}
 
       {/* Tracks */}
       {tracks.length > 0 && (
         <div className="bg-white rounded-2xl border border-black/10 p-6 shadow-sm">
-          <h3 className="text-base font-bold text-[#1A534A] mb-1">{t("cohorts.detail.tracks.title")}</h3>
-          <p className="text-xs text-[#5B7571] mb-4">{t("cohorts.detail.tracks.subtitle")}</p>
+          <h3 className="text-base font-bold text-[#1A534A] mb-1">Tracks</h3>
+          <p className="text-xs text-[#5B7571] mb-4">Percentages of different tracks across the cohort</p>
           <div className="flex flex-col gap-4">
             {tracks.map((track) => (
               <div key={track.id}>
                 <div className="flex items-center justify-between mb-1">
                   <div>
                     <p className="text-sm font-semibold text-[#1A534A]">{track.name}</p>
-                    <p className="text-xs text-[#5B7571]">{t("cohorts.detail.tracks.participants", { count: track.participant_count })}</p>
+                    <p className="text-xs text-[#5B7571]">{track.participant_count} Participants</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusBadge status={track.status} />
@@ -359,17 +327,16 @@ function CohortDetailView({ cohortId, cohortName }: { cohortId: string; cohortNa
       {/* Before / After */}
       {(baseline || outcomes) && (
         <div className="grid sm:grid-cols-2 gap-5 items-start">
-          {/* Before */}
           {baseline && (
             <div className="bg-white rounded-2xl border border-black/10 p-6 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-1">{t("cohorts.detail.before.title")}</p>
-              <p className="text-xs text-[#5B7571] mb-4">{t("cohorts.detail.before.subtitle")}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-1">Before the Programme</p>
+              <p className="text-xs text-[#5B7571] mb-4">Self-reported pre-program values (USD)</p>
               <div className="flex flex-col gap-3">
                 {[
-                  { label: t("cohorts.detail.before.avgMonthlyIncome"), sublabel: t("cohorts.detail.before.avgMonthlyIncomeSub"), value: `$${baseline.avg_pre_program_income}` },
-                  { label: t("cohorts.detail.before.avgHouseholdSize"), sublabel: t("cohorts.detail.before.avgHouseholdSizeSub"), value: String(baseline.avg_household_size) },
-                  { label: t("cohorts.detail.before.priorEmployment"), sublabel: t("cohorts.detail.before.priorEmploymentSub"), value: `${baseline.employed_before_pct}%` },
-                  { label: t("cohorts.detail.before.highestEducation"), sublabel: t("cohorts.detail.before.highestEducationSub"), value: baseline.highest_education_common },
+                  { label: "Avg. Monthly Income", sublabel: "Pre-program average", value: `$${baseline.avg_pre_program_income}` },
+                  { label: "Avg. Household Size", sublabel: "Individuals per home", value: String(baseline.avg_household_size) },
+                  { label: "Prior Employment", sublabel: "Informal/Unstable", value: `${baseline.employed_before_pct}%` },
+                  { label: "Highest Education", sublabel: "Secondary school", value: baseline.highest_education_common },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between border-b border-black/5 pb-2">
                     <div>
@@ -382,30 +349,22 @@ function CohortDetailView({ cohortId, cohortName }: { cohortId: string; cohortNa
               </div>
               <div className="mt-4 flex items-start gap-2 text-xs text-[#7C9791]">
                 <Info className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                <p>{t("cohorts.detail.before.footnote")}</p>
+                <p>Baseline data represents the socio-economic status of participants upon entry.</p>
               </div>
             </div>
           )}
 
-          {/* Arrow connector */}
-          <div className="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-            <div className="w-8 h-8 rounded-full bg-white border border-black/10 shadow flex items-center justify-center">
-              <ArrowRight className="w-4 h-4 text-[#1A534A]" />
-            </div>
-          </div>
-
-          {/* After */}
           {outcomes && (
             <div className="bg-white rounded-2xl border border-black/10 p-6 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-1">{t("cohorts.detail.after.title")}</p>
-              <p className="text-xs text-[#5B7571] mb-4">{t("cohorts.detail.after.subtitle")}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-1">After the Programme</p>
+              <p className="text-xs text-[#5B7571] mb-4">Post-program verified professional metrics</p>
               <div className="flex flex-col gap-3">
                 {[
-                  { label: t("cohorts.detail.after.avgMonthlyIncome"), sublabel: t("cohorts.detail.after.avgMonthlyIncomeSub"), value: outcomes.post_avg_monthly_income != null ? `$${outcomes.post_avg_monthly_income}` : "—" },
-                  { label: t("cohorts.detail.after.employmentRate"), sublabel: t("cohorts.detail.after.employmentRateSub"), value: outcomes.employment_rate != null ? `${outcomes.employment_rate}%` : "—" },
-                  { label: t("cohorts.detail.after.africanCompanies"), sublabel: t("cohorts.detail.after.africanCompaniesSub"), value: outcomes.african_companies_pct != null ? `${outcomes.african_companies_pct}%` : "—" },
-                  { label: t("cohorts.detail.after.globalCompanies"), sublabel: t("cohorts.detail.after.globalCompaniesSub"), value: outcomes.global_companies_pct != null ? `${outcomes.global_companies_pct}%` : "—" },
-                  { label: t("cohorts.detail.after.notableProjects"), sublabel: t("cohorts.detail.after.notableProjectsSub"), value: outcomes.notable_projects_count != null ? t("cohorts.detail.after.notableProjectsValue", { count: outcomes.notable_projects_count }) : "—" },
+                  { label: "Avg. Monthly Income", sublabel: "25x increase avg.", value: outcomes.post_avg_monthly_income != null ? `$${outcomes.post_avg_monthly_income}` : "—" },
+                  { label: "Employment Rate", sublabel: "High-growth tech roles", value: outcomes.employment_rate != null ? `${outcomes.employment_rate}%` : "—" },
+                  { label: "African Companies", sublabel: "Local tech ecosystem", value: outcomes.african_companies_pct != null ? `${outcomes.african_companies_pct}%` : "—" },
+                  { label: "Global/Intl Companies", sublabel: "Remote/Global export", value: outcomes.global_companies_pct != null ? `${outcomes.global_companies_pct}%` : "—" },
+                  { label: "Notable Projects", sublabel: "Production-ready apps", value: outcomes.notable_projects_count != null ? `${outcomes.notable_projects_count}+` : "—" },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between border-b border-black/5 pb-2">
                     <div>
@@ -416,16 +375,11 @@ function CohortDetailView({ cohortId, cohortName }: { cohortId: string; cohortNa
                   </div>
                 ))}
               </div>
-
-              {/* Strategic insight */}
               {detail?.avg_income_growth_multiplier != null && (
                 <div className="mt-4 bg-[#1A534A] rounded-xl p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-white/60 mb-1">{t("cohorts.detail.strategicInsight.title")}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-white/60 mb-1">Strategic Insight</p>
                   <p className="text-xs text-white leading-relaxed">
-                    {t("cohorts.detail.strategicInsight.body", {
-                      multiplier: detail.avg_income_growth_multiplier,
-                      cohortName,
-                    })}
+                    The {detail.avg_income_growth_multiplier}x income growth observed in {cohortName} represents our highest mobility rate to date.
                   </p>
                 </div>
               )}
@@ -437,16 +391,16 @@ function CohortDetailView({ cohortId, cohortName }: { cohortId: string; cohortNa
       {/* Exchange rate footnote */}
       {(baseline || outcomes) && (
         <p className="text-[10px] text-amber-600 italic">
-          {t("cohorts.detail.exchangeRateFootnote")}
+          Results data conversion calculated using a historical average exchange rate of 1 USD = 3,750 UGX for the duration of the program.
         </p>
       )}
 
       {/* Notable Projects */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-[#1A534A]">{t("cohorts.detail.notableProjects.title")}</h3>
+          <h3 className="text-base font-bold text-[#1A534A]">Notable Projects</h3>
           <button type="button" className="flex items-center gap-1 text-xs font-semibold text-[#1A534A] hover:underline">
-            {t("cohorts.detail.notableProjects.viewStories")} <ChevronRight className="w-3 h-3" />
+            View participant stories <ChevronRight className="w-3 h-3" />
           </button>
         </div>
         <ProjectCarousel projects={projects} />
@@ -455,17 +409,17 @@ function CohortDetailView({ cohortId, cohortName }: { cohortId: string; cohortNa
       {/* Impact Narrative */}
       {narrative && (narrative.professional_development || (narrative.key_success_factors ?? []).length > 0) && (
         <div className="bg-white rounded-2xl border border-black/10 p-6 shadow-sm">
-          <h3 className="text-base font-bold text-[#1A534A] mb-1">{t("cohorts.detail.narrative.title")}</h3>
-          <p className="text-xs text-[#5B7571] mb-4">{t("cohorts.detail.narrative.subtitle")}</p>
+          <h3 className="text-base font-bold text-[#1A534A] mb-1">Impact Narrative</h3>
+          <p className="text-xs text-[#5B7571] mb-4">Qualitative growth observations</p>
           {narrative.professional_development && (
             <div className="mb-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-2">{t("cohorts.detail.narrative.professionalDevelopment")}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-2">Professional Development</p>
               <p className="text-sm text-[#5B7571] leading-relaxed">{narrative.professional_development}</p>
             </div>
           )}
-          {narrative.key_success_factors.length > 0 && (
+          {(narrative.key_success_factors ?? []).length > 0 && (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-2">{t("cohorts.detail.narrative.keySuccessFactors")}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[#7C9791] mb-2">Key Success Factors</p>
               <ul className="flex flex-col gap-1.5">
                 {(narrative.key_success_factors ?? []).map((factor, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-[#5B7571]">
@@ -483,7 +437,7 @@ function CohortDetailView({ cohortId, cohortName }: { cohortId: string; cohortNa
             className="mt-6 w-full flex items-center justify-center gap-2 bg-[#1A534A] hover:bg-[#134038] disabled:opacity-60 text-white text-sm font-semibold py-3 rounded-full transition-colors"
           >
             {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            {t("cohorts.detail.narrative.downloadButton")}
+            Download Cohort Impact Report
           </button>
         </div>
       )}
@@ -497,19 +451,16 @@ type SortKey = "default" | "graduation" | "completion";
 type FilterStatus = "all" | "completed" | "in_progress";
 
 function AllCohortsView({ cohorts, onTabClick }: { cohorts: Cohort[]; onTabClick: (id: string) => void }) {
-  const { t } = useTranslation("donor");
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [sortKey, setSortKey] = useState<SortKey>("default");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Summary totals
   const totalParticipants = cohorts.reduce((s, c) => s + c.active_participants, 0);
   const avgGraduation = avg(cohorts.map((c) => c.graduation_pct));
   const avgCompletion = avg(cohorts.map((c) => c.completion_pct));
   const completed = cohorts.filter((c) => c.status === "completed").length;
 
-  // Filter + sort
   let filtered = cohorts.filter((c) => {
     const matchSearch =
       c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -528,10 +479,10 @@ function AllCohortsView({ cohorts, onTabClick }: { cohorts: Cohort[]; onTabClick
     <div className="flex flex-col gap-5">
       {/* Summary header */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <SummaryStatCard label={t("cohorts.summary.totalCohorts")} value={String(cohorts.length)} icon={Users} />
-        <SummaryStatCard label={t("cohorts.summary.totalParticipants")} value={String(totalParticipants)} icon={Users} />
-        <SummaryStatCard label={t("cohorts.summary.avgGraduationRate")} value={avgGraduation ? `${avgGraduation}%` : "—"} icon={GraduationCap} />
-        <SummaryStatCard label={t("cohorts.summary.avgCompletion")} value={`${avgCompletion}%`} icon={CheckCircle2} />
+        <SummaryStatCard label="Total Cohorts" value={String(cohorts.length)} icon={Users} />
+        <SummaryStatCard label="Total Participants" value={String(totalParticipants)} icon={Users} />
+        <SummaryStatCard label="Avg Graduation Rate" value={avgGraduation ? `${avgGraduation}%` : "—"} icon={GraduationCap} />
+        <SummaryStatCard label="Avg Completion" value={`${avgCompletion}%`} icon={CheckCircle2} />
       </div>
 
       {/* Search + filters */}
@@ -542,7 +493,7 @@ function AllCohortsView({ cohorts, onTabClick }: { cohorts: Cohort[]; onTabClick
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("cohorts.search.placeholder")}
+            placeholder="Search tracks or names..."
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-black/10 bg-white text-sm text-[#1A534A] placeholder:text-[#7C9791] focus:outline-none focus:ring-2 focus:ring-[#1A534A]/20"
           />
         </div>
@@ -555,45 +506,36 @@ function AllCohortsView({ cohorts, onTabClick }: { cohorts: Cohort[]; onTabClick
               : "bg-white text-[#1A534A] border-black/10 hover:bg-[#eaf5f0]"
           }`}
         >
-          <SlidersHorizontal className="w-4 h-4" /> {t("cohorts.search.advancedFilters")}
+          <SlidersHorizontal className="w-4 h-4" /> Advanced Filters
         </button>
       </div>
 
-      {/* Filter panel */}
       {showFilters && (
         <div className="bg-white rounded-2xl border border-black/10 p-4 flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[#5B7571]">{t("cohorts.search.statusLabel")}</span>
+            <span className="text-xs font-semibold text-[#5B7571]">Status:</span>
             {(["all", "in_progress", "completed"] as FilterStatus[]).map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => setFilterStatus(s)}
                 className={`capitalize text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
-                  filterStatus === s
-                    ? "bg-[#1A534A] text-white"
-                    : "bg-[#eaf5f0] text-[#1A534A] hover:bg-[#d4ede7]"
+                  filterStatus === s ? "bg-[#1A534A] text-white" : "bg-[#eaf5f0] text-[#1A534A] hover:bg-[#d4ede7]"
                 }`}
               >
-                {s === "in_progress" ? t("cohorts.status.inProgress") : s === "all" ? t("cohorts.tabs.all") : t("cohorts.status.completed")}
+                {s === "in_progress" ? "In Progress" : s === "all" ? "All" : "Completed"}
               </button>
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[#5B7571]">{t("cohorts.search.sortByLabel")}</span>
-            {([
-              ["default", t("cohorts.search.sortDefault")],
-              ["graduation", t("cohorts.search.sortGraduation")],
-              ["completion", t("cohorts.search.sortCompletion")],
-            ] as [SortKey, string][]).map(([key, label]) => (
+            <span className="text-xs font-semibold text-[#5B7571]">Sort by:</span>
+            {([["default", "Default"], ["graduation", "Graduation Rate"], ["completion", "Completion"]] as [SortKey, string][]).map(([key, label]) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => setSortKey(key)}
                 className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
-                  sortKey === key
-                    ? "bg-[#1A534A] text-white"
-                    : "bg-[#eaf5f0] text-[#1A534A] hover:bg-[#d4ede7]"
+                  sortKey === key ? "bg-[#1A534A] text-white" : "bg-[#eaf5f0] text-[#1A534A] hover:bg-[#d4ede7]"
                 }`}
               >
                 <ArrowUpDown className="w-3 h-3" /> {label}
@@ -606,7 +548,7 @@ function AllCohortsView({ cohorts, onTabClick }: { cohorts: Cohort[]; onTabClick
               onClick={() => { setFilterStatus("all"); setSortKey("default"); setSearch(""); }}
               className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline ml-auto"
             >
-              <X className="w-3 h-3" /> {t("cohorts.search.clear")}
+              <X className="w-3 h-3" /> Clear
             </button>
           )}
         </div>
@@ -616,27 +558,25 @@ function AllCohortsView({ cohorts, onTabClick }: { cohorts: Cohort[]; onTabClick
       <div className="flex items-start gap-3 bg-[#1A534A] text-white rounded-2xl px-5 py-4">
         <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-white/70" />
         <div>
-          <p className="text-sm font-semibold">{t("cohorts.methodology.title")}</p>
+          <p className="text-sm font-semibold">Impact Methodology Update</p>
           <p className="text-xs text-white/80 mt-0.5 leading-relaxed">
-            {t("cohorts.methodology.body")}
+            Starting from Cohort 3, we implemented standardised surveying across all tracks to ensure long-term outcome comparability. Data for Cohorts 1 and 2 remains verified but utilises legacy categorisation metrics.
           </p>
         </div>
       </div>
 
-      {/* Results count */}
       <div className="flex items-center justify-between">
         <p className="text-xs text-[#5B7571]">
-          {t("cohorts.search.resultsCount", { shown: filtered.length, total: cohorts.length })}
-          {completed > 0 && t("cohorts.search.completedSuffix", { count: completed })}
+          Showing {filtered.length} of {cohorts.length} cohorts
+          {completed > 0 && ` · ${completed} completed`}
         </p>
       </div>
 
-      {/* Cards grid */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Users className="w-8 h-8 text-[#7C9791] mb-3" />
-          <p className="text-sm font-semibold text-[#1A534A]">{t("cohorts.empty.title")}</p>
-          <p className="text-xs text-[#5B7571] mt-1">{t("cohorts.empty.subtitle")}</p>
+          <p className="text-sm font-semibold text-[#1A534A]">No cohorts found</p>
+          <p className="text-xs text-[#5B7571] mt-1">Try adjusting your search or filters.</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 gap-5">
@@ -651,8 +591,7 @@ function AllCohortsView({ cohorts, onTabClick }: { cohorts: Cohort[]; onTabClick
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-function CohortsPageContent() {
-  const { t } = useTranslation("donor");
+function CohortsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
@@ -687,14 +626,14 @@ function CohortsPageContent() {
   return (
     <DonorLayout>
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
         <div className="mb-6">
           <p className="text-xs font-bold uppercase tracking-widest text-[#7C9791] mb-1 flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5" /> {t("cohorts.eyebrow")}
+            <Users className="w-3.5 h-3.5" /> Regional Impact Groups
           </p>
-          <h1 className="text-3xl font-bold text-[#1A534A]">{t("cohorts.heading")}</h1>
+          <h1 className="text-3xl font-bold text-[#1A534A]">Program Cohorts</h1>
           <p className="text-sm text-[#5B7571] mt-2 max-w-xl">
-            {t("cohorts.description")}
+            Review detailed progress and performance metrics across historical and active program cycles.
+            Data transparency is maintained through standardised outcome assessments at intake, graduation, and endline.
           </p>
         </div>
 
@@ -711,7 +650,6 @@ function CohortsPageContent() {
           </div>
         ) : (
           <>
-            {/* Tabs */}
             <div className="flex items-center gap-1 overflow-x-auto pb-px mb-6 border-b border-black/10">
               <button
                 type="button"
@@ -722,7 +660,7 @@ function CohortsPageContent() {
                     : "border-transparent text-[#5B7571] hover:text-[#1A534A]"
                 }`}
               >
-                {t("cohorts.tabs.all")}
+                All Cohorts
               </button>
               {cohorts.map((cohort) => (
                 <button
@@ -740,7 +678,6 @@ function CohortsPageContent() {
               ))}
             </div>
 
-            {/* Content */}
             {activeTab === "all" ? (
               <AllCohortsView cohorts={cohorts} onTabClick={setActiveTab} />
             ) : activeCohort ? (
@@ -753,10 +690,10 @@ function CohortsPageContent() {
   );
 }
 
-export default function CohortsPage() {
+export default function CohortsPageWrapper() {
   return (
     <Suspense fallback={null}>
-      <CohortsPageContent />
+      <CohortsPage />
     </Suspense>
   );
 }
