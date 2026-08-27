@@ -203,7 +203,7 @@ export default function AdminDashboardPage() {
     const result = await exportAuditLogsPdf(accessToken, {});
     setExportingAnalytics(false);
 
-    if (!result.success) {
+    if ("message" in result) {
       setExportError(result.message);
     }
   }
