@@ -1,4 +1,5 @@
 from pydantic import BaseModel, field_validator
+from typing import Optional
 
 
 class SetFirstPasswordRequest(BaseModel):
@@ -30,7 +31,8 @@ class CreateAdminResponse(BaseModel):
     email: str
     full_name: str
     role: str
-    temporary_password: str
+    temporary_password: Optional[str] = None
+    email_sent: bool = False
     message: str = "Admin account created. They must change their password on first login."
 
 
