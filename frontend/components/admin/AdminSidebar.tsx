@@ -32,6 +32,7 @@ const PRIMARY_NAV_ITEMS = [
 const CONTENT_NAV_ITEMS = [
   { label: "Landing Stats", icon: BarChart3, href: "/admin/stats" },
   { label: "Impact Stories", icon: Images, href: "/admin/stories" },
+  { label: "Cohort Projects", icon: Images, href: "/admin/cohorts" },
   { label: "Participant Data", icon: Upload, href: "/admin/participants" },
   { label: "Reports", icon: FileText, href: "/admin/reports" },
 ] as const;
