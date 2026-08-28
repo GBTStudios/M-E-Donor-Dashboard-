@@ -80,3 +80,20 @@ def send_password_reset_email(to_email: str, code: str) -> None:
         </div>
     """
     send_email(to_email, "Reset your password — Groundbreaker Donor Dashboard", html)
+
+
+
+def send_admin_welcome_email(to_email: str, full_name: str, temp_password: str) -> None:
+    html = f"""
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+            <h2>Welcome to Groundbreaker Donor Dashboard</h2>
+            <p>Hi {full_name},</p>
+            <p>An admin account has been created for you. Use the credentials below to log in:</p>
+            <p><strong>Email:</strong> {to_email}</p>
+            <p><strong>Temporary password:</strong></p>
+            <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">{temp_password}</p>
+            <p>You will be asked to set your own password the first time you log in.</p>
+            <p>If you weren't expecting this account, please contact your administrator.</p>
+        </div>
+    """
+    send_email(to_email, "Your admin account is ready — Groundbreaker Donor Dashboard", html)

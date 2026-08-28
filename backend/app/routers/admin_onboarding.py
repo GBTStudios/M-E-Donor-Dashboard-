@@ -93,12 +93,20 @@ async def create_admin(
         related_id=new_user["id"],
     )
 
+    email_sent = False
+    try:
+        send_admin_welcome_email(new_user["email"], new_user["full_name"], temp_password)
+        email_sent = True
+    except Exception:
+        email_sent = False
+
     return CreateAdminResponse(
         id=new_user["id"],
         email=new_user["email"],
         full_name=new_user["full_name"],
         role=new_user["role"],
-        temporary_password=temp_password
+        temporary_password=None if email_sent else temp_password,
+        email_sent=email_sent,
     )
 
 
