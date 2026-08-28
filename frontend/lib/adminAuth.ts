@@ -42,10 +42,20 @@ export function isSuperadmin(): boolean {
 
 // ── Create Admin ──────────────────────────────────────────────────────────────
 
+/**
+ * See "M&E Donor Dashboard Admin Welcome Email — API Contract" (Recho, backend).
+ * The backend now emails the new admin their login details automatically.
+ * emailSent tells the UI which message to show:
+ *  - true  → welcome email was sent; temporaryPassword is null, don't show it
+ *  - false → email failed to send; temporaryPassword is populated as a
+ *            manual fallback so the superadmin can relay it themselves
+ */
 export interface CreateAdminResult {
   success: boolean;
   message: string;
-  temporaryPassword?: string;
+  email?: string;
+  emailSent?: boolean;
+  temporaryPassword: string | null;
 }
 
 export async function createAdminUser(
@@ -66,28 +76,50 @@ export async function createAdminUser(
     const data = await response.json().catch(() => ({}));
 
     if (handleSessionExpiredIfNeeded(response.status, data.detail)) {
-      return { success: false, message: "Session expired due to inactivity. Please log in again." };
+      return {
+        success: false,
+        message: "Session expired due to inactivity. Please log in again.",
+        temporaryPassword: null,
+      };
     }
 
     if (response.status === 201) {
       return {
         success: true,
         message: data.message ?? "Admin account created.",
-        temporaryPassword: data.temporary_password,
+        email: data.email ?? email,
+        emailSent: Boolean(data.email_sent),
+        temporaryPassword: data.temporary_password ?? null,
       };
     }
 
     if (response.status === 403) {
-      return { success: false, message: data.detail ?? "Superadmin access required." };
+      return {
+        success: false,
+        message: data.detail ?? "Superadmin access required.",
+        temporaryPassword: null,
+      };
     }
 
     if (response.status === 409) {
-      return { success: false, message: data.detail ?? "An account with this email already exists." };
+      return {
+        success: false,
+        message: data.detail ?? "An account with this email already exists.",
+        temporaryPassword: null,
+      };
     }
 
-    return { success: false, message: data.detail ?? "Something went wrong. Please try again." };
+    return {
+      success: false,
+      message: data.detail ?? "Something went wrong. Please try again.",
+      temporaryPassword: null,
+    };
   } catch {
-    return { success: false, message: "Network error. Please try again." };
+    return {
+      success: false,
+      message: "Network error. Please try again.",
+      temporaryPassword: null,
+    };
   }
 }
 
